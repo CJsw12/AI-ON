@@ -74,40 +74,64 @@ public static class FirstSemesterStory
             "나|예약이 꽉 찬 경우, 빈 시간표, 없는 강의실 번호도 테스트하자. 정상 입력 한 번 된 걸로 끝내면 안 되겠네.",
             "교수|결과가 없다는 안내도 필요하죠. 사용자에게는 빈 화면과 고장이 똑같이 보일 수 있어요.",
             "교수|원인을 찾았으면 같은 오류가 다시 생기는지도 확인해 보세요.",
-            "동기|근데 추천 기능까지 만들려면 시간이 모자라. 기본 기능은 이제 잘 되는데.",
-            "나레이션|창밖은 이미 어두웠다. 모든 걸 넣을지, 지금 되는 걸 마무리할지 정해야 했다."
+            "동기|추천 기능은 시간이 모자라니 실험용으로 빼 두자. 대신 교수님 말대로 빈 강의실이 없을 때 안내부터 넣자.",
+            "나레이션|예약이 꽉 찬 시간을 넣어 보니 화면이 텅 비었다. 정말 고장 난 것처럼 보였다."
         }
     };
 
-    public static string[] Choices(int chapter, bool experienced)
+    // Lines where the professor is not part of the conversation (alone, or only classmates and seniors),
+    // so the portrait is hidden. Indexes are per chapter: Dialogue lines, then FollowUp lines.
+    static readonly int[][] DialogueWithoutProfessor = {
+        new int[0],
+        new[] { 0, 1, 2, 3 },             // Lost on campus, before bumping into the professor.
+        new[] { 0, 1, 2, 3, 4, 5, 6 },    // After OT and chatting with a classmate before the lecture.
+        new int[0],
+        new[] { 2, 3, 4, 5, 6, 7, 8 },    // Weeks later with classmates, until entering the office.
+        new[] { 4, 5, 6, 7, 8, 9, 10 },   // Festival and the night before, until the professor walks in.
+        new[] { 0, 1, 2, 5, 6 }           // Team testing, then the team trying the blank result.
+    };
+    static readonly int[][] FollowUpWithoutProfessor = {
+        new int[0],
+        new[] { 1, 2 },                   // Seniors explain courses and clubs.
+        new[] { 0, 1, 2, 3 },             // Review cards with a classmate at lunch.
+        new[] { 1 },                      // Classmate's remark after the explanation.
+        new[] { 0, 1 },                   // Reading the lab's project board.
+        new[] { 1, 2 },                   // Team splits the remaining work.
+        new[] { 0, 1, 2 }                 // Presentation day, until greeting the professor.
+    };
+    public static bool ProfessorOnStage(int chapter, int stage, int line)
+    {
+        int[][] hidden = stage == 0 ? DialogueWithoutProfessor : FollowUpWithoutProfessor;
+        return chapter < 1 || chapter >= hidden.Length || System.Array.IndexOf(hidden[chapter], line) < 0;
+    }
+
+    // Chapters 3, 4 and 6 open with a quiz instead (ChapterQuizzes).
+    public static string[] Choices(int chapter)
     {
         switch (chapter) {
             case 1: return new[] { "그럼 교수님만 따라가면 되겠네요!", "죄송합니다. 제가 길을 잘 못 찾아서요." };
             case 2: return new[] { "불편했던 걸 해결하는 프로그램을 만들고 싶어요.", "아직 모르겠어요. 이것저것 해 보고 싶어요.", "과제만 적으면 좋겠어요." };
-            case 3: return experienced ? new[] { "i++로 바꾼다.", "숫자를 매번 0으로 되돌린다.", "종료할 숫자를 100으로 바꾼다." } : new[] { "숫자를 1씩 늘린다.", "숫자를 매번 0으로 되돌린다.", "종료할 숫자를 100으로 바꾼다." };
-            case 4: return new[] { "테스트 입력과 출력 기록을 준비했어요. 같이 봐 주세요.", "정답 코드만 받을 수 있을까요?" };
             case 5: return new[] { "제가 합친 뒤부터 안 돼요. 변경 기록부터 같이 볼까요?", "제 함수 테스트는 통과했으니 제 문제는 아닌 것 같아요.", "제가 혼자 고칠 테니까 먼저 가세요." };
-            default: return new[] { "기본 기능부터 확실하게 마무리하자.", "밤새서라도 모든 기능을 넣자." };
+            default: return new string[0];
         }
     }
 
     public static readonly string[] FollowUp = {
         "", "교수님을 따라 OT 교실로 들어왔다. 복도 끝에서 선배들이 이름표를 나눠 주고 있었다.\n선배가 수강신청과 동아리 안내를 설명했다. 모르는 것은 단톡방에서 편하게 물어보라고 했다.\n소개 자료에는 프로그래밍, 데이터, 팀 프로젝트가 적혀 있었다. 같은 학부에서도 해 볼 일이 꽤 많았다.\n교수님이 짧은 자기소개 종이를 나눠 주었다. 학과를 고른 이유와 궁금한 것을 적어 보자.",
-        "수업이 끝나자 옆자리 동기가 가방을 챙기며 말을 걸었다.\n동기: 나 학식 처음인데 같이 갈래? 다음 수업까지 한 시간 남았어.\n질문하려고 교수님 앞에 서 있는 학생도 몇 명 있었다. 내 노트에도 아직 이해하지 못한 부분이 남아 있었다.\n점심을 함께 먹을지, 지금 질문할지, 조용히 복습할지 잠깐 고민했다.",
-        "교수님과 반복문을 확인했다. 숫자가 증가하면 10에 도달하고, 그때 조건이 거짓이 되어 반복이 끝난다.\n동기: 설명 듣고 나니까 알겠는데, 다음에 혼자 보면 또 헷갈릴 것 같아.\n나도 실습 노트를 펼쳤다. 복사한 정답 한 줄만 남겨 두면 오늘 고민한 이유를 잊을 것 같았다.\n수업이 끝나기 전, 오늘 배운 것을 어떤 방식으로 정리할지 골랐다.",
+        "수업이 끝나자 옆자리 동기가 가방을 챙기며 말을 걸었다.\n동기: 학식 먹으면서 오늘 배운 거 복습할래? 내가 용어 카드 만들어 왔어.\n학식당 테이블 위에 동기가 카드를 엎어 놓았다. 변수, 반복문, 자료구조, 알고리즘… 오늘 수업에서 들은 단어들이었다.\n동기: 용어랑 뜻을 짝지어 봐. 많이 틀리면 디저트는 네가 사는 거다!",
+        "교수님과 반복문을 확인했다. 숫자가 증가하면 10에 도달하고, 그때 조건이 거짓이 되어 반복이 끝난다.\n동기: 설명 듣고 나니까 알겠는데, 다음에 혼자 보면 또 헷갈릴 것 같아.\n교수님: 그럼 눈으로 확인해 봅시다. 화면의 숫자가 10이 되는 순간 멈춤 버튼을 누르세요.\n화면의 숫자가 빠르게 올라가기 시작했다. 반복이 끝나는 바로 그 순간을 잡아야 한다.",
         "질문을 마치고 나오려는데 연구실 게시판의 프로젝트 모집 공고가 눈에 들어왔다.\n화면에는 보행 안내 앱과 데이터 시각화 프로젝트가 소개되어 있었다. 교실에서 배운 코드가 쓰이는 모습이었다.\n교수님은 구경은 가능하지만 정기 참여는 일정과 기초 학습을 함께 고려해야 한다고 설명했다.\n당장 참여할지 정할 필요는 없었다. 지금 궁금한 것부터 물어보기로 했다.",
-        "교수님과 실행 기록을 확인했다. 새 입력 화면은 강의실 번호를 글자로 보내는데, 기존 코드는 숫자만 비교하고 있었다.\n동기: 누가 잘못했냐보다 어디서 달라졌는지 보니까 빨리 찾네.\n나는 입력 형식을 맞추고, 동기는 테스트용 강의실 목록을 준비했다. 수정한 부분을 따로 저장해 두었다.\n이제 작업을 마무리할 차례다. 서로 확인할지, 교수님께 검토를 부탁할지 정해야 했다.",
+        "교수님과 실행 기록을 확인했다. 새 입력 화면은 강의실 번호를 글자로 보내는데, 기존 코드는 숫자만 비교하고 있었다.\n동기: 누가 잘못했냐보다 어디서 달라졌는지 보니까 빨리 찾네.\n나는 입력 형식을 맞추고, 동기는 테스트용 강의실 목록을 준비했다. 수정한 부분을 따로 저장해 두었다.\n교수님: 잠깐 쉬었다 합시다. 연구실 커피 머신 쓸 줄 알아요? 제 것도 한 잔 부탁해요.",
         "역할을 나눠 작업을 마쳤다. 추천 기능은 실험용으로 따로 두고, 발표에서는 검증한 기본 기능을 보여 주기로 했다.\n다음 날, 발표 중 질문 하나에는 말을 더듬었다. 그래도 강의실 목록은 끝까지 정상적으로 표시됐다.\n동기: 끝났다! 밥 먹으러 가자. 나는 잠깐 교수님께 인사하고 가겠다고 했다.\n교수님: 첫 학기를 보내 보니 어떤가요? 다음에는 무엇을 해 보고 싶어요?"
     };
+    // Chapters 2, 3 and 5 continue with a minigame instead (MiniGames).
     public static string[] ExtraChoices(int chapter)
     {
         switch (chapter) {
             case 1: return new[] { "전공 수업에서 뭘 배우는지 질문한다.", "친구들과 함께 학교생활을 해 보고 싶다고 적는다.", "아직은 혼자 생각해 보고 싶다고 적는다." };
-            case 2: return new[] { "같이 밥 먹으며 과제도 이야기하자고 한다.", "모르는 부분을 교수님께 추가로 질문한다.", "혼자 복습하러 간다." };
-            case 3: return new[] { "틀린 이유와 수정 원리를 질문한다.", "생활 속에서 반복문이 쓰이는 예를 찾아본다.", "정답만 적고 다음 실습을 준비한다." };
             case 4: return new[] { "연구실 프로젝트 체험 방법을 물어본다.", "친구와 함께 참가할 수 있는지 물어본다.", "우선 수업부터 혼자 익히겠다고 한다." };
-            case 5: return new[] { "진행 상황을 공유하고 서로 테스트한다.", "막힌 부분을 정리해 교수님께 질문한다.", "내 작업을 혼자 마무리한다." };
-            default: return new[] { "새로운 전공 프로젝트에 도전하고 싶어요.", "친구들과 함께 더 배우고 싶어요.", "제 속도로 혼자 더 공부해 보고 싶어요." };
+            case 6: return new[] { "새로운 전공 프로젝트에 도전하고 싶어요.", "친구들과 함께 더 배우고 싶어요.", "제 속도로 혼자 더 공부해 보고 싶어요." };
+            default: return new string[0];
         }
     }
     public static readonly string[] EndingNames = { "아직 낯선 캠퍼스", "첫 학기 수료", "학식 메이트", "혼자서도 해냈어요", "질문왕 신입생", "디버깅 파트너", "연구실 문은 열려 있다", "다음 학기도 잘 부탁드립니다" };

@@ -1,12 +1,18 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
+// Background music per mood plus one-shot UI sounds. Volumes follow GameSettings.
+// UI sounds live in Resources/Audio/Ui/<Name>.wav (Advance, Back, Select, Open, Close, Toggle, Hover,
+// Save, Load, Up, Down, Unlock, Chapter); replacing a file with the same name swaps the sound.
 public class NovelAudio : MonoBehaviour
 {
+    const float MusicLevel = .4f, EffectsLevel = .4f;
     AudioSource music, effects;
     string current;
     Coroutine transition;
-    public bool Muted { get; private set; }
+    float fade;   // 0..1 crossfade between moods, multiplied by the music volume setting.
+    readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
 
     void Awake()
     {
@@ -16,10 +22,9 @@ public class NovelAudio : MonoBehaviour
         music.loop = true;
         music.spatialBlend = effects.spatialBlend = 0;
         music.volume = 0;
-        effects.volume = .35f;
-        Muted = PlayerPrefs.GetInt("SoundMuted", 0) == 1;
-        music.mute = effects.mute = Muted;
     }
+
+    void Update() => music.volume = fade * MusicLevel * GameSettings.Music;
 
     public void SetMood(string mood)
     {
@@ -31,9 +36,9 @@ public class NovelAudio : MonoBehaviour
 
     IEnumerator ChangeMusic(string mood)
     {
-        while (music.volume > 0)
+        while (fade > 0)
         {
-            music.volume = Mathf.MoveTowards(music.volume, 0, Time.unscaledDeltaTime * .5f);
+            fade = Mathf.MoveTowards(fade, 0, Time.unscaledDeltaTime * 1.5f);
             yield return null;
         }
         music.Stop();
@@ -42,34 +47,22 @@ public class NovelAudio : MonoBehaviour
         if (old != null && old != music.clip) Resources.UnloadAsset(old);
         if (music.clip == null) { Debug.LogWarning("Missing music: " + mood); yield break; }
         music.Play();
-        while (music.volume < .32f)
+        while (fade < 1)
         {
-            music.volume = Mathf.MoveTowards(music.volume, .32f, Time.unscaledDeltaTime * .32f);
+            fade = Mathf.MoveTowards(fade, 1, Time.unscaledDeltaTime);
             yield return null;
         }
     }
 
     public void Play(string sound)
     {
-        AudioClip clip = Resources.Load<AudioClip>("Audio/" + sound);
-        if (clip != null) effects.PlayOneShot(clip);
-    }
-
-    public void ToggleMute()
-    {
-        Muted = !Muted;
-        music.mute = effects.mute = Muted;
-        PlayerPrefs.SetInt("SoundMuted", Muted ? 1 : 0);
-        PlayerPrefs.Save();
-    }
-    void OnGUI()
-    {
-        Matrix4x4 oldMatrix = GUI.matrix;
-        int oldDepth = GUI.depth;
-        GUI.matrix = Matrix4x4.identity;
-        GUI.depth = -100;
-        if (GUI.Button(new Rect(Screen.width - 140, 8, 130, 32), Muted ? "소리 켜기" : "음소거")) ToggleMute();
-        GUI.depth = oldDepth;
-        GUI.matrix = oldMatrix;
+        if (!clips.TryGetValue(sound, out AudioClip clip))
+        {
+            clip = Resources.Load<AudioClip>("Audio/Ui/" + sound) ?? Resources.Load<AudioClip>("Audio/" + sound);
+            clips[sound] = clip;
+        }
+        if (clip == null) return;
+        float level = sound == "Hover" ? .35f : 1;
+        effects.PlayOneShot(clip, level * EffectsLevel * GameSettings.Sfx);
     }
 }
