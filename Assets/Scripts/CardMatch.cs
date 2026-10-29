@@ -9,18 +9,23 @@ public class CardMatch : MiniGame
     };
     readonly string[] faces = new string[12];
     readonly int[] pairOf = new int[12];
+    readonly bool[] isTerm = new bool[12];
     readonly bool[] matched = new bool[12];
     int first = -1, second = -1, mistakes, found;
     float hideAt;
+    readonly float startedAt = Time.unscaledTime;
+    Texture2D cardBack;
+    GUIStyle hiddenButton;
 
     public CardMatch()
     {
-        for (int i = 0; i < 12; i++) { pairOf[i] = i / 2; faces[i] = Pairs[i / 2, i % 2]; }
+        for (int i = 0; i < 12; i++) { pairOf[i] = i / 2; isTerm[i] = i % 2 == 0; faces[i] = Pairs[i / 2, i % 2]; }
         for (int i = 11; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
             (faces[i], faces[j]) = (faces[j], faces[i]);
             (pairOf[i], pairOf[j]) = (pairOf[j], pairOf[i]);
+            (isTerm[i], isTerm[j]) = (isTerm[j], isTerm[i]);
         }
     }
     public override string Title => MiniGames.Title(2);
@@ -31,17 +36,34 @@ public class CardMatch : MiniGame
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {
+        if (cardBack == null) cardBack = Resources.Load<Texture2D>("CardMatch/DTTCardBack");
+        if (hiddenButton == null) hiddenButton = new GUIStyle(GUIStyle.none);
+        float remaining = Mathf.Max(0, 60f - (Time.unscaledTime - startedAt));
+        if (!Done && remaining <= 0) Finish();
         if (second >= 0 && Time.unscaledTime >= hideAt) first = second = -1;
         GUI.Label(new Rect(100, 120, 1080, 35), "같은 개념의 용어와 뜻을 짝지으세요.   틀린 횟수 " + mistakes + "   ·   찾은 짝 " + found + "/6", body);
+        Color timerColor = remaining < 10 ? Color.Lerp(NovelUI.Pink, Color.red, .5f + .5f * Mathf.Sin(Time.unscaledTime * 5)) : NovelUI.Mint;
+        NovelUI.Fill(new Rect(830, 150, 300, 12), NovelUI.Blush, 6);
+        if (remaining > 0) NovelUI.Fill(new Rect(830, 150, 300 * remaining / 60f, 12), timerColor, 6);
+        GUI.Label(new Rect(650, 140, 180, 30), "남은 시간 " + Mathf.CeilToInt(remaining) + "초", NovelUI.Text(NovelUI.Soft, 18, timerColor));
         for (int i = 0; i < 12; i++)
         {
             Rect rect = new Rect(110 + (i % 4) * 268, 175 + (i / 4) * 175, 250, 155);
             if (matched[i] || i == first || i == second)
             {
-                Box(rect, matched[i] ? new Color(.35f, .55f, .45f, .95f) : new Color(.55f, .14f, .34f, .95f));
-                GUI.Label(rect, faces[i], Face(body));
+                NovelUI.Card(rect, matched[i] ? NovelUI.Mint : NovelUI.Cream, 18);
+                GUI.Label(new Rect(rect.x + 8, rect.y + 15, rect.width - 16, 25), isTerm[i] ? "전공 용어" : "뜻과 쓰임", NovelUI.Text(NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter));
+                GUI.Label(new Rect(rect.x + 10, rect.y + 45, rect.width - 20, rect.height - 55), faces[i], NovelUI.Text(NovelUI.Soft, isTerm[i] ? 26 : 19, NovelUI.Berry, TextAnchor.MiddleCenter, isTerm[i] ? FontStyle.Bold : FontStyle.Normal));
             }
-            else if (GUI.Button(rect, "?", button) && !Done && second < 0) Flip(i);
+            else
+            {
+                bool hover = rect.Contains(Event.current.mousePosition) && !Done && second < 0;
+                Rect visual = new Rect(rect.x, rect.y - (hover ? 4 : 0), rect.width, rect.height);
+                NovelUI.Card(visual, new Color(.46f, .43f, .43f), 18, hover ? NovelUI.Pink : NovelUI.Blush, 2);
+                if (cardBack != null && Event.current.type == EventType.Repaint) { GUI.color = new Color(1, 1, 1, .15f); GUI.DrawTexture(visual, cardBack, ScaleMode.ScaleToFit); GUI.color = Color.white; }
+                GUI.Label(visual, "‹ / ›", NovelUI.Text(NovelUI.Round, 30, NovelUI.Cream, TextAnchor.MiddleCenter, FontStyle.Bold));
+                if (GUI.Button(rect, GUIContent.none, hiddenButton) && !Done && second < 0) Flip(i);
+            }
         }
     }
     void Flip(int card)
@@ -58,7 +80,7 @@ public class CardMatch : MiniGame
     void Finish()
     {
         Done = true;
-        Delta = mistakes <= 3 ? 2 : mistakes <= 7 ? 1 : 0;
-        Summary = "6쌍 완성 · 틀린 횟수 " + mistakes;
+        Delta = found == 6 ? (mistakes <= 3 ? 2 : mistakes <= 7 ? 1 : 0) : 0;
+        Summary = (found == 6 ? "6쌍 완성" : "시간 종료 · " + found + "/6쌍") + " · 틀린 횟수 " + mistakes;
     }
 }
