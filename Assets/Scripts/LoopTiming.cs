@@ -14,7 +14,7 @@ public class LoopTiming : MiniGame
         new[] { "종료 조건을 다시 살펴보세요. 숫자가 10이 되면 i < 10은 거짓입니다.", "한 번은 맞혔군요. 조건이 거짓이 되는 순간을 다시 확인하세요.", "정확합니다. 조건이 거짓이 되는 순간을 잘 파악했군요." },
         new[] { "괜찮아요! 10이 되면 조건이 거짓이 된다는 것을 기억해요.", "한 번은 딱 잡았네요! 한 번씩 차근차근 살펴봐요.", "와, 반복이 끝나는 순간을 정확히 잡았네요!" }
     };
-    float Interval(int n) => round == 0 ? 1f / 3f : round == 1 ? (n < 6 ? 1f / 3f : n < 9 ? .25f : .2f) : .25f;
+    float Interval(int n) => round == 0 ? 1f / 3f : round == 1 ? (n < 6 ? .28f : n < 9 ? .20f : .15f) : .25f;
     void BeginCountdown() { state = State.Countdown; stateAt = Time.unscaledTime; }
     void Stop(int n)
     {
@@ -45,7 +45,7 @@ public class LoopTiming : MiniGame
         if (state == State.Result && now - stateAt >= 1.5f)
         {
             if (attempt == 0) attempt = 1;
-            else { attempt = 0; round++; }
+            else { round++; }
             if (round >= 3) Finish(); else BeginCountdown();
         }
         float shake = state == State.Running && value >= 8 ? Mathf.Sin(now * 45f) * 1.5f : 0;
@@ -54,7 +54,7 @@ public class LoopTiming : MiniGame
         GUI.Label(new Rect(155, 220, 960, 38), "for (int i = 0; i < 10; i++)    // i가 10이면 조건 종료", body);
         if (state == State.Instructions)
         {
-            GUI.Label(new Rect(175, 300, 930, 130), "숫자가 10이 되는 순간 정지하세요.\n각 단계는 연습과 본 도전으로 진행됩니다.\n마지막 단계는 8부터 숫자가 숨겨집니다.", body);
+            GUI.Label(new Rect(175, 300, 930, 130), "숫자가 10이 되는 순간 정지하세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8부터 숫자가 숨겨집니다.", body);
             if (GUI.Button(new Rect(440, 550, 400, 75), "시작하기", button)) BeginCountdown();
         }
         else if (state == State.Countdown)
