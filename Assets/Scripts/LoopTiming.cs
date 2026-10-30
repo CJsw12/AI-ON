@@ -1,48 +1,76 @@
 using UnityEngine;
 
-// Chapter 3: stop the loop counter exactly when it reaches 10; it speeds up every round.
+// A three-level timing exercise; only the scored attempt contributes to affection.
 public class LoopTiming : MiniGame
 {
-    static readonly float[] StepSeconds = { .16f, .11f, .08f };
-    int round, hits, stopped = -1;
-    float startedAt = Time.unscaledTime, resumeAt;
+    enum State { Instructions, Countdown, Running, Result, Completed }
+    State state = State.Instructions;
+    int round, attempt, hits, value, stopped;
+    float stateAt, nextStepAt;
     string verdict = "";
-
+    static readonly string[] LevelNames = { "일정한 속도", "점점 빨라지는 속도", "숫자 숨기기" };
     public override string Title => MiniGames.Title(3);
     public override string[][] Replies => new[] {
-        new[] { "종료 조건을 놓쳤습니다. i < 10이 언제 거짓이 되는지 값을 하나씩 적어 보세요.", "한 번은 맞혔군요. 반복은 i가 10이 되는 순간 끝납니다. 다시 확인하세요.", "정확합니다. 조건이 거짓이 되는 순간을 정확히 알고 있군요." },
-        new[] { "숫자가 너무 빨랐죠? 괜찮아요. 10이 결승선이라는 것만 기억하면 돼요!", "한 번은 딱 잡았네요! 숫자가 10에서 퇴근한다는 것만 기억해요.", "와, 반복문이 퇴근하는 순간을 정확히 잡았네요! 감각 최고!" }
+        new[] { "종료 조건을 다시 살펴보세요. 숫자가 10이 되면 i < 10은 거짓입니다.", "한 번은 맞혔군요. 조건이 거짓이 되는 순간을 다시 확인하세요.", "정확합니다. 조건이 거짓이 되는 순간을 잘 파악했군요." },
+        new[] { "괜찮아요! 10이 되면 조건이 거짓이 된다는 것을 기억해요.", "한 번은 딱 잡았네요! 한 번씩 차근차근 살펴봐요.", "와, 반복이 끝나는 순간을 정확히 잡았네요!" }
     };
-    int Current => (int)((Time.unscaledTime - startedAt) / StepSeconds[round]) % 15;
-
-    public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
+    float Interval(int n) => round == 0 ? 1f / 3f : round == 1 ? (n < 6 ? .28f : n < 9 ? .20f : .15f) : .25f;
+    void BeginCountdown() { state = State.Countdown; stateAt = Time.unscaledTime; }
+    void Stop(int n)
     {
-        GUI.Label(new Rect(100, 120, 1080, 35), "for (int i = 0; i < 10; i++)      i가 10이 되는 순간 멈추세요.", body);
-        GUI.Label(new Rect(100, 160, 1080, 35), "라운드 " + Mathf.Min(round + 1, 3) + "/3   ·   성공 " + hits, body);
-        if (Done) { GUI.Label(new Rect(100, 300, 1080, 120), Summary, title); return; }
-        if (stopped >= 0)
-        {
-            GUI.Label(new Rect(100, 280, 1080, 120), "i = " + stopped, title);
-            GUI.Label(new Rect(100, 420, 1080, 50), verdict, Face(body));
-            if (Time.unscaledTime < resumeAt) return;
-            stopped = -1;
-            if (++round == 3) { Finish(); return; }
-            startedAt = Time.unscaledTime;
-            return;
-        }
-        GUI.Label(new Rect(100, 280, 1080, 120), "i = " + Current, title);
-        if (GUI.Button(new Rect(440, 560, 400, 90), "멈춤!", button))
-        {
-            stopped = Current;
-            if (stopped == 10) hits++;
-            verdict = stopped == 10 ? "정확히 10! 조건이 거짓이 되어 반복이 끝났어요." : stopped < 10 ? "아직 i < 10이 참이라 반복 중이에요." : "이미 10을 지나쳤어요.";
-            resumeAt = Time.unscaledTime + 1.2f;
-        }
+        stopped = n;
+        if (n == 10) { verdict = "Breakpoint Hit! · 정확히 10입니다."; if (attempt == 1) hits++; }
+        else if (n == 9 || n == 11) verdict = "±1 타이밍 오차 · 정지 지점에 가까웠어요.";
+        else verdict = "Breakpoint Missed · 정지 지점을 놓쳤어요.";
+        state = State.Result; stateAt = Time.unscaledTime;
+        NovelUI.Sound?.Invoke(n == 10 ? "Up" : "Down");
     }
     void Finish()
     {
-        Done = true;
-        Delta = hits >= 2 ? 2 : hits;
-        Summary = "3번 중 " + hits + "번 정확히 멈춤";
+        state = State.Completed; Done = true; Delta = hits >= 2 ? 2 : hits;
+        Summary = "본 도전 3번 중 " + hits + "번 정확히 멈춤";
+    }
+    public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
+    {
+        float now = Time.unscaledTime;
+        if (state == State.Countdown && now - stateAt >= 3f) { state = State.Running; value = 0; nextStepAt = now + Interval(0); }
+        if (state == State.Running)
+        {
+            while (now >= nextStepAt && state == State.Running)
+            {
+                value++; NovelUI.Sound?.Invoke("LoopTick");
+                if (value >= 12) Stop(value); else nextStepAt += Interval(value);
+            }
+        }
+        if (state == State.Result && now - stateAt >= 1.5f)
+        {
+            if (attempt == 0) attempt = 1;
+            else { round++; }
+            if (round >= 3) Finish(); else BeginCountdown();
+        }
+        float shake = state == State.Running && value >= 8 ? Mathf.Sin(now * 45f) * 1.5f : 0;
+        NovelUI.Card(new Rect(130 + shake, 150, 1020, 560), new Color(.08f,.1f,.15f), 18, NovelUI.Pink, 2);
+        GUI.Label(new Rect(155, 170, 950, 35), "LOOP DEBUGGER  ·  " + (Done ? "완료" : (round + 1) + "/3  " + LevelNames[round]) + "  ·  " + (attempt == 0 ? "연습" : "본 도전"), body);
+        GUI.Label(new Rect(155, 220, 960, 38), "for (int i = 0; i < 10; i++)    // i가 10이면 조건 종료", body);
+        if (state == State.Instructions)
+        {
+            GUI.Label(new Rect(175, 300, 930, 130), "숫자가 10이 되는 순간 정지하세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8부터 숫자가 숨겨집니다.", body);
+            if (GUI.Button(new Rect(440, 550, 400, 75), "시작하기", button)) BeginCountdown();
+        }
+        else if (state == State.Countdown)
+            GUI.Label(new Rect(170, 330, 940, 100), "준비  " + Mathf.Max(1, 3 - Mathf.FloorToInt(now - stateAt)), title);
+        else if (state == State.Running)
+        {
+            bool blind = round == 2 && value >= 8 && value <= 11;
+            GUI.Label(new Rect(170, 310, 940, 100), "i = " + (blind ? "??" : value.ToString()), title);
+            GUI.Label(new Rect(170, 415, 940, 45), (value % 2 == 0 ? "●" : "○") + " 반복 진행 중 · 10에서 정지", Face(body));
+            if (GUI.Button(new Rect(440, 535, 400, 85), "●  Break Point", button)) Stop(value);
+        }
+        else if (state == State.Result)
+        {
+            GUI.Label(new Rect(170, 300, 940, 90), "i = " + stopped, title);
+            GUI.Label(new Rect(170, 415, 940, 80), verdict, Face(body));
+        }
+        else GUI.Label(new Rect(170, 330, 940, 100), Summary, title);
     }
 }
