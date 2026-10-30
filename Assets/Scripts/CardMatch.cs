@@ -13,13 +13,18 @@ public class CardMatch : MiniGame
     readonly bool[] matched = new bool[12];
     int first = -1, second = -1, mistakes, found;
     float hideAt;
-    readonly float startedAt = Time.unscaledTime;
+    float startedAt, shuffleAt;
+    bool preview = true, shuffling;
     Texture2D cardBack;
     GUIStyle hiddenButton;
 
     public CardMatch()
     {
         for (int i = 0; i < 12; i++) { pairOf[i] = i / 2; isTerm[i] = i % 2 == 0; faces[i] = Pairs[i / 2, i % 2]; }
+    }
+
+    void Shuffle()
+    {
         for (int i = 11; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
@@ -38,31 +43,55 @@ public class CardMatch : MiniGame
     {
         if (cardBack == null) cardBack = Resources.Load<Texture2D>("CardMatch/DTTCardBack");
         if (hiddenButton == null) hiddenButton = new GUIStyle(GUIStyle.none);
-        float remaining = Mathf.Max(0, 60f - (Time.unscaledTime - startedAt));
-        if (!Done && remaining <= 0) Finish();
+        if (shuffling && Time.unscaledTime - shuffleAt >= 1.8f)
+        {
+            Shuffle();
+            shuffling = false;
+            startedAt = Time.unscaledTime;
+        }
+        bool playing = !preview && !shuffling;
+        float remaining = playing ? Mathf.Max(0, 60f - (Time.unscaledTime - startedAt)) : 60f;
+        if (playing && !Done && remaining <= 0) Finish();
         if (second >= 0 && Time.unscaledTime >= hideAt) first = second = -1;
-        GUI.Label(new Rect(100, 120, 1080, 35), "같은 개념의 용어와 뜻을 짝지으세요.   틀린 횟수 " + mistakes + "   ·   찾은 짝 " + found + "/6", body);
+        string instruction = preview ? "짝 번호를 보며 용어와 뜻을 익혀 보세요." : shuffling ? "카드를 뒤집어 섞고 있습니다..." : "같은 개념의 용어와 뜻을 짝지으세요.   틀린 횟수 " + mistakes + "   ·   찾은 짝 " + found + "/6";
+        GUI.Label(new Rect(100, 120, 1080, 35), instruction, body);
+        if (preview && GUI.Button(new Rect(450, 715, 380, 50), "준비 완료", button))
+        {
+            preview = false;
+            shuffling = true;
+            shuffleAt = Time.unscaledTime;
+        }
         Color timerColor = remaining < 10 ? Color.Lerp(NovelUI.Pink, Color.red, .5f + .5f * Mathf.Sin(Time.unscaledTime * 5)) : NovelUI.Mint;
         NovelUI.Fill(new Rect(830, 150, 300, 12), NovelUI.Blush, 6);
         if (remaining > 0) NovelUI.Fill(new Rect(830, 150, 300 * remaining / 60f, 12), timerColor, 6);
-        GUI.Label(new Rect(650, 140, 180, 30), "남은 시간 " + Mathf.CeilToInt(remaining) + "초", NovelUI.Text(NovelUI.Soft, 18, timerColor));
+        GUI.Label(new Rect(650, 140, 180, 30), playing ? "남은 시간 " + Mathf.CeilToInt(remaining) + "초" : "시작 전", NovelUI.Text(NovelUI.Soft, 18, timerColor));
         for (int i = 0; i < 12; i++)
         {
             Rect rect = new Rect(110 + (i % 4) * 268, 175 + (i / 4) * 175, 250, 155);
-            if (matched[i] || i == first || i == second)
+            if (preview || matched[i] || i == first || i == second)
             {
                 NovelUI.Card(rect, matched[i] ? NovelUI.Mint : NovelUI.Cream, 18);
-                GUI.Label(new Rect(rect.x + 8, rect.y + 15, rect.width - 16, 25), isTerm[i] ? "전공 용어" : "뜻과 쓰임", NovelUI.Text(NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter));
+                GUI.Label(new Rect(rect.x + 8, rect.y + 15, rect.width - 16, 25), (preview ? "짝 " + (pairOf[i] + 1) + " · " : "") + (isTerm[i] ? "전공 용어" : "뜻과 쓰임"), NovelUI.Text(NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter));
                 GUI.Label(new Rect(rect.x + 10, rect.y + 45, rect.width - 20, rect.height - 55), faces[i], NovelUI.Text(NovelUI.Soft, isTerm[i] ? 26 : 19, NovelUI.Berry, TextAnchor.MiddleCenter, isTerm[i] ? FontStyle.Bold : FontStyle.Normal));
             }
             else
             {
-                bool hover = rect.Contains(Event.current.mousePosition) && !Done && second < 0;
+                bool hover = playing && rect.Contains(Event.current.mousePosition) && !Done && second < 0;
                 Rect visual = new Rect(rect.x, rect.y - (hover ? 4 : 0), rect.width, rect.height);
+                if (shuffling)
+                {
+                    float elapsed = Time.unscaledTime - shuffleAt;
+                    float gather = Mathf.SmoothStep(0, 1, Mathf.Clamp01(elapsed / .5f));
+                    float spread = Mathf.SmoothStep(0, 1, Mathf.Clamp01((elapsed - 1.2f) / .6f));
+                    float stack = gather * (1 - spread);
+                    float orbit = Mathf.Sin(Mathf.Clamp01((elapsed - .5f) / .7f) * Mathf.PI);
+                    Vector2 center = new Vector2(515 + (i % 4 - 1.5f) * 12, 350 + (i / 4 - 1) * 10);
+                    visual.position = Vector2.Lerp(rect.position, center, stack) + new Vector2(Mathf.Sin(i * 2.1f + elapsed * 12) * 35, Mathf.Cos(i * 2.1f + elapsed * 12) * 25) * orbit;
+                }
                 NovelUI.Card(visual, new Color(.46f, .43f, .43f), 18, hover ? NovelUI.Pink : NovelUI.Blush, 2);
                 if (cardBack != null && Event.current.type == EventType.Repaint) { GUI.color = new Color(1, 1, 1, .15f); GUI.DrawTexture(visual, cardBack, ScaleMode.ScaleToFit); GUI.color = Color.white; }
                 GUI.Label(visual, "‹ / ›", NovelUI.Text(NovelUI.Round, 30, NovelUI.Cream, TextAnchor.MiddleCenter, FontStyle.Bold));
-                if (GUI.Button(rect, GUIContent.none, hiddenButton) && !Done && second < 0) Flip(i);
+                if (GUI.Button(rect, GUIContent.none, hiddenButton) && playing && !Done && second < 0) Flip(i);
             }
         }
     }
