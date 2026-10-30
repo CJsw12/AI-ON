@@ -1,5 +1,6 @@
-// Fixed events and choices; relationship changes only the professor's response.
-public static class FirstSemesterStory
+// AI-SW융합학부: fixed events and choices; relationship changes only the professor's response.
+// The professor's tone lives in AiSwPersonality, the quizzes in AiSwQuizzes.
+public static class AiSwStory
 {
     public static readonly string[][] Dialogue = {
         new string[0],
@@ -81,7 +82,7 @@ public static class FirstSemesterStory
 
     // Lines where the professor is not part of the conversation (alone, or only classmates and seniors),
     // so the portrait is hidden. Indexes are per chapter: Dialogue lines, then FollowUp lines.
-    static readonly int[][] DialogueWithoutProfessor = {
+    static readonly int[][] HiddenDialogue = {
         new int[0],
         new[] { 0, 1, 2, 3 },             // Lost on campus, before bumping into the professor.
         new[] { 0, 1, 2, 3, 4, 5, 6 },    // After OT and chatting with a classmate before the lecture.
@@ -90,7 +91,7 @@ public static class FirstSemesterStory
         new[] { 4, 5, 6, 7, 8, 9, 10 },   // Festival and the night before, until the professor walks in.
         new[] { 0, 1, 2, 5, 6 }           // Team testing, then the team trying the blank result.
     };
-    static readonly int[][] FollowUpWithoutProfessor = {
+    static readonly int[][] HiddenFollowUp = {
         new int[0],
         new[] { 1, 2 },                   // Seniors explain courses and clubs.
         new[] { 0, 1, 2, 3 },             // Review cards with a classmate at lunch.
@@ -99,13 +100,8 @@ public static class FirstSemesterStory
         new[] { 1, 2 },                   // Team splits the remaining work.
         new[] { 0, 1, 2 }                 // Presentation day, until greeting the professor.
     };
-    public static bool ProfessorOnStage(int chapter, int stage, int line)
-    {
-        int[][] hidden = stage == 0 ? DialogueWithoutProfessor : FollowUpWithoutProfessor;
-        return chapter < 1 || chapter >= hidden.Length || System.Array.IndexOf(hidden[chapter], line) < 0;
-    }
 
-    // Chapters 3, 4 and 6 open with a quiz instead (ChapterQuizzes).
+    // Chapters 3, 4 and 6 open with a quiz instead (AiSwQuizzes).
     public static string[] Choices(int chapter)
     {
         switch (chapter) {
@@ -135,18 +131,6 @@ public static class FirstSemesterStory
         }
     }
     public static readonly string[] EndingNames = { "아직 낯선 캠퍼스", "첫 학기 수료", "학식 메이트", "혼자서도 해냈어요", "질문왕 신입생", "디버깅 파트너", "연구실 문은 열려 있다", "다음 학기도 잘 부탁드립니다" };
-    // Priority resolves overlapping achievements to exactly one ending.
-    public static int ResolveEnding(int affection, int questions, int teamwork, int interest, int solo)
-    {
-        if (affection <= 0) return 0;
-        if (affection >= 10 && questions >= 2 && teamwork >= 2 && interest >= 2) return 7;
-        if (affection >= 7 && interest >= 2) return 6;
-        if (affection >= 6 && teamwork >= 2 && questions >= 1) return 5;
-        if (questions >= 3) return 4;
-        if (solo >= 3) return 3;
-        if (teamwork >= 2) return 2;
-        return 1;
-    }
     public static readonly string[] EndingText = {
         "발표는 끝났지만, 캠퍼스는 여전히 낯설다.\n나: 아직 이 전공에 맞는지 모르겠어요.\n교수님: 어려웠던 것과 흥미 없었던 것을 구분해 보세요.\n다음 학기 상담 날짜를 달력에 적었다.",
         "낯설던 강의실에서 첫 학기를 끝냈다.\n교수님: 수고했어요. 다음엔 후배 길도 알려 주세요.\n나: 이제 304호는 확실히 알아요.\n시간표를 접으며 조금 웃었다.",
@@ -156,5 +140,53 @@ public static class FirstSemesterStory
         "동기: 이번엔 내가 고친 코드도 봐 줄래?\n나: 좋아. 같이 확인하자.\n교수님: 서로의 오류를 찾아 주는 좋은 팀이네요.\n다음 프로젝트의 공동 작업 폴더를 만들었다.",
         "교수님: 방학에 연구실 프로젝트를 구경하러 올래요?\n나: 제가 참여해도 돼요?\n교수님: 배우고 싶으면 문은 열려 있습니다.\n게시판의 모집 공고가 이제 내 이야기처럼 느껴졌다.",
         "나: 모르는 건 더 많아졌는데, 해 보고 싶은 것도 생겼어요.\n교수님: 그럼 제대로 배운 겁니다.\n나: 다음 학기도 잘 부탁드립니다.\n처음 길을 잃었던 곳에 다시 만나고 싶은 사람들이 생겼다."
+    };
+
+    static readonly MiniGameTheme Cards = new MiniGameTheme { Kind = MiniGameKind.Cards, Title = "용어 카드 짝맞추기", Place = "Cafeteria", Note = "챕터 2 · 학식에서 용어 카드로 복습" };
+    static readonly MiniGameTheme Loop = new MiniGameTheme { Kind = MiniGameKind.Timing, Title = "반복문 타이밍 맞추기", Place = "Classroom", Note = "챕터 3 · 반복문이 끝나는 순간 멈추기" };
+    static readonly MiniGameTheme Coffee = new MiniGameTheme { Kind = MiniGameKind.Coffee, Title = "연구실 커피 제조", Place = "ComputerLab", Note = "챕터 5 · 주문서대로 커피 만들기" };
+
+    static Slot[] Slots()
+    {
+        Slot[] slots = new Slot[12];
+        for (int i = 0; i < slots.Length; i++)
+        {
+            int chapter = i / 2 + 1, stage = i % 2;
+            slots[i] = new Slot {
+                Options = stage == 0 ? Choices(chapter) : ExtraChoices(chapter),
+                Scores = AiSwPersonality.Scores(i), Replies = AiSwPersonality.Replies(i),
+                Major = AiSwQuizzes.Find(chapter, stage, true), Minor = AiSwQuizzes.Find(chapter, stage, false)
+            };
+        }
+        slots[0].Stats = "--"; slots[1].Stats = "qts"; slots[2].Stats = "ii-"; slots[7].Stats = "its"; slots[8].Stats = "t-s"; slots[11].Stats = "its";
+        slots[3].Game = Cards; slots[3].Stat = 't';
+        slots[5].Game = Loop; slots[5].Stat = 'i';
+        slots[9].Game = Coffee; slots[9].Stat = 'q';
+        slots[6].Stat = 'q';   // The office-hour quiz counts as a question.
+        return slots;
+    }
+
+    public static readonly Story Data = new Story {
+        College = "공과대학", Name = "AI-SW융합학부", Short = "AI-SW", Tag = "소프트웨어",
+        LevelQuestion = "코딩 경험이 있나요?",
+        Levels = new[] { "전공자", "비전공자" },
+        LevelNotes = new[] { "코드를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
+        Professors = new[] {
+            new Professor { Name = "김가람 교수", Description = "엄격한 원칙파 · 근거와 준비를 중시", TagA = "#원칙파", TagB = "#꼼꼼함" },
+            new Professor { Name = "이명희 교수", Description = "유쾌한 소통파 · 호기심과 협업을 중시", TagA = "#소통파", TagB = "#호기심" }
+        },
+        Chapters = new[] { "", "입학 OT", "첫 수업", "첫 실습", "오피스아워", "발표 전날", "함께 마무리하기" },
+        Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
+        Slots = Slots(),
+        EndingNames = EndingNames, EndingText = EndingText,
+        EndingLines = new[] { AiSwPersonality.StrictEndings, AiSwPersonality.CheerfulEndings },
+        Spoken = AiSwPersonality.Spoken,
+        Background = (chapter, stage, line) =>
+            chapter == 1 && stage == 1 ? "Classroom" :
+            chapter == 2 ? (stage == 1 ? "Cafeteria" : "Classroom") :
+            chapter == 3 ? "Classroom" :
+            chapter == 4 && stage == 0 && line < 6 ? "Cafeteria" :
+            chapter == 6 && stage == 1 && line >= 1 ? "Auditorium" :
+            chapter <= 1 || chapter == 7 ? "CampusExterior" : "ComputerLab"
     };
 }

@@ -1,8 +1,9 @@
-public static class ProfessorPersonality
+// AI-SW융합학부 professors: scores, replies, rewording and ending lines.
+public static class AiSwPersonality
 {
     // Rows follow the twelve fixed choices. Both professors see identical options.
     // Kim values preparation and evidence; Lee values curiosity and communication.
-    // Null rows are quiz slots (ChapterQuizzes) or minigame slots (MiniGames).
+    // Null rows are quiz slots (AiSwQuizzes) or minigame slots (MiniGames).
     static readonly int[][] StrictScores = {
         new[] {0, 1}, new[] {2, 0, 0},
         new[] {2, 0, -1}, null,
@@ -20,10 +21,7 @@ public static class ProfessorPersonality
         null, new[] {1, 2, 0}
     };
 
-    public static int Score(int professor, int chapter, int stage, int option)
-    {
-        return (professor == 0 ? StrictScores : CheerfulScores)[(chapter - 1) * 2 + stage][option];
-    }
+    public static int[][] Scores(int slot) => new[] { StrictScores[slot], CheerfulScores[slot] };
 
     static readonly string[][] StrictReplies = {
         new[] { "길 안내는 하겠습니다. 다음부터는 공지의 강의실 위치를 먼저 확인하세요.", "괜찮습니다. 위치를 확인하고 다시 찾아올 수 있으면 됩니다." },
@@ -56,18 +54,7 @@ public static class ProfessorPersonality
         "같이 배우고 싶은 사람이 생겼군요. 다음엔 역할도 바꿔 봐요. 친구 코드 구경도 재밌어요!", "자기 페이스도 소중하죠. 막히면 질문하러 와요. 혼자 공부해도 혼자 버틸 필요는 없으니까!" }
     };
 
-    public static string Reply(int professor, int chapter, int stage, int option, int affection)
-    {
-        return Decorate(professor, (professor == 0 ? StrictReplies : CheerfulReplies)[(chapter - 1) * 2 + stage][option], affection);
-    }
-
-    // Wraps a reply with the professor's tone for very high or negative affection.
-    public static string Decorate(int professor, string text, int affection)
-    {
-        if (affection >= 7) return text + (professor == 0 ? " 지난번보다 판단이 좋아졌습니다. 계속 그렇게 해 보세요." : " 다음에 또 이야기해 줘요. 은근히 기다리게 되네요!");
-        if (affection < 0) return (professor == 0 ? "원칙부터 확인하겠습니다. " : "잠깐, 이 부분은 짚고 갈게요. ") + text;
-        return text;
-    }
+    public static string[][] Replies(int slot) => new[] { StrictReplies[slot], CheerfulReplies[slot] };
 
     public static string Spoken(int professor, string text)
     {
@@ -114,19 +101,7 @@ public static class ProfessorPersonality
         }
     }
 
-    public static string FollowUp(int professor, int chapter, int line)
-    {
-        string text = FirstSemesterStory.FollowUp[chapter].Split('\n')[line];
-        const string prefix = "교수님: ";
-        return text.StartsWith(prefix) ? prefix + Spoken(professor, text.Substring(prefix.Length)) : text;
-    }
-
-    public static string Ending(int professor, int ending)
-    {
-        string[] strict = { "어려웠던 개념과 흥미가 없었던 활동을 구분해 보세요. 다음 상담에서 확인하겠습니다.", "한 학기를 마쳤군요. 다음에는 후배에게 실습실 위치를 안내해 주세요.", "함께 배울 동료를 찾았군요. 서로의 코드도 설명할 수 있도록 준비하세요.", "자기 학습 과정을 만들었군요. 다음에는 테스트 결과까지 정리해 오세요.", "질문 목록을 가져왔습니까? 재현 가능한 예제부터 봅시다.", "코드 리뷰와 테스트를 서로 수행했군요. 좋은 협업 방식입니다.", "방학 연구실 세미나에 참관하세요. 읽어 올 코드는 미리 전달하겠습니다.", "처음보다 근거를 갖고 판단하는군요. 다음 학기도 기대하겠습니다." };
-        string[] cheerful = { "아직 헷갈려도 괜찮아요. 재밌었던 순간 하나부터 찾아볼까요? 다음에 같이 이야기해요.", "첫 학기 클리어! 다음엔 길 잃은 후배도 데려와 줘요. 제가 또 내비 할 순 없잖아요!", "밥 친구에 디버깅 친구까지 생겼네요! 다음 학기에도 서로 잘 챙겨 줘요.", "자기 페이스를 찾았네요! 혼자 공부하다 심심하면 질문 들고 와도 돼요.", "오늘 질문은 몇 개예요? 제가 커피부터 준비해야 하나요? 좋아요, 시작해 봅시다!", "둘이 버그 잡는 호흡이 좋네요! 다음엔 제 코드도 좀 봐 주실래요?", "방학에 연구실 구경 와요! 선배들 시연 보고 같이 질문 폭탄도 던져 봅시다.", "해 보고 싶은 게 생겼다면 대성공이죠! 다음 학기에도 그 이야기 들으러 올게요." };
-        string[] lines = FirstSemesterStory.EndingText[ending].Split('\n');
-        for (int i = 0; i < lines.Length; i++) if (lines[i].StartsWith("교수님:")) lines[i] = "교수님: " + (professor == 0 ? strict : cheerful)[ending];
-        return string.Join("\n", lines);
-    }
+    // The professor's line in each of the eight endings.
+    public static readonly string[] StrictEndings = { "어려웠던 개념과 흥미가 없었던 활동을 구분해 보세요. 다음 상담에서 확인하겠습니다.", "한 학기를 마쳤군요. 다음에는 후배에게 실습실 위치를 안내해 주세요.", "함께 배울 동료를 찾았군요. 서로의 코드도 설명할 수 있도록 준비하세요.", "자기 학습 과정을 만들었군요. 다음에는 테스트 결과까지 정리해 오세요.", "질문 목록을 가져왔습니까? 재현 가능한 예제부터 봅시다.", "코드 리뷰와 테스트를 서로 수행했군요. 좋은 협업 방식입니다.", "방학 연구실 세미나에 참관하세요. 읽어 올 코드는 미리 전달하겠습니다.", "처음보다 근거를 갖고 판단하는군요. 다음 학기도 기대하겠습니다." };
+    public static readonly string[] CheerfulEndings = { "아직 헷갈려도 괜찮아요. 재밌었던 순간 하나부터 찾아볼까요? 다음에 같이 이야기해요.", "첫 학기 클리어! 다음엔 길 잃은 후배도 데려와 줘요. 제가 또 내비 할 순 없잖아요!", "밥 친구에 디버깅 친구까지 생겼네요! 다음 학기에도 서로 잘 챙겨 줘요.", "자기 페이스를 찾았네요! 혼자 공부하다 심심하면 질문 들고 와도 돼요.", "오늘 질문은 몇 개예요? 제가 커피부터 준비해야 하나요? 좋아요, 시작해 봅시다!", "둘이 버그 잡는 호흡이 좋네요! 다음엔 제 코드도 좀 봐 주실래요?", "방학에 연구실 구경 와요! 선배들 시연 보고 같이 질문 폭탄도 던져 봅시다.", "해 보고 싶은 게 생겼다면 대성공이죠! 다음 학기에도 그 이야기 들으러 올게요." };
 }

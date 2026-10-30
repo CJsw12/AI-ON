@@ -16,7 +16,6 @@ public partial class GameController : MonoBehaviour
     NovelAudio novelAudio;
     MiniGame miniGame;
     string typed = "";
-    readonly string[] faculties = { "AI-SW융합학부", "스마트시스템공학부", "경영-휴먼라이프학부", "예술-건강학부" };
 
     // Presentation state: typewriter, auto mode, portrait fade and the affection popup.
     string lineKey;
@@ -25,6 +24,13 @@ public partial class GameController : MonoBehaviour
     float introTime;   // Advances at most 50 ms per frame, so a loading hitch can't skip a line.
     bool introDone, introChimed;
     bool endingRecorded, endingNew;   // The ending screen adds its ending to the book once.
+    // Skip mode: readKey names the line on screen in ReadLog; resultKey names the reply to the last choice.
+    string readKey, resultKey;
+    bool skip;
+    float skippedAt;
+    MiniGameTheme practice;            // The minigame being practised from the title, or null.
+    int practiceCollege, practiceFaculty, practiceProfessor;
+    int titleCollege;                  // The college tab on the title's faculty list.
     static readonly Regex Tags = new Regex("<[^>]+>");
     static Matrix4x4 Canvas => NovelUI.Canvas;
 
@@ -45,12 +51,12 @@ public partial class GameController : MonoBehaviour
     }
     void Update()
     {
-        string mood = scene == 5 || (scene == 6 && choiceStage == 0) ? "Crisis" : scene == 0 || scene == 1 || scene == 7 || (scene == 2 && choiceStage == 1) || (scene == 6 && choiceStage == 1) ? "Campus" : "Study";
-        novelAudio.SetMood(mood);
+        novelAudio.SetMood(S.Mood(scene, choiceStage));
+        if (menu == Menu.None) MiniGame.Tick(Time.unscaledDeltaTime);
     }
-    string ProfessorName { get { return professor == 0 ? "김가람 교수" : "이명희 교수"; } }
-    string ChapterName => ChapterTitle(scene);
-    static string ChapterTitle(int chapter) => chapter == 1 ? "입학 OT" : chapter == 2 ? "첫 수업" : chapter == 3 ? "첫 실습" : chapter == 4 ? "오피스아워" : chapter == 5 ? "발표 전날" : "함께 마무리하기";
+    Story S => Stories.All[faculty];   // The chosen faculty's semester.
+    string ProfessorName => S.Professors[professor].Name;
+    string ChapterName => S.Chapters[scene];
     Texture2D Portrait
     {
         get
@@ -63,20 +69,7 @@ public partial class GameController : MonoBehaviour
             return Resources.Load<Texture2D>(character + "Transparent");
         }
     }
-    Texture2D Background
-    {
-        get
-        {
-            if (scene == 1 && choiceStage == 1) return Resources.Load<Texture2D>("Classroom");
-            if (scene == 2) return Resources.Load<Texture2D>(choiceStage == 1 ? "Cafeteria" : "Classroom");
-            if (scene == 3) return Resources.Load<Texture2D>("Classroom");
-            if (scene == 4 && choiceStage == 0 && dialogueIndex < 6) return Resources.Load<Texture2D>("Cafeteria");
-            if (scene == 6 && choiceStage == 1 && dialogueIndex >= 1) return Resources.Load<Texture2D>("Auditorium");
-            if (scene <= 1 || scene == 7) return Resources.Load<Texture2D>("CampusExterior");
-            if (scene == 2) return Resources.Load<Texture2D>("CampusHallway");
-            return Resources.Load<Texture2D>("ComputerLab");
-        }
-    }
+    Texture2D Background => Resources.Load<Texture2D>(S.Background(scene, choiceStage, dialogueIndex));
 
     void DrawScene(bool portrait = true)
     {
@@ -84,7 +77,7 @@ public partial class GameController : MonoBehaviour
         if (previousBackground != background) { previousBackground = background; backgroundChangedAt = Time.unscaledTime; }
         GUI.DrawTexture(Drift(new Rect(0, 0, Screen.width, Screen.height)), background, ScaleMode.ScaleAndCrop);
         // Choice results are the professor's replies, so the portrait is always shown there.
-        bool showProfessor = portrait && (showResult || FirstSemesterStory.ProfessorOnStage(scene, choiceStage, dialogueIndex));
+        bool showProfessor = portrait && (showResult || S.ProfessorOnStage(scene, choiceStage, dialogueIndex));
         if (NovelUI.Repaint) portraitAlpha = Mathf.MoveTowards(portraitAlpha, showProfessor ? 1 : 0, Time.unscaledDeltaTime * 4);
         if (portraitAlpha > 0)
         {
@@ -131,6 +124,7 @@ public partial class GameController : MonoBehaviour
     {
         if (memorial > 0) { Memorial(); return; }
         if (!introDone) { Intro(); return; }
+        if (practice != null) { Practice(); return; }
         if (scene == 0) { StartScreen(); return; }
         if (scene == 7) { Ending(); return; }
 
@@ -162,7 +156,8 @@ public partial class GameController : MonoBehaviour
 
     void Hud()
     {
-        string slot = ChapterQuizzes.Find(scene, choiceStage, experienced) != null ? "문제 " : MiniGames.Has(scene, choiceStage) ? "미니게임 " : "선택 ";
+        Slot current = S.Slot(scene, choiceStage);
+        string slot = current.Major != null ? "문제 " : current.Game != null ? "미니게임 " : "선택 ";
         float x = 28;
         x += NovelUI.Pill(x, 24, 42, "CHAPTER " + scene, NovelUI.Pink, Color.white, 20) + 8;
         x += NovelUI.Pill(x, 24, 42, ChapterName, NovelUI.Alpha(NovelUI.Cream, .95f), NovelUI.Berry, 20) + 8;
@@ -197,27 +192,26 @@ public partial class GameController : MonoBehaviour
         {
             // Follow-up lines are narration, but some open with "동기: " or "교수님: ".
             speaker = "나레이션";
-            text = ProfessorPersonality.FollowUp(professor, scene, dialogueIndex);
+            text = S.FollowUpLine(professor, scene, dialogueIndex);
             int colon = text.IndexOf(": ");
             if (colon > 0 && colon <= 3)
             {
                 string who = text.Substring(0, colon);
-                if (who == "동기" || who == "나" || who == "선배" || who == "교수님") { speaker = who == "교수님" ? ProfessorName : who; text = text.Substring(colon + 2); }
+                if (who == "동기" || who == "나" || who == "선배" || who == "사장님" || who == "교수님") { speaker = who == "교수님" ? ProfessorName : who; text = text.Substring(colon + 2); }
             }
             return;
         }
-        string[] current = FirstSemesterStory.Dialogue[scene];
-        string[] line = current[Mathf.Min(dialogueIndex, current.Length - 1)].Split('|');
-        speaker = line[0] == "교수" ? ProfessorName : line[0];
-        text = line[0] == "교수" ? ProfessorPersonality.Spoken(professor, line[1]) : line[1];
+        S.Line(professor, scene, dialogueIndex, out speaker, out text);
+        if (speaker == "교수") speaker = ProfessorName;
     }
-    bool AtChoice => !showResult && dialogueIndex >= (choiceStage == 0 ? FirstSemesterStory.Dialogue[scene].Length : FirstSemesterStory.FollowUp[scene].Split('\n').Length) - 1;
+    bool AtChoice => !showResult && dialogueIndex >= S.Lines(scene, choiceStage) - 1;
 
     void Dialogue()
     {
         CurrentLine(out string speaker, out string text);
         string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
-        if (key != lineKey) { lineKey = key; lineStartedAt = Time.unscaledTime; typedAt = -1; }
+        if (key != lineKey) { lineKey = key; lineStartedAt = Time.unscaledTime; typedAt = -1; AddToBacklog(key, speaker, text); }
+        readKey = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString());
         string plain = Tags.Replace(text, "");
         int shown = Mathf.FloorToInt((Time.unscaledTime - lineStartedAt) * GameSettings.LettersPerSecond);
         bool typing = shown < plain.Length;
@@ -228,8 +222,7 @@ public partial class GameController : MonoBehaviour
         bool narration = speaker == "나레이션";
         if (!narration)
         {
-            Color tag = speaker == ProfessorName ? NovelUI.DeepPink : speaker == "나" ? NovelUI.Sky : speaker == "동기" ? NovelUI.Mint : NovelUI.Lemon;
-            NovelUI.Pill(box.x + 34, box.y - 26, 52, speaker, tag, speaker == ProfessorName || speaker == "나" ? Color.white : NovelUI.Berry, 24);
+            NovelUI.Pill(box.x + 34, box.y - 26, 52, speaker, SpeakerTag(speaker), SpeakerInk(speaker), 24);
         }
         Rect textRect = new Rect(box.x + 42, box.y + 46, box.width - 100, box.height - 64);
         int size = NovelUI.Height(text, NovelUI.Soft, 26, textRect.width) > textRect.height ? 22 : 26;
@@ -242,7 +235,7 @@ public partial class GameController : MonoBehaviour
             NovelUI.Heart(new Rect(box.xMax - 58, box.yMax - 46 + bob, 28, 28), NovelUI.DeepPink);
         }
 
-        BackButton(box);
+        LineButtons(box);
         if (!typing && AtChoice) Choices();
         // Click the box, or press Space/Enter, to finish the line or move on.
         bool pressed = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
@@ -252,25 +245,47 @@ public partial class GameController : MonoBehaviour
             Advance(typing);
         }
         // Auto mode waits on the finished line, then moves on; it stops at choices and while a menu is open.
+        // Skip mode (the button, or holding Ctrl) races through lines already read and stops at new ones and at choices.
+        else if ((skip || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && menu == Menu.None && NovelUI.Repaint)
+        {
+            if (canAdvance && ReadLog.Seen(readKey)) { if (Time.unscaledTime - skippedAt > .06f) { skippedAt = Time.unscaledTime; Advance(false, true); } }
+            else if (skip) { skip = false; ShowToast(canAdvance ? "처음 보는 대사에서 멈췄어요" : "선택지에서 멈췄어요"); }
+        }
         else if (GameSettings.Auto && menu == Menu.None && !typing && canAdvance && NovelUI.Repaint && Time.unscaledTime - typedAt > GameSettings.AutoWait(plain.Length))
             Advance(false);
+        // Scrolling up opens the backlog.
+        if (Event.current.type == EventType.ScrollWheel && Event.current.delta.y < 0) { Event.current.Use(); OpenMenu(Menu.Backlog); }
     }
+    Color SpeakerTag(string speaker) => speaker == ProfessorName ? NovelUI.DeepPink : speaker == "나" ? NovelUI.Sky : speaker == "동기" ? NovelUI.Mint : NovelUI.Lemon;
+    Color SpeakerInk(string speaker) => speaker == ProfessorName || speaker == "나" ? Color.white : NovelUI.Berry;
 
-    void Advance(bool typing)
+    void Advance(bool typing, bool quiet = false)
     {
         if (typing) { lineStartedAt = -1000; return; }
-        novelAudio.Play("Advance");
+        if (!quiet) novelAudio.Play("Advance");
+        ReadLog.Mark(readKey);
         if (!showResult) { dialogueIndex++; return; }
         showResult = false;
         if (choiceStage == 0) { choiceStage = 1; dialogueIndex = 0; }
         else { choiceStage = dialogueIndex = 0; scene++; }
     }
 
-    // Steps back one line. Never crosses a choice: once chosen, its affection change is final.
-    void BackButton(Rect box)
+    // Skip, backlog and back buttons on the dialogue box's top edge.
+    // Back steps one line and never crosses a choice: once chosen, its affection change is final.
+    void LineButtons(Rect box)
     {
+        Rect button = new Rect(box.xMax - 394, box.y - 22, 110, 44);
+        if (NovelUI.Button(button, "스킵", skip, 19))
+        {
+            skip = !skip;
+            novelAudio.Play("Toggle");
+            ShowToast(skip ? "읽은 대사를 건너뛰어요 (Ctrl을 누르고 있어도 돼요)" : "스킵을 껐어요");
+        }
+        button.x += 122;
+        if (NovelUI.Button(button, "기록", false, 19)) OpenMenu(Menu.Backlog);
+        button.x += 122;
         bool canGoBack = !showResult && (dialogueIndex > 0 || (scene == 1 && choiceStage == 0));
-        if (!canGoBack || !NovelUI.Button(new Rect(box.xMax - 150, box.y - 22, 110, 44), "이전", false, 19)) return;
+        if (!canGoBack || !NovelUI.Button(button, "이전", false, 19)) return;
         novelAudio.Play("Back");
         if (dialogueIndex > 0) dialogueIndex--;
         else { scene = 0; professor = -1; }
@@ -279,17 +294,18 @@ public partial class GameController : MonoBehaviour
     void Choices()
     {
         const float bottom = 584;
-        if (MiniGames.Has(scene, choiceStage))
+        Slot slot = S.Slot(scene, choiceStage);
+        if (slot.Game != null)
         {
             Rect card = new Rect(290, bottom - 190, 700, 176);
             NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .97f), 32, NovelUI.Pink);
             float width = NovelUI.Width("미니게임", NovelUI.Round, 18) + 36;
             NovelUI.Pill(card.center.x - width / 2, card.y - 18, 36, "미니게임", NovelUI.Lemon, NovelUI.Berry, 18);
-            NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 50), MiniGames.Title(scene), NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); miniGame = MiniGames.Create(scene, professor); }
+            NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 50), slot.Game.Title, NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
+            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); miniGame = MiniGames.Create(slot.Game, professor); }
             return;
         }
-        Quiz quiz = ChapterQuizzes.Find(scene, choiceStage, experienced);
+        Quiz quiz = slot.Quiz(experienced);
         if (quiz != null && quiz.ShortAnswer)
         {
             Prompt(quiz, bottom - 92);
@@ -310,7 +326,7 @@ public partial class GameController : MonoBehaviour
             GUI.enabled = true;
             return;
         }
-        string[] available = quiz != null ? quiz.Options : choiceStage == 0 ? FirstSemesterStory.Choices(scene) : FirstSemesterStory.ExtraChoices(scene);
+        string[] available = quiz != null ? quiz.Options : slot.Options;
         const float height = 62, gap = 14;
         float y = bottom - available.Length * (height + gap) + gap;
         if (quiz != null) Prompt(quiz, y - 20);
@@ -337,28 +353,25 @@ public partial class GameController : MonoBehaviour
 
     void Choose(int option)
     {
-        Quiz quiz = ChapterQuizzes.Find(scene, choiceStage, experienced);
+        Slot slot = S.Slot(scene, choiceStage);
+        Quiz quiz = slot.Quiz(experienced);
         if (quiz != null) { Answer(quiz, option, option == quiz.Answer); return; }
-        int delta = ProfessorPersonality.Score(professor, scene, choiceStage, option);
-        if (choiceStage == 1)
-        {
-            // Follow-up choices remain in chapters 1, 4 and 6.
-            if (option == 2) solo++;
-            else if (scene == 1 && option == 0) questions++;
-            else if (option == 1) teamwork++;
-            if ((scene == 4 || scene == 6) && option == 0) interest++;
-        }
-        else
-        {
-            if (scene == 2 && option < 2) interest++;
-            if (scene == 5 && option == 0) teamwork++;
-            if (scene == 5 && option == 2) solo++;
-        }
+        int delta = slot.Scores[professor][option];
+        Raise(option < slot.Stats.Length ? slot.Stats[option] : '-');
         affection += delta;
         React(delta, true);
-        resultLine = ProfessorPersonality.Reply(professor, scene, choiceStage, option, affection);
+        resultLine = Stories.Decorate(professor, slot.Replies[professor][option], affection);
+        resultKey = "c" + option;
         resultLine += AffectionLine(delta);
         showResult = true;
+    }
+    // Ending stats, named by one letter in the story's slots.
+    void Raise(char stat)
+    {
+        if (stat == 'q') questions++;
+        else if (stat == 't') teamwork++;
+        else if (stat == 'i') interest++;
+        else if (stat == 's') solo++;
     }
     static string AffectionLine(int delta) => "\n<color=" + NovelUI.AffectionColor + ">호감도 " + (delta > 0 ? "+" : "") + delta + "</color>";
 
@@ -367,11 +380,12 @@ public partial class GameController : MonoBehaviour
     void Answer(Quiz quiz, int reply, bool correct)
     {
         int delta = correct ? 2 : 0;
-        if (correct && scene == 4) questions++;
+        if (correct) Raise(S.Slot(scene, choiceStage).Stat);
         affection += delta;
         React(delta, correct, true);
         typed = "";
-        resultLine = (correct ? "정답! 호감도 보너스 +2.\n" : "오답이어도 감점은 없어요.\n") + ProfessorPersonality.Decorate(professor, quiz.Replies[professor][reply], affection);
+        resultKey = "q" + reply;
+        resultLine = (correct ? "정답! 호감도 보너스 +2.\n" : "오답이어도 감점은 없어요.\n") + Stories.Decorate(professor, quiz.Replies[professor][reply], affection);
         resultLine += AffectionLine(delta);
         showResult = true;
     }
@@ -382,23 +396,20 @@ public partial class GameController : MonoBehaviour
         float x = 100 + NovelUI.Pill(100, 58, 44, "MINI GAME", NovelUI.Pink, Color.white, 20) + 12;
         NovelUI.Label(new Rect(x, 58, 700, 44), miniGame.Title, NovelUI.Round, 26, NovelUI.Cream, TextAnchor.MiddleLeft);
         miniGame.Draw(NovelUI.MiniTitle, NovelUI.MiniBody, NovelUI.MiniButton);
-        if (miniGame.Done && NovelUI.Button(new Rect(980, 790, 210, 50), "결과 보기", true, 20)) FinishMiniGame();
+        if (!miniGame.Done || !NovelUI.Button(new Rect(980, 790, 210, 50), practice != null ? "돌아가기" : "결과 보기", true, 20)) return;
+        if (practice != null) EndPractice();
+        else FinishMiniGame();
     }
 
-    // Minigame slots: up to +2 affection, never negative. A good result keeps the ending stat
-    // the replaced choice used to give: teamwork (cards), interest (loop), questions (coffee).
+    // Minigame slots: up to +2 affection, never negative. A good result raises the slot's ending stat.
     void FinishMiniGame()
     {
         int delta = miniGame.Delta;
-        if (miniGame.CountsForStat)
-        {
-            if (scene == 2) teamwork++;
-            else if (scene == 3) interest++;
-            else questions++;
-        }
+        if (miniGame.CountsForStat) Raise(S.Slot(scene, choiceStage).Stat);
         affection += delta;
         React(delta, true, delta == 2);
-        resultLine = miniGame.Summary + "\n" + ProfessorPersonality.Decorate(professor, miniGame.Replies[professor][delta], affection);
+        resultKey = "m" + delta;
+        resultLine = miniGame.Summary + "\n" + Stories.Decorate(professor, miniGame.Replies[professor][delta], affection);
         resultLine += AffectionLine(delta);
         miniGame = null;
         showResult = true;
@@ -409,6 +420,7 @@ public partial class GameController : MonoBehaviour
     // Opening shown once per launch: three lines over the campus with falling petals, then the logo pops in
     // exactly where the title screen draws it. The first click skips to the logo, the next one starts.
     const float LogoAt = 8;
+    const string Subtitle = "설레는 대학 첫 학기";
     static readonly string[] IntroLines = { "3월, 입학 첫날.", "낯선 캠퍼스, 처음 만나는 사람들.", "그리고 그날, 나는 교수님을 만났다." };
     void Intro()
     {
@@ -453,8 +465,8 @@ public partial class GameController : MonoBehaviour
             GUI.matrix = before;
 
             float sub = Mathf.Clamp01((k - .5f) / .5f);
-            float width = NovelUI.Width("AI-SW융합학부 첫 학기", NovelUI.Round, 26) + 46;
-            NovelUI.Pill(640 - width / 2, 192 + (1 - sub) * 16, 52, "AI-SW융합학부 첫 학기", NovelUI.Alpha(NovelUI.Cream, .95f * sub), NovelUI.Alpha(NovelUI.DeepPink, sub), 26);
+            float width = NovelUI.Width(Subtitle, NovelUI.Round, 26) + 46;
+            NovelUI.Pill(640 - width / 2, 192 + (1 - sub) * 16, 52, Subtitle, NovelUI.Alpha(NovelUI.Cream, .95f * sub), NovelUI.Alpha(NovelUI.DeepPink, sub), 26);
             if (k > 1.2f)
             {
                 float blink = .55f + .45f * Mathf.Sin((k - 1.2f) * 4);
@@ -509,8 +521,8 @@ public partial class GameController : MonoBehaviour
     {
         Dreamy(.35f);
         NovelUI.Outlined(new Rect(0, 70, 1280, 120), "두근두근 교수님", NovelUI.Round, 92, Color.white, NovelUI.DeepPink, 6);
-        float width = NovelUI.Width("AI-SW융합학부 첫 학기", NovelUI.Round, 26) + 46;
-        NovelUI.Pill(640 - width / 2, 192, 52, "AI-SW융합학부 첫 학기", NovelUI.Alpha(NovelUI.Cream, .95f), NovelUI.DeepPink, 26);
+        float width = NovelUI.Width(Subtitle, NovelUI.Round, 26) + 46;
+        NovelUI.Pill(640 - width / 2, 192, 52, Subtitle, NovelUI.Alpha(NovelUI.Cream, .95f), NovelUI.DeepPink, 26);
         NovelUI.Outlined(new Rect(0, 252, 1280, 40), "낯선 캠퍼스에서 시작하는 나의 첫 학기", NovelUI.Soft, 24, NovelUI.Berry, NovelUI.Alpha(Color.white, .9f), 2);
 
         if (entryStep == 0)
@@ -519,19 +531,26 @@ public partial class GameController : MonoBehaviour
             NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .96f), 36, NovelUI.Pink);
             NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 40), "체험할 학부를 선택하세요", NovelUI.Round, 28, NovelUI.Berry, TextAnchor.MiddleCenter);
             // Back to the intro's "click to start" screen, without replaying the opening.
-            if (NovelUI.Button(new Rect(card.x + 30, card.yMax - 66, 110, 46), "이전", false, 19)) { novelAudio.Play("Back"); introDone = false; introTime = LogoAt + 1.5f; }
+            if (NovelUI.Button(new Rect(card.x + 30, card.yMax - 66, 96, 46), "이전", false, 19)) { novelAudio.Play("Back"); introDone = false; introTime = LogoAt + 1.5f; }
             GUI.enabled = GameSave.Any();
-            if (NovelUI.Button(new Rect(card.x + 156, card.yMax - 66, 148, 46), "이어하기", false, 19)) OpenMenu(Menu.LoadSlots);
+            if (NovelUI.Button(new Rect(card.x + 136, card.yMax - 66, 112, 46), "이어하기", false, 19)) OpenMenu(Menu.LoadSlots);
             GUI.enabled = true;
-            if (NovelUI.Button(new Rect(card.x + 316, card.yMax - 66, 148, 46), "엔딩 도감", false, 19)) OpenMenu(Menu.Gallery);
-            if (NovelUI.Button(new Rect(card.x + 476, card.yMax - 66, 148, 46), "설정", false, 19)) OpenMenu(Menu.Settings);
+            if (NovelUI.Button(new Rect(card.x + 258, card.yMax - 66, 112, 46), "미니게임", false, 19)) OpenMenu(Menu.Practice);
+            if (NovelUI.Button(new Rect(card.x + 380, card.yMax - 66, 124, 46), "엔딩 도감", false, 19)) OpenMenu(Menu.Gallery);
+            if (NovelUI.Button(new Rect(card.x + 514, card.yMax - 66, 116, 46), "설정", false, 19)) OpenMenu(Menu.Settings);
+            int college = NovelUI.Segmented(new Rect(card.x + 40, card.y + 80, card.width - 80, 48), Stories.Colleges, titleCollege, 18);
+            if (college != titleCollege) { novelAudio.Play("Toggle"); titleCollege = college; }
+            int[] faculties = Stories.In(titleCollege);
+            if (faculties.Length == 0)
+                NovelUI.Label(new Rect(card.x, card.y + 230, card.width, 90), "준비 중인 대학이에요\n곧 새 학부가 열려요!", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+            // Room for five faculties per college above the bottom buttons.
             for (int i = 0; i < faculties.Length; i++)
             {
-                Rect row = new Rect(card.x + 50, card.y + 86 + i * 86, card.width - 100, 66);
-                GUI.enabled = i == 0;
-                if (NovelUI.Button(row, faculties[i], i == 0, 24)) { novelAudio.Play("Select"); faculty = i; entryStep = 1; }
-                GUI.enabled = true;
-                NovelUI.Pill(row.xMax - (i == 0 ? 150 : 104), row.y + 17, 32, i == 0 ? "소프트웨어" : "준비 중", i == 0 ? NovelUI.Alpha(Color.white, .9f) : NovelUI.Blush, i == 0 ? NovelUI.DeepPink : NovelUI.Plum, 16);
+                Story story = Stories.All[faculties[i]];
+                Rect row = new Rect(card.x + 50, card.y + 146 + i * 70, card.width - 100, 58);
+                if (NovelUI.Button(row, story.Name, i == 0, 23)) { novelAudio.Play("Select"); faculty = faculties[i]; entryStep = 1; }
+                float tag = NovelUI.Width(story.Tag, NovelUI.Round, 16) + 32;
+                NovelUI.Pill(row.xMax - tag - 22, row.y + 13, 32, story.Tag, i == 0 ? NovelUI.Alpha(Color.white, .9f) : NovelUI.Blush, NovelUI.DeepPink, 16);
             }
             return;
         }
@@ -539,18 +558,18 @@ public partial class GameController : MonoBehaviour
         {
             Rect card = new Rect(310, 320, 660, 470);
             NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .96f), 36, NovelUI.Pink);
-            NovelUI.Label(new Rect(card.x, card.y + 26, card.width, 40), "코딩 경험이 있나요?", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+            NovelUI.Label(new Rect(card.x, card.y + 26, card.width, 40), S.LevelQuestion, NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
             NovelUI.Label(new Rect(card.x, card.y + 68, card.width, 30), "경험에 맞는 설명과 문제가 나와요", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-            if (Tile(new Rect(card.x + 50, card.y + 120, card.width - 100, 110), "전공자", "코드를 직접 입력해서 문제 풀기", true)) { novelAudio.Play("Select"); experienced = true; entryStep = 2; }
-            if (Tile(new Rect(card.x + 50, card.y + 250, card.width - 100, 110), "비전공자", "쉬운 설명과 객관식으로 문제 풀기", false)) { novelAudio.Play("Select"); experienced = false; entryStep = 2; }
+            if (Tile(new Rect(card.x + 50, card.y + 120, card.width - 100, 110), S.Levels[0], S.LevelNotes[0], true)) { novelAudio.Play("Select"); experienced = true; entryStep = 2; }
+            if (Tile(new Rect(card.x + 50, card.y + 250, card.width - 100, 110), S.Levels[1], S.LevelNotes[1], false)) { novelAudio.Play("Select"); experienced = false; entryStep = 2; }
             if (NovelUI.Button(new Rect(card.x + 30, card.yMax - 74, 110, 46), "이전", false, 19)) { novelAudio.Play("Back"); entryStep = 0; }
             return;
         }
         Rect panel = new Rect(170, 316, 940, 540);
         NovelUI.Card(panel, NovelUI.Alpha(NovelUI.Cream, .96f), 36, NovelUI.Pink);
         NovelUI.Label(new Rect(panel.x, panel.y + 22, panel.width, 44), "공략할 교수님을 선택하세요", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
-        if (ProfessorCard(new Rect(panel.x + 50, panel.y + 86, 400, 380), 0, "김가람 교수", "엄격한 원칙파 · 근거와 준비를 중시", "#원칙파", "#꼼꼼함")) Begin(0);
-        if (ProfessorCard(new Rect(panel.xMax - 450, panel.y + 86, 400, 380), 1, "이명희 교수", "유쾌한 소통파 · 호기심과 협업을 중시", "#소통파", "#호기심")) Begin(1);
+        if (ProfessorCard(new Rect(panel.x + 50, panel.y + 86, 400, 380), 0, S.Professors[0])) Begin(0);
+        if (ProfessorCard(new Rect(panel.xMax - 450, panel.y + 86, 400, 380), 1, S.Professors[1])) Begin(1);
         if (NovelUI.Button(new Rect(panel.x + 30, panel.yMax - 62, 110, 44), "이전", false, 19)) { novelAudio.Play("Back"); entryStep = 1; }
     }
     void Begin(int chosen)
@@ -573,7 +592,8 @@ public partial class GameController : MonoBehaviour
         return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 
-    bool ProfessorCard(Rect rect, int who, string name, string description, string tagA, string tagB)
+    // The pictures are shared by every faculty for now: 0 is the strict professor, 1 the cheerful one.
+    bool ProfessorCard(Rect rect, int who, Professor info)
     {
         bool hover = NovelUI.Hover(rect);
         Rect face = hover ? new Rect(rect.x, rect.y - 5, rect.width, rect.height) : rect;
@@ -583,12 +603,12 @@ public partial class GameController : MonoBehaviour
         NovelUI.Fill(photo, NovelUI.Blush, 22);
         Texture2D portrait = Resources.Load<Texture2D>((who == 0 ? "ProfessorKim" : "ProfessorLee") + (hover ? "Happy" : "") + "Transparent");
         if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(who));
-        NovelUI.Label(new Rect(face.x, photo.yMax + 14, face.width, 40), name, NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
-        NovelUI.Label(new Rect(face.x + 20, photo.yMax + 56, face.width - 40, 30), description, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-        float a = NovelUI.Width(tagA, NovelUI.Round, 17) + 30, b = NovelUI.Width(tagB, NovelUI.Round, 17) + 30;
+        NovelUI.Label(new Rect(face.x, photo.yMax + 14, face.width, 40), info.Name, NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(face.x + 20, photo.yMax + 56, face.width - 40, 30), info.Description, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+        float a = NovelUI.Width(info.TagA, NovelUI.Round, 17) + 30, b = NovelUI.Width(info.TagB, NovelUI.Round, 17) + 30;
         float x = face.center.x - (a + b + 10) / 2;
-        NovelUI.Pill(x, photo.yMax + 98, 32, tagA, NovelUI.Blush, NovelUI.DeepPink, 17);
-        NovelUI.Pill(x + a + 10, photo.yMax + 98, 32, tagB, NovelUI.Blush, NovelUI.DeepPink, 17);
+        NovelUI.Pill(x, photo.yMax + 98, 32, info.TagA, NovelUI.Blush, NovelUI.DeepPink, 17);
+        NovelUI.Pill(x + a + 10, photo.yMax + 98, 32, info.TagB, NovelUI.Blush, NovelUI.DeepPink, 17);
         return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 
@@ -598,7 +618,7 @@ public partial class GameController : MonoBehaviour
         DrawScene(false);
         GUI.matrix = Canvas;
         NovelUI.Tint(new Color(1f, .82f, .9f, .3f));
-        int ending = FirstSemesterStory.ResolveEnding(affection, questions, teamwork, interest, solo);
+        int ending = Story.ResolveEnding(affection, questions, teamwork, interest, solo);
         bool trueEnd = ending == 7;
         if (!endingRecorded)
         {
@@ -619,8 +639,8 @@ public partial class GameController : MonoBehaviour
             float wobble = Mathf.Sin(Time.unscaledTime * 4) * 3;
             NovelUI.Pill(card.xMax - 190, card.y + 24 + wobble, 40, "NEW! 도감 등록", NovelUI.Lemon, NovelUI.Berry, 18);
         }
-        NovelUI.Label(new Rect(card.x, card.y + 86, card.width, 64), FirstSemesterStory.EndingNames[ending], NovelUI.Round, 48, NovelUI.Berry, TextAnchor.MiddleCenter);
-        NovelUI.Label(new Rect(card.x + 70, card.y + 176, card.width - 140, 250), ProfessorPersonality.Ending(professor, ending), NovelUI.Soft, 23, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
+        NovelUI.Label(new Rect(card.x, card.y + 86, card.width, 64), S.EndingNames[ending], NovelUI.Round, 48, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(card.x + 70, card.y + 176, card.width - 140, 250), S.Ending(professor, ending), NovelUI.Soft, 23, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
 
         string[] stats = { "♥ 호감도 " + affection, "질문 " + questions, "협업 " + teamwork, "관심 " + interest };
         float total = -14;
@@ -638,7 +658,7 @@ public partial class GameController : MonoBehaviour
     void ResetRun()
     {
         scene = affection = entryStep = dialogueIndex = choiceStage = questions = teamwork = interest = solo = 0;
-        professor = -1; showResult = false; resultLine = typed = "";
+        professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear();
         shownAffection = lastDelta = 0; lineKey = null; miniGame = null;
         endingRecorded = endingNew = false; chapterShown = 0; reactAt = -10; sparks.Clear();
     }

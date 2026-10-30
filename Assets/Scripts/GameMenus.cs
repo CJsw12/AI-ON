@@ -1,16 +1,20 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// Pop-up menus drawn over the game: settings, the five save slots and the ending book.
+// Pop-up menus drawn over the game: settings, the five save slots, the ending book, the backlog and minigame practice.
 // While one is open, OnGUI feeds the screen underneath only Repaint/Layout events, so it can't be clicked.
 public partial class GameController
 {
-    enum Menu { None, Settings, SaveSlots, LoadSlots, Gallery, EndingDetail }
+    enum Menu { None, Settings, SaveSlots, LoadSlots, Gallery, EndingDetail, Backlog, Practice }
     Menu menu;
     float menuAt, toastAt = -10;
     string toast;
-    int confirmSlot = -1, galleryFaculty, galleryProfessor, galleryEnding;
+    int confirmSlot = -1, galleryCollege, galleryFaculty, galleryProfessor, galleryEnding;
     bool confirmTitle;
     readonly GameSave.Data[] slots = new GameSave.Data[GameSave.Slots];
+    // Lines shown this run, oldest first: { line key, speaker, text }.
+    readonly List<string[]> backlog = new List<string[]>();
+    Vector2 backlogScroll;
 
     static readonly string[] OffOn = { "끔", "켬" };
     const string Preview = "교수님, 오늘도 잘 부탁드려요! 두근두근한 첫 학기의 시작이에요.";
@@ -31,7 +35,9 @@ public partial class GameController
         confirmSlot = -1;
         confirmTitle = false;
         for (int i = 0; i < slots.Length; i++) slots[i] = GameSave.Read(i);
-        if (next == Menu.Gallery) { galleryFaculty = faculty; galleryProfessor = Mathf.Max(0, professor); }
+        if (next == Menu.Gallery) { galleryFaculty = faculty; galleryCollege = Stories.CollegeOf(faculty); galleryProfessor = Mathf.Max(0, professor); }
+        if (next == Menu.Practice) practiceCollege = Stories.CollegeOf(practiceFaculty);
+        if (next == Menu.Backlog) backlogScroll = new Vector2(0, float.MaxValue);   // Opens on the newest line.
     }
     void CloseMenu()
     {
@@ -67,6 +73,8 @@ public partial class GameController
         else if (menu == Menu.SaveSlots || menu == Menu.LoadSlots) Slots();
         else if (menu == Menu.Gallery) Gallery();
         else if (menu == Menu.EndingDetail) EndingDetail();
+        else if (menu == Menu.Backlog) Backlog();
+        else if (menu == Menu.Practice) PracticeMenu();
         GUI.matrix = before;
         GUI.enabled = true;
         // Clicks outside the panel land here instead of on the game.
@@ -198,8 +206,9 @@ public partial class GameController
                 if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(data.Professor, true));
                 float tx = photo.xMax + 20;
                 tx += NovelUI.Pill(tx, face.y + 18, 36, "CHAPTER " + data.Scene, NovelUI.Pink, Color.white, 17) + 10;
-                NovelUI.Label(new Rect(tx, face.y + 14, 300, 44), ChapterTitle(data.Scene), NovelUI.Round, 25, NovelUI.Berry, TextAnchor.MiddleLeft);
-                string detail = (data.Professor == 0 ? "김가람 교수" : "이명희 교수") + "  ·  ♥ " + data.Affection + "  ·  " + (data.Experienced ? "전공자" : "비전공자");
+                Story story = Stories.All[data.Faculty];
+                NovelUI.Label(new Rect(tx, face.y + 14, 300, 44), story.Chapters[data.Scene], NovelUI.Round, 25, NovelUI.Berry, TextAnchor.MiddleLeft);
+                string detail = story.Short + "  ·  " + story.Professors[data.Professor].Name + "  ·  ♥ " + data.Affection + "  ·  " + story.Levels[data.Experienced ? 0 : 1];
                 NovelUI.Label(new Rect(photo.xMax + 22, face.y + 60, 420, 34), detail, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
                 NovelUI.Label(new Rect(face.xMax - 220, face.y + 14, 196, 40), data.SavedAt.ToString("MM.dd HH:mm"), NovelUI.Round, 19, NovelUI.Plum, TextAnchor.MiddleRight);
                 if (confirm) NovelUI.Pill(face.xMax - 250, face.y + 58, 34, "한 번 더 누르면 덮어써요", NovelUI.DeepPink, Color.white, 16);
@@ -238,8 +247,7 @@ public partial class GameController
         questions = data.Questions; teamwork = data.Teamwork; interest = data.Interest; solo = data.Solo;
         experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine;
         // The story may have changed since the save was made, so keep the line inside the chapter.
-        int lines = choiceStage == 0 ? FirstSemesterStory.Dialogue[scene].Length : FirstSemesterStory.FollowUp[scene].Split('\n').Length;
-        dialogueIndex = Mathf.Clamp(data.Line, 0, lines - 1);
+        dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);
         memorial = 0; introDone = true; portraitAlpha = 0;
         chapterShown = -1;   // Replays the chapter card as a reminder of where the player is.
         menu = Menu.None;
@@ -254,30 +262,41 @@ public partial class GameController
         return who == 0 ? new Rect(.418f, .66f, .164f, .3f) : new Rect(.385f, .55f, .229f, .42f);
     }
 
+    // College tabs, then the faculty tabs inside the chosen college (two rows from rect.y, 100 high).
+    // Returns false and shows "준비 중" while the college has no faculty yet.
+    bool FacultyTabs(Rect rect, ref int college, ref int faculty, bool shortNames)
+    {
+        int pick = NovelUI.Segmented(new Rect(rect.x, rect.y, rect.width, 46), Stories.Colleges, college, 18);
+        if (pick != college) { novelAudio.Play("Toggle"); college = pick; }
+        int[] faculties = Stories.In(college);
+        if (faculties.Length == 0)
+        {
+            NovelUI.Label(new Rect(rect.x, rect.y + 120, rect.width, 90), "준비 중인 대학이에요\n곧 새 학부가 열려요!", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+            return false;
+        }
+        int at = System.Array.IndexOf(faculties, faculty);
+        if (at < 0) { at = 0; faculty = faculties[0]; }
+        string[] names = new string[faculties.Length];
+        for (int i = 0; i < names.Length; i++) names[i] = shortNames ? Stories.All[faculties[i]].Short : Stories.All[faculties[i]].Name;
+        pick = NovelUI.Segmented(new Rect(rect.x + 60, rect.y + 54, rect.width - 120, 42), names, at, 17);
+        if (pick != at) { novelAudio.Play("Toggle"); faculty = faculties[pick]; }
+        return true;
+    }
+
     // ---- Ending book --------------------------------------------------------------------------
 
     void Gallery()
     {
         Rect card = new Rect(90, 40, 1100, 820);
         if (!Panel(card, "IconBook", "엔딩 도감")) return;
-        int tab = NovelUI.Segmented(new Rect(card.x + 40, card.y + 92, card.width - 80, 52), faculties, galleryFaculty, 18);
-        if (tab != galleryFaculty) { novelAudio.Play("Toggle"); galleryFaculty = tab; }
-
-        if (galleryFaculty != 0)
-        {
-            Rect empty = new Rect(card.x + 200, card.y + 240, card.width - 400, 360);
-            NovelUI.Fill(empty, NovelUI.Blush, 32);
-            NovelUI.Heart(new Rect(empty.center.x - 40, empty.y + 60, 80, 80), NovelUI.Pink);
-            NovelUI.Label(new Rect(empty.x, empty.y + 170, empty.width, 50), "준비 중인 학부예요", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
-            NovelUI.Label(new Rect(empty.x, empty.y + 226, empty.width, 40), "곧 새로운 교수님들이 찾아올 거예요!", NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-            return;
-        }
+        if (!FacultyTabs(new Rect(card.x + 40, card.y + 88, card.width - 80, 0), ref galleryCollege, ref galleryFaculty, false)) return;
+        Story story = Stories.All[galleryFaculty];
 
         string[] names = {
-            "김가람 교수  " + EndingBook.Count(0, 0) + " / " + EndingBook.Endings,
-            "이명희 교수  " + EndingBook.Count(0, 1) + " / " + EndingBook.Endings
+            story.Professors[0].Name + "  " + EndingBook.Count(galleryFaculty, 0) + " / " + EndingBook.Endings,
+            story.Professors[1].Name + "  " + EndingBook.Count(galleryFaculty, 1) + " / " + EndingBook.Endings
         };
-        int who = NovelUI.Segmented(new Rect(card.center.x - 270, card.y + 162, 540, 50), names, galleryProfessor, 20);
+        int who = NovelUI.Segmented(new Rect(card.center.x - 270, card.y + 196, 540, 48), names, galleryProfessor, 20);
         if (who != galleryProfessor) { novelAudio.Play("Toggle"); galleryProfessor = who; }
 
         // Every locked ending looks the same, so the true ending stays a surprise until it is found.
@@ -285,7 +304,7 @@ public partial class GameController
         float left = card.center.x - (width * 4 + gap * 3) / 2;
         for (int i = 0; i < EndingBook.Endings; i++)
         {
-            Rect cell = new Rect(left + i % 4 * (width + gap), card.y + 236 + i / 4 * (height + gap), width, height);
+            Rect cell = new Rect(left + i % 4 * (width + gap), card.y + 260 + i / 4 * (height + gap), width, height);
             bool seen = EndingBook.Seen(galleryFaculty, galleryProfessor, i);
             string number = "ENDING " + (i + 1);
             if (!seen)
@@ -310,7 +329,7 @@ public partial class GameController
                 for (int s = 0; s < 3; s++)
                     NovelUI.DrawIcon(new Rect(face.center.x - 62 + s * 50 + (s == 1 ? 6 : 0), face.y + 56 + (s == 1 ? -12 : 0), 26, 26), "IconStar", NovelUI.Lemon);
             // Long names shrink rather than break mid-word.
-            string name = FirstSemesterStory.EndingNames[i];
+            string name = story.EndingNames[i];
             int size = NovelUI.Width(name, NovelUI.Round, 22) > face.width - 28 ? 18 : 22;
             NovelUI.Label(new Rect(face.x + 14, face.y + 148, face.width - 28, 84), name, NovelUI.Round, size, NovelUI.Berry, TextAnchor.MiddleCenter);
             if (GUI.Button(cell, GUIContent.none, GUIStyle.none)) { novelAudio.Play("Select"); galleryEnding = i; menu = Menu.EndingDetail; menuAt = Time.unscaledTime; }
@@ -321,6 +340,7 @@ public partial class GameController
     {
         Rect card = new Rect(170, 100, 940, 700);
         if (!Panel(card, null, null)) return;
+        Story story = Stories.All[galleryFaculty];
         bool special = galleryEnding == 7;
         string number = "ENDING " + (galleryEnding + 1);
         float width = NovelUI.Width(number, NovelUI.Round, 22) + 50 * .9f;
@@ -329,9 +349,101 @@ public partial class GameController
         NovelUI.Fill(photo, NovelUI.Blush, 30);
         Texture2D portrait = Resources.Load<Texture2D>((galleryProfessor == 0 ? "ProfessorKim" : "ProfessorLee") + "HappyTransparent");
         if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(galleryProfessor, true));
-        NovelUI.Label(new Rect(photo.xMax + 30, card.y + 70, card.width - 300, 64), FirstSemesterStory.EndingNames[galleryEnding], NovelUI.Round, 42, NovelUI.Berry, TextAnchor.MiddleLeft);
-        NovelUI.Pill(photo.xMax + 30, card.y + 148, 40, galleryProfessor == 0 ? "김가람 교수" : "이명희 교수", NovelUI.Blush, NovelUI.DeepPink, 20);
-        NovelUI.Label(new Rect(card.x + 60, card.y + 250, card.width - 120, 330), ProfessorPersonality.Ending(galleryProfessor, galleryEnding), NovelUI.Soft, 22, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
+        NovelUI.Label(new Rect(photo.xMax + 30, card.y + 70, card.width - 300, 64), story.EndingNames[galleryEnding], NovelUI.Round, 42, NovelUI.Berry, TextAnchor.MiddleLeft);
+        NovelUI.Pill(photo.xMax + 30, card.y + 148, 40, story.Professors[galleryProfessor].Name, NovelUI.Blush, NovelUI.DeepPink, 20);
+        NovelUI.Label(new Rect(card.x + 60, card.y + 250, card.width - 120, 330), story.Ending(galleryProfessor, galleryEnding), NovelUI.Soft, 22, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
         if (NovelUI.Button(new Rect(640 - 110, card.yMax - 86, 220, 58), "목록으로", true, 22)) { novelAudio.Play("Back"); menu = Menu.Gallery; menuAt = Time.unscaledTime; }
+    }
+
+    // ---- Backlog ------------------------------------------------------------------------------
+
+    void AddToBacklog(string key, string speaker, string text)
+    {
+        // Stepping back and forward again revisits lines that are already listed.
+        foreach (string[] entry in backlog) if (entry[0] == key) return;
+        backlog.Add(new[] { key, speaker, text });
+        if (backlog.Count > 300) backlog.RemoveAt(0);
+    }
+
+    void Backlog()
+    {
+        Rect card = new Rect(140, 50, 1000, 800);
+        if (!Panel(card, "IconBook", "대사 기록")) return;
+        Rect view = new Rect(card.x + 44, card.y + 100, card.width - 88, card.height - 140);
+        if (backlog.Count == 0)
+        {
+            NovelUI.Label(view, "아직 기록이 없어요", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+            return;
+        }
+        float width = view.width - 30, total = 0;
+        foreach (string[] entry in backlog) total += EntryHeight(entry, width);
+        float overflow = Mathf.Max(0, total - view.height);
+        backlogScroll.y = Mathf.Clamp(backlogScroll.y, 0, overflow);
+        backlogScroll = GUI.BeginScrollView(view, backlogScroll, new Rect(0, 0, width, total), GUIStyle.none, GUIStyle.none);
+        float y = 0;
+        foreach (string[] entry in backlog)
+        {
+            float height = EntryHeight(entry, width), top = y;
+            y += height;
+            if (y < backlogScroll.y || top > backlogScroll.y + view.height) continue;
+            bool narration = entry[1] == "나레이션";
+            if (!narration) NovelUI.Pill(0, top, 34, entry[1], SpeakerTag(entry[1]), SpeakerInk(entry[1]), 17);
+            NovelUI.Label(new Rect(4, top + (narration ? 0 : 42), width - 8, height), entry[2], NovelUI.Soft, 21, narration ? NovelUI.Plum : NovelUI.Berry);
+            NovelUI.Fill(new Rect(0, y - 14, width, 2), NovelUI.Blush, 1);
+        }
+        GUI.EndScrollView();
+        if (overflow <= 0) return;
+        // Scroll position bar; the wheel scrolls the list.
+        Rect track = new Rect(view.xMax - 8, view.y, 8, view.height);
+        NovelUI.Fill(track, NovelUI.Blush, 4);
+        float thumb = Mathf.Max(40, track.height * view.height / total);
+        NovelUI.Fill(new Rect(track.x, track.y + (track.height - thumb) * backlogScroll.y / overflow, 8, thumb), NovelUI.Pink, 4);
+    }
+    static float EntryHeight(string[] entry, float width) =>
+        (entry[1] == "나레이션" ? 0 : 42) + NovelUI.Height(entry[2], NovelUI.Soft, 21, width - 8) + 30;
+
+    // ---- Minigame practice --------------------------------------------------------------------
+
+    void PracticeMenu()
+    {
+        Rect card = new Rect(290, 60, 700, 780);
+        if (!Panel(card, "IconStar", "미니게임 연습")) return;
+        NovelUI.Label(new Rect(card.x, card.y + 84, card.width, 30), "연습 결과는 호감도와 엔딩에 반영되지 않아요", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+        if (!FacultyTabs(new Rect(card.x + 30, card.y + 124, card.width - 60, 0), ref practiceCollege, ref practiceFaculty, true)) return;
+        Story story = Stories.All[practiceFaculty];
+        float y = card.y + 240;
+        foreach (Slot slot in story.Slots)
+        {
+            if (slot.Game == null) continue;
+            if (Tile(new Rect(card.x + 50, y, card.width - 100, 110), slot.Game.Title, slot.Game.Note, false)) StartPractice(slot.Game);
+            y += 128;
+        }
+        NovelUI.Label(new Rect(card.x, card.y + 640, card.width, 30), "함께할 교수님", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
+        int who = NovelUI.Segmented(new Rect(card.center.x - 220, card.y + 676, 440, 48), new[] { story.Professors[0].Name, story.Professors[1].Name }, practiceProfessor, 19);
+        if (who != practiceProfessor) { novelAudio.Play("Toggle"); practiceProfessor = who; }
+    }
+
+    void StartPractice(MiniGameTheme theme)
+    {
+        novelAudio.Play("Select");
+        practice = theme;
+        miniGame = MiniGames.Create(theme, practiceProfessor);
+        menu = Menu.None;
+    }
+    void EndPractice()
+    {
+        practice = null;
+        miniGame = null;
+        OpenMenu(Menu.Practice);
+    }
+
+    // A practice run over the chapter's own background; the close icon under the settings icon quits it.
+    void Practice()
+    {
+        GUI.DrawTexture(Drift(new Rect(0, 0, Screen.width, Screen.height)), Resources.Load<Texture2D>(practice.Place), ScaleMode.ScaleAndCrop);
+        GUI.matrix = Canvas;
+        DrawMiniGame();
+        if (NovelUI.IconButton(new Rect(1228, 10, 44, 44), "IconSettings", null)) OpenMenu(Menu.Settings);
+        if (NovelUI.IconButton(new Rect(1228, 62, 44, 44), "IconClose", null)) EndPractice();
     }
 }

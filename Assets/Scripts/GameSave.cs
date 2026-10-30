@@ -45,7 +45,7 @@ public static class GameSave
                 Interest = int.Parse(f[10]), Solo = int.Parse(f[11]), Experienced = f[12] == "1", ShowResult = f[13] == "1",
                 ResultLine = Encoding.UTF8.GetString(Convert.FromBase64String(f[14]))
             };
-            bool valid = d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
+            bool valid = d.Faculty >= 0 && d.Faculty < Stories.All.Length && d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
             return valid ? d : null;
         }
         catch (FormatException) { return null; }
