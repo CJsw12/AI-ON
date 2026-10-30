@@ -19,14 +19,35 @@ public class CoffeeOrder : MiniGame
 
     public CoffeeOrder(int professor)
     {
-        int[][] professorOptions = professor == 0
-            ? new[] { new[] { 0, 0, 1 }, new[] { 0, 0, 1, 1 }, new[] { 0, 0, 0, 1 } }
-            : new[] { new[] { 0, 2, 2, 3 }, new[] { 0, 2, 3, 3 }, new[] { 0, 0, 2, 2, 3 } };
-        int[][] friendOptions = { new[] { 0, 1, 3, 3 }, new[] { 1, 0, 0, 3 }, new[] { 0, 1, 1, 3, 3 } };
-        int[][] finalOptions = { new[] { 2, 0, 3, 2, 0, 3 }, new[] { 1, 0, 3, 0, 1, 3 }, new[] { 2, 3, 0, 2, 3, 0 } };
-        orders = new[] { professor == 0 ? "교수님 · 진한 아메리카노" : "교수님 · 바닐라 라떼", "동기 · 맞춤 커피", "마무리 주문 · 맞춤 커피" };
-        recipes = new[] { professorOptions[Random.Range(0, professorOptions.Length)], friendOptions[Random.Range(0, friendOptions.Length)], finalOptions[Random.Range(0, finalOptions.Length)] };
+        orders = new[] { "교수님 · 첫 번째 주문", "교수님 · 두 번째 주문", "교수님 · 마지막 주문" };
+        recipes = new int[3][];
+        for (int i = 0; i < recipes.Length; i++)
+            recipes[i] = MakeRecipe(professor, i);
         roundStartedAt = Time.unscaledTime;
+    }
+    static int[] MakeRecipe(int professor, int round)
+    {
+        int length = round == 0 ? Random.Range(3, 5) : round == 1 ? Random.Range(4, 6) : 6;
+        int[] recipe = new int[length];
+        for (int i = 0; i < recipe.Length; i++) recipe[i] = Random.Range(0, Names.Length);
+        string key = "AION.Coffee.LastOrder." + professor + "." + round;
+        string previous = PlayerPrefs.GetString(key, "");
+        string current = RecipeKey(recipe, round == 0);
+        if (current == previous)
+        {
+            recipe[recipe.Length - 1] = (recipe[recipe.Length - 1] + Random.Range(1, Names.Length)) % Names.Length;
+            current = RecipeKey(recipe, round == 0);
+        }
+        PlayerPrefs.SetString(key, current);
+        PlayerPrefs.Save();
+        return recipe;
+    }
+    static string RecipeKey(int[] recipe, bool unordered)
+    {
+        if (!unordered) return string.Join(",", recipe);
+        int[] counts = new int[Names.Length];
+        foreach (int ingredient in recipe) counts[ingredient]++;
+        return string.Join(",", counts);
     }
     public override string Title => MiniGames.Title(5);
     public override bool CountsForStat => professorCorrect;
