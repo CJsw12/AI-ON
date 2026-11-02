@@ -1,4 +1,4 @@
-// AI-SW융합학부: fixed events and choices; relationship changes only the professor's response.
+// 컴퓨터공학과: fixed events and choices; relationship changes only the professor's response.
 // The professor's tone lives in AiSwPersonality, the quizzes in AiSwQuizzes.
 public static class AiSwStory
 {
@@ -113,7 +113,7 @@ public static class AiSwStory
     }
 
     public static readonly string[] FollowUp = {
-        "", "교수님을 따라 OT 교실로 들어왔다. 복도 끝에서 선배들이 이름표를 나눠 주고 있었다.\n선배가 수강신청과 동아리 안내를 설명했다. 모르는 것은 단톡방에서 편하게 물어보라고 했다.\n소개 자료에는 프로그래밍, 데이터, 팀 프로젝트가 적혀 있었다. 같은 학부에서도 해 볼 일이 꽤 많았다.\n교수님이 짧은 자기소개 종이를 나눠 주었다. 학과를 고른 이유와 궁금한 것을 적어 보자.",
+        "", "교수님을 따라 OT 교실로 들어왔다. 복도 끝에서 선배들이 이름표를 나눠 주고 있었다.\n선배가 수강신청과 동아리 안내를 설명했다. 모르는 것은 단톡방에서 편하게 물어보라고 했다.\n소개 자료에는 프로그래밍, 데이터, 팀 프로젝트가 적혀 있었다. 같은 학과에서도 해 볼 일이 꽤 많았다.\n교수님이 짧은 자기소개 종이를 나눠 주었다. 학과를 고른 이유와 궁금한 것을 적어 보자.",
         "수업이 끝나자 옆자리 동기가 가방을 챙기며 말을 걸었다.\n동기: 학식 먹으면서 오늘 배운 거 복습할래? 내가 용어 카드 만들어 왔어.\n학식당 테이블 위에 동기가 카드를 엎어 놓았다. 변수, 반복문, 자료구조, 알고리즘… 오늘 수업에서 들은 단어들이었다.\n동기: 용어랑 뜻을 짝지어 봐. 많이 틀리면 디저트는 네가 사는 거다!",
         "교수님과 반복문을 확인했다. 숫자가 증가하면 10에 도달하고, 그때 조건이 거짓이 되어 반복이 끝난다.\n동기: 설명 듣고 나니까 알겠는데, 다음에 혼자 보면 또 헷갈릴 것 같아.\n교수님: 그럼 눈으로 확인해 봅시다. 화면의 숫자가 10이 되는 순간 멈춤 버튼을 누르세요.\n화면의 숫자가 빠르게 올라가기 시작했다. 반복이 끝나는 바로 그 순간을 잡아야 한다.",
         "질문을 마치고 나오려는데 연구실 게시판의 프로젝트 모집 공고가 눈에 들어왔다.\n화면에는 보행 안내 앱과 데이터 시각화 프로젝트가 소개되어 있었다. 교실에서 배운 코드가 쓰이는 모습이었다.\n교수님은 구경은 가능하지만 정기 참여는 일정과 기초 학습을 함께 고려해야 한다고 설명했다.\n당장 참여할지 정할 필요는 없었다. 지금 궁금한 것부터 물어보기로 했다.",
@@ -167,13 +167,13 @@ public static class AiSwStory
     }
 
     public static readonly Story Data = new Story {
-        College = "공과대학", Name = "AI-SW융합학부", Short = "AI-SW", Tag = "소프트웨어",
+        College = "공학부", Name = "컴퓨터공학과", Short = "컴퓨터공학", Tag = "소프트웨어",
         LevelQuestion = "코딩 경험이 있나요?",
         Levels = new[] { "전공자", "비전공자" },
         LevelNotes = new[] { "코드를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "김가람 교수", Description = "엄격한 원칙파 · 근거와 준비를 중시", TagA = "#원칙파", TagB = "#꼼꼼함" },
-            new Professor { Name = "이명희 교수", Description = "유쾌한 소통파 · 호기심과 협업을 중시", TagA = "#소통파", TagB = "#호기심" }
+            new Professor { Name = "김가람 교수", Description = "엄격한 원칙파 · 근거와 준비를 중시", TagA = "#원칙파", TagB = "#꼼꼼함", Image = "ProfessorKim" },
+            new Professor { Name = "이명희 교수", Description = "유쾌한 소통파 · 호기심과 협업을 중시", TagA = "#소통파", TagB = "#호기심", Image = "ProfessorLee" }
         },
         Chapters = new[] { "", "입학 OT", "첫 수업", "첫 실습", "오피스아워", "발표 전날", "함께 마무리하기" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

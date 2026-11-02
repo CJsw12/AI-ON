@@ -1,4 +1,4 @@
-// AI-SW융합학부 problems. Majors type the missing code. Non-majors get the same bug as an easier, plain-language multiple choice.
+// 컴퓨터공학과 problems. Majors type the missing code. Non-majors get the same bug as an easier, plain-language multiple choice.
 public static class AiSwQuizzes
 {
     public static Quiz Find(int chapter, int stage, bool experienced)

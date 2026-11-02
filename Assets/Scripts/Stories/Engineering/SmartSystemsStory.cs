@@ -1,4 +1,4 @@
-// 스마트시스템공학부: a semester of fixing things. A blackout on day one, then the campus delivery robot
+// 스마트시스템공학과: a semester of fixing things. A blackout on day one, then the campus delivery robot
 // "배달이" that the professor's lab keeps running, until a complaint nearly bans it.
 // Slots: ch1 choice·choice, ch2 cards·choice, ch3 quiz·timing, ch4 choice·quiz, ch5 quiz·choice, ch6 coffee·choice.
 public static class SmartSystemsStory
@@ -16,7 +16,7 @@ public static class SmartSystemsStory
             "나레이션|원인은 복도 끝 휴게실이었다. OT 간식을 준비하던 선배들이 전기포트 세 개와 난로를 멀티탭 하나에 꽂아 두었다.",
             "교수|플러그를 나눠 꽂아 달라고 전하고 오세요. 그다음에 올리겠습니다.|멀티탭 하나에 다 꽂으면 기절해요. 나눠 꽂아 달라고 전해 줄래요?",
             "나레이션|심부름을 마치고 돌아오자 교수님이 스위치를 올렸다. 복도에 차례로 불이 들어왔다.",
-            "교수|공학관에 온 걸 환영합니다. 방금 한 일이 이 학부에서 배우는 일입니다.|짠, 불 켜졌다! 환영해요. 방금 그게 우리 학부 첫 수업이에요!"
+            "교수|공학관에 온 걸 환영합니다. 방금 한 일이 이 학과에서 배우는 일입니다.|짠, 불 켜졌다! 환영해요. 방금 그게 우리 학과 첫 수업이에요!"
         },
         new[] {
             "나레이션|첫 전공 실습 '회로와 장치'. 책상마다 고장 난 탁상 라디오가 하나씩 놓여 있었다.",
@@ -63,7 +63,7 @@ public static class SmartSystemsStory
 
     static readonly string[] FollowUp = {
         "",
-        "OT는 30분 늦게 시작됐다. 강당 무대 위에는 바퀴 여섯 개 달린 하얀 상자가 서 있었다.\n선배: 학교 배달 로봇 '배달이'예요! 학식에서 연구동까지 커피랑 택배를 날라요. 우리 학부 연구실 작품이죠.\n배달이가 무대 앞까지 굴러오더니, 낮은 문턱 하나를 넘지 못하고 제자리에서 바퀴만 돌렸다. 강당에 웃음이 터졌다.\n교수님: 1학기에 여러분이 할 일은 저런 것을 고치는 겁니다. 무엇부터 보겠습니까?|자, 첫 질문! 배달이는 왜 멈췄을까요? 뭐부터 볼래요?",
+        "OT는 30분 늦게 시작됐다. 강당 무대 위에는 바퀴 여섯 개 달린 하얀 상자가 서 있었다.\n선배: 학교 배달 로봇 '배달이'예요! 학식에서 연구동까지 커피랑 택배를 날라요. 우리 학과 연구실 작품이죠.\n배달이가 무대 앞까지 굴러오더니, 낮은 문턱 하나를 넘지 못하고 제자리에서 바퀴만 돌렸다. 강당에 웃음이 터졌다.\n교수님: 1학기에 여러분이 할 일은 저런 것을 고치는 겁니다. 무엇부터 보겠습니까?|자, 첫 질문! 배달이는 왜 멈췄을까요? 뭐부터 볼래요?",
         "이름표를 다 붙이자 고장 원인이 보였다. 손톱만 한 퓨즈 하나가 까맣게 끊어져 있었다.\n새 퓨즈를 끼우자 지직거리던 스피커에서 옛날 노래가 흘러나왔다. 실습실 여기저기서 박수가 터졌다.\n수업이 끝날 무렵 교수님이 게시판에 종이 한 장을 붙였다. '배달이 정비 보조 모집 · 금요일 오후 · 신입생 가능'.\n교수님: 관심 있으면 이름을 적으세요. 단, 시작하면 학기 끝까지입니다.|배달이 돌보미 구해요! 금요일마다 같이 고치고 간식도 먹어요. 할래요?",
         "새 저항을 납땜하자 배달이의 눈 LED가 다시 깜빡였다. 교수님이 배달이를 바닥에 내려놓았다.\n교수님: 다음은 정지 위치 보정입니다. 바퀴 모터에 펄스를 열 번 보내면 정확히 문 앞에 섭니다.|이제 브레이크 연습! 펄스 열 번이면 딱 문 앞이에요.\n교수님: 열 번째에서 멈추세요. 지나치면 문에 부딪힙니다.|열 번째에서 딱! 늦으면 배달이가 문에 뽀뽀해요.",
         "배달이를 연구실로 옮겨 수건으로 닦았다. 바퀴보다 먼저 배터리 표시등이 꺼져 있었다.\n교수님: 배터리는 2000mAh입니다. 평지에서는 400mA, 오르막에서는 두 배인 800mA를 씁니다.|배터리는 2000mAh, 평지에선 400mA씩 먹는데 오르막에선 두 배로 먹보가 돼요!\n교수님: 비 오는 날 경로를 다시 짜려면 계산부터 합시다.|경로 다시 짜기 전에 계산 타임!",
@@ -230,13 +230,13 @@ public static class SmartSystemsStory
     };
 
     public static readonly Story Data = new Story {
-        College = "공과대학", Name = "스마트시스템공학부", Short = "스마트시스템", Tag = "하드웨어",
+        College = "공학부", Name = "스마트시스템공학과", Short = "스마트시스템", Tag = "하드웨어",
         LevelQuestion = "회로나 아두이노를 다뤄 봤나요?",
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값을 직접 계산해서 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "박태준 교수", Description = "철저한 안전 제일파 · 측정과 검증을 중시", TagA = "#안전제일", TagB = "#측정값" },
-            new Professor { Name = "최유나 교수", Description = "호기심 많은 메이커 · 일단 만들어 보기", TagA = "#메이커", TagB = "#실험정신" }
+            new Professor { Name = "박태준 교수", Description = "철저한 안전 제일파 · 측정과 검증을 중시", TagA = "#안전제일", TagB = "#측정값", Image = "ProfessorPark" },
+            new Professor { Name = "최유나 교수", Description = "호기심 많은 메이커 · 일단 만들어 보기", TagA = "#메이커", TagB = "#실험정신", Image = "ProfessorChoi" }
         },
         Chapters = new[] { "", "정전된 OT", "분해 실습", "금요일의 배달이", "비 오는 언덕", "운행 중단 위기", "다시 달리는 배달이" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

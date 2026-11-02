@@ -1,4 +1,4 @@
-// AI-SW융합학부 professors: scores, replies, rewording and ending lines.
+// 컴퓨터공학과 professors: scores, replies, rewording and ending lines.
 public static class AiSwPersonality
 {
     // Rows follow the twelve fixed choices. Both professors see identical options.

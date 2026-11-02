@@ -202,8 +202,9 @@ public partial class GameController
             {
                 Rect photo = new Rect(face.x + 86, face.y + 12, 82, 82);
                 NovelUI.Fill(photo, NovelUI.Blush, 20);
-                Texture2D portrait = Resources.Load<Texture2D>((data.Professor == 0 ? "ProfessorKim" : "ProfessorLee") + "Transparent");
-                if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(data.Professor, true));
+                string picture = Professor.Picture(Stories.All[data.Faculty].Professors[data.Professor], data.Professor);
+                Texture2D portrait = Resources.Load<Texture2D>(picture);
+                if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
                 float tx = photo.xMax + 20;
                 tx += NovelUI.Pill(tx, face.y + 18, 36, "CHAPTER " + data.Scene, NovelUI.Pink, Color.white, 17) + 10;
                 Story story = Stories.All[data.Faculty];
@@ -255,11 +256,14 @@ public partial class GameController
         ShowToast("불러왔어요");
     }
 
-    // Head-and-shoulders crop of a portrait; Professor Kim stands smaller in his picture.
-    static Rect FaceCrop(int who, bool square = false)
+    // Head-and-shoulders crop of a portrait (texture coordinates, from the bottom). Kim and Lee are
+    // full-figure pictures, Kim standing smaller; the per-faculty pictures are centred busts with the
+    // head top 60px down and the body fading out under the dialogue box.
+    static Rect FaceCrop(string picture, bool square = false)
     {
-        if (!square) return who == 0 ? new Rect(.31f, .6f, .38f, .4f) : new Rect(.22f, .4f, .56f, .6f);
-        return who == 0 ? new Rect(.418f, .66f, .164f, .3f) : new Rect(.385f, .55f, .229f, .42f);
+        if (picture.StartsWith("ProfessorKim")) return square ? new Rect(.418f, .66f, .164f, .3f) : new Rect(.31f, .6f, .38f, .4f);
+        if (picture.StartsWith("ProfessorLee")) return square ? new Rect(.385f, .55f, .229f, .42f) : new Rect(.22f, .4f, .56f, .6f);
+        return square ? new Rect(.382f, .514f, .236f, .432f) : new Rect(.218f, .352f, .564f, .605f);
     }
 
     // College tabs, then the faculty tabs inside the chosen college (two rows from rect.y, 100 high).
@@ -271,7 +275,7 @@ public partial class GameController
         int[] faculties = Stories.In(college);
         if (faculties.Length == 0)
         {
-            NovelUI.Label(new Rect(rect.x, rect.y + 120, rect.width, 90), "준비 중인 대학이에요\n곧 새 학부가 열려요!", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+            NovelUI.Label(new Rect(rect.x, rect.y + 120, rect.width, 90), "준비 중인 학부예요\n곧 새 학과가 열려요!", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
             return false;
         }
         int at = System.Array.IndexOf(faculties, faculty);
@@ -347,8 +351,9 @@ public partial class GameController
         NovelUI.Pill(640 - width / 2, card.y - 24, 50, number, special ? NovelUI.DeepPink : NovelUI.Pink, Color.white, 22);
         Rect photo = new Rect(card.x + 50, card.y + 60, 150, 150);
         NovelUI.Fill(photo, NovelUI.Blush, 30);
-        Texture2D portrait = Resources.Load<Texture2D>((galleryProfessor == 0 ? "ProfessorKim" : "ProfessorLee") + "HappyTransparent");
-        if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(galleryProfessor, true));
+        string picture = Professor.Picture(story.Professors[galleryProfessor], galleryProfessor, "Happy");
+        Texture2D portrait = Resources.Load<Texture2D>(picture);
+        if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
         NovelUI.Label(new Rect(photo.xMax + 30, card.y + 70, card.width - 300, 64), story.EndingNames[galleryEnding], NovelUI.Round, 42, NovelUI.Berry, TextAnchor.MiddleLeft);
         NovelUI.Pill(photo.xMax + 30, card.y + 148, 40, story.Professors[galleryProfessor].Name, NovelUI.Blush, NovelUI.DeepPink, 20);
         NovelUI.Label(new Rect(card.x + 60, card.y + 250, card.width - 120, 330), story.Ending(galleryProfessor, galleryEnding), NovelUI.Soft, 22, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);

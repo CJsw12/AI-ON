@@ -1,4 +1,4 @@
-// 예술-건강학부: a semester of learning to use the body and to rest it. A 7 a.m. mix-up on day one, an ankle
+// 체육학과: a semester of learning to use the body and to rest it. A 7 a.m. mix-up on day one, an ankle
 // sprained two weeks before the showcase, and a chair choreography the audience can join.
 // Slots: ch1 choice·timing, ch2 quiz·choice, ch3 cards·choice, ch4 quiz·choice, ch5 quiz·coffee, ch6 choice·choice.
 public static class ArtsHealthStory
@@ -23,7 +23,7 @@ public static class ArtsHealthStory
             "교수|그림이 어색하면 비율부터 봅니다. 사람의 키는 머리 몇 개쯤입니까?|하하, 대두 교수님 탄생! 사람 키가 머리 몇 개쯤인지 알면 금방 고쳐져요."
         },
         new[] {
-            "나레이션|몇 주 뒤. 학부 쇼케이스 '봄, 몸, 그림' 연습이 시작되자 나는 매일 아침 운동장에 나갔다.",
+            "나레이션|몇 주 뒤. 학과 쇼케이스 '봄, 몸, 그림' 연습이 시작되자 나는 매일 아침 운동장에 나갔다.",
             "나레이션|그런데 요즘 종아리가 계속 당겼다. 계단을 내려갈 때마다 찌릿했다.",
             "동기|너 걸음이 좀 이상한데? 연습 너무 많이 하는 거 아니야?",
             "나|괜찮아. 쇼케이스까지 3주밖에 안 남았잖아.",
@@ -219,20 +219,20 @@ public static class ArtsHealthStory
     };
 
     public static readonly Story Data = new Story {
-        College = "예체능대학", Name = "예술-건강학부", Short = "예술-건강", Tag = "예술·체육",
+        College = "예체능학부", Name = "체육학과", Short = "체육", Tag = "예술·체육",
         LevelQuestion = "실기나 운동을 꾸준히 해 봤나요?",
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "서진호 교수", Description = "엄격한 기본기파 · 반복과 정확성을 중시", TagA = "#기본기", TagB = "#정확한박자" },
-            new Professor { Name = "강하늘 교수", Description = "에너지 넘치는 무대파 · 표현과 즐거움을 중시", TagA = "#무대체질", TagB = "#즐겁게" }
+            new Professor { Name = "서진호 교수", Description = "엄격한 기본기파 · 반복과 정확성을 중시", TagA = "#기본기", TagB = "#정확한박자", Image = "ProfessorSeo" },
+            new Professor { Name = "강하늘 교수", Description = "에너지 넘치는 무대파 · 표현과 즐거움을 중시", TagA = "#무대체질", TagB = "#즐겁게", Image = "ProfessorKang" }
         },
         Chapters = new[] { "", "아침 7시 운동장", "30초 크로키", "몸이 보내는 신호", "삐끗한 발목", "의자 위의 안무", "막이 오르면" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
         Slots = Slots,
         EndingNames = new[] { "아직 굳어 있는 몸", "첫 학기 완주", "의자 크루", "혼자 세는 박자", "질문하는 무용수", "손뼉 파트너", "복지관에서 온 초대장", "새벽 운동장에서 다시" },
         EndingText = new[] {
-            "쇼케이스는 끝났지만, 내 몸은 아직 이 학부가 낯설다.\n나: 무대도, 다치는 것도 무서웠어요.\n교수님:\n아침 일곱 시 알람을 끌까 말까 한참 고민했다.",
+            "쇼케이스는 끝났지만, 내 몸은 아직 이 학과가 낯설다.\n나: 무대도, 다치는 것도 무서웠어요.\n교수님:\n아침 일곱 시 알람을 끌까 말까 한참 고민했다.",
             "새벽 운동장에서 시작한 첫 학기가 끝났다.\n교수님:\n나: 이제 시간표의 오전 오후는 두 번씩 확인해요.\n발목 붕대를 풀자 가벼운 바람이 스쳤다.",
             "동기: 우리 크루 이름 '의자 크루' 어때?\n나: 다음엔 의자 두 개로 하자.\n교수님:\n단톡방 이름이 '의자 위의 사람들'로 바뀌었다.",
             "혼자 세던 박자가 몸에 새겨졌다.\n교수님:\n나: 다음엔 혼자 막히는 것도 여쭤볼게요.\n거울 앞에서 열 번째 박에 맞춰 팔을 내렸다.",

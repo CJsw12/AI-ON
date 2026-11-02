@@ -61,12 +61,9 @@ public partial class GameController : MonoBehaviour
     {
         get
         {
-            string character = professor == 0 ? "ProfessorKim" : "ProfessorLee";
-            string face = ReactionFace;
-            if (face != null) character += face;
-            else if (affection < 0) character += "Frown";
-            else if (affection >= 3) character += "Happy";
-            return Resources.Load<Texture2D>(character + "Transparent");
+            string mood = ReactionFace;
+            if (mood == null) mood = affection < 0 ? "Frown" : affection >= 3 ? "Happy" : "";
+            return Resources.Load<Texture2D>(Professor.Picture(S.Professors[professor], professor, mood));
         }
     }
     Texture2D Background => Resources.Load<Texture2D>(S.Background(scene, choiceStage, dialogueIndex));
@@ -461,7 +458,7 @@ public partial class GameController : MonoBehaviour
             float pop = k < .35f ? Mathf.Lerp(.4f, 1.12f, k / .35f) : k < .6f ? Mathf.Lerp(1.12f, 1f, (k - .35f) / .25f) : 1;
             Matrix4x4 before = GUI.matrix;
             GUIUtility.ScaleAroundPivot(new Vector2(pop, pop), new Vector2(640, 130));
-            NovelUI.Outlined(new Rect(0, 70, 1280, 120), "두근두근 교수님", NovelUI.Round, 92, Color.white, NovelUI.DeepPink, 6);
+            NovelUI.Outlined(new Rect(0, 70, 1280, 120), "두근두근 캠퍼스", NovelUI.Round, 92, Color.white, NovelUI.DeepPink, 6);
             GUI.matrix = before;
 
             float sub = Mathf.Clamp01((k - .5f) / .5f);
@@ -520,7 +517,7 @@ public partial class GameController : MonoBehaviour
     void StartScreen()
     {
         Dreamy(.35f);
-        NovelUI.Outlined(new Rect(0, 70, 1280, 120), "두근두근 교수님", NovelUI.Round, 92, Color.white, NovelUI.DeepPink, 6);
+        NovelUI.Outlined(new Rect(0, 70, 1280, 120), "두근두근 캠퍼스", NovelUI.Round, 92, Color.white, NovelUI.DeepPink, 6);
         float width = NovelUI.Width(Subtitle, NovelUI.Round, 26) + 46;
         NovelUI.Pill(640 - width / 2, 192, 52, Subtitle, NovelUI.Alpha(NovelUI.Cream, .95f), NovelUI.DeepPink, 26);
         NovelUI.Outlined(new Rect(0, 252, 1280, 40), "낯선 캠퍼스에서 시작하는 나의 첫 학기", NovelUI.Soft, 24, NovelUI.Berry, NovelUI.Alpha(Color.white, .9f), 2);
@@ -529,7 +526,7 @@ public partial class GameController : MonoBehaviour
         {
             Rect card = new Rect(310, 316, 660, 564);
             NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .96f), 36, NovelUI.Pink);
-            NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 40), "체험할 학부를 선택하세요", NovelUI.Round, 28, NovelUI.Berry, TextAnchor.MiddleCenter);
+            NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 40), "체험할 학과를 선택하세요", NovelUI.Round, 28, NovelUI.Berry, TextAnchor.MiddleCenter);
             // Back to the intro's "click to start" screen, without replaying the opening.
             if (NovelUI.Button(new Rect(card.x + 30, card.yMax - 66, 96, 46), "이전", false, 19)) { novelAudio.Play("Back"); introDone = false; introTime = LogoAt + 1.5f; }
             GUI.enabled = GameSave.Any();
@@ -542,7 +539,7 @@ public partial class GameController : MonoBehaviour
             if (college != titleCollege) { novelAudio.Play("Toggle"); titleCollege = college; }
             int[] faculties = Stories.In(titleCollege);
             if (faculties.Length == 0)
-                NovelUI.Label(new Rect(card.x, card.y + 230, card.width, 90), "준비 중인 대학이에요\n곧 새 학부가 열려요!", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+                NovelUI.Label(new Rect(card.x, card.y + 230, card.width, 90), "준비 중인 학부예요\n곧 새 학과가 열려요!", NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
             // Room for five faculties per college above the bottom buttons.
             for (int i = 0; i < faculties.Length; i++)
             {
@@ -592,7 +589,7 @@ public partial class GameController : MonoBehaviour
         return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 
-    // The pictures are shared by every faculty for now: 0 is the strict professor, 1 the cheerful one.
+    // Each faculty's own professor picture, from Professor.Image.
     bool ProfessorCard(Rect rect, int who, Professor info)
     {
         bool hover = NovelUI.Hover(rect);
@@ -601,8 +598,9 @@ public partial class GameController : MonoBehaviour
         NovelUI.Card(face, Color.white, 30, hover ? NovelUI.DeepPink : NovelUI.Pink, hover ? 4 : 3);
         Rect photo = new Rect(face.x + 18, face.y + 18, face.width - 36, 210);
         NovelUI.Fill(photo, NovelUI.Blush, 22);
-        Texture2D portrait = Resources.Load<Texture2D>((who == 0 ? "ProfessorKim" : "ProfessorLee") + (hover ? "Happy" : "") + "Transparent");
-        if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(who));
+        string picture = Professor.Picture(info, who, hover ? "Happy" : "");
+        Texture2D portrait = Resources.Load<Texture2D>(picture);
+        if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture));
         NovelUI.Label(new Rect(face.x, photo.yMax + 14, face.width, 40), info.Name, NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
         NovelUI.Label(new Rect(face.x + 20, photo.yMax + 56, face.width - 40, 30), info.Description, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
         float a = NovelUI.Width(info.TagA, NovelUI.Round, 17) + 30, b = NovelUI.Width(info.TagB, NovelUI.Round, 17) + 30;
@@ -649,7 +647,13 @@ public partial class GameController : MonoBehaviour
         for (int i = 0; i < stats.Length; i++)
             x += NovelUI.Pill(x, card.y + 440, 40, stats[i], i == 0 ? NovelUI.DeepPink : NovelUI.Blush, i == 0 ? Color.white : NovelUI.Berry, 20) + 14;
 
-        if (trueEnd && NovelUI.Button(new Rect(640 - 230, card.y + 520, 220, 62), "메모리얼 보기", false, 22)) { novelAudio.Play("Select"); memorial = 0.01f; }
+        // The memorial (Memorial()) is not finished yet, so its button stays greyed out as 준비 중.
+        if (trueEnd)
+        {
+            GUI.enabled = false;
+            NovelUI.Button(new Rect(640 - 230, card.y + 520, 220, 62), "메모리얼 준비 중", false, 22);
+            GUI.enabled = true;
+        }
         Rect restart = trueEnd ? new Rect(650, card.y + 520, 220, 62) : new Rect(640 - 120, card.y + 520, 240, 62);
         if (NovelUI.Button(restart, "처음부터", true, 24)) { novelAudio.Play("Select"); ResetRun(); }
     }

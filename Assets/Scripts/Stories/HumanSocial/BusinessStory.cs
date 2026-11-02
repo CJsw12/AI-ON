@@ -1,4 +1,4 @@
-// 경영-휴먼라이프학부: a semester with real people and real money. The class consults for "행운문구", a
+// 경영학과: a semester with real people and real money. The class consults for "행운문구", a
 // forty-year-old stationery shop by the main gate; a careless remark nearly ends it.
 // Slots: ch1 choice·quiz, ch2 choice·coffee, ch3 quiz·cards, ch4 choice·choice, ch5 choice·timing, ch6 choice·quiz.
 public static class BusinessStory
@@ -223,13 +223,13 @@ public static class BusinessStory
     };
 
     public static readonly Story Data = new Story {
-        College = "인문사회대학", Name = "경영-휴먼라이프학부", Short = "경영-휴먼", Tag = "경영·생활",
+        College = "인문사회학부", Name = "경영학과", Short = "경영", Tag = "경영·생활",
         LevelQuestion = "경영이나 경제를 공부해 봤나요?",
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "한석진 교수", Description = "냉철한 숫자파 · 데이터와 근거를 중시", TagA = "#숫자로말해요", TagB = "#근거" },
-            new Professor { Name = "윤소희 교수", Description = "다정한 현장파 · 사람의 마음을 중시", TagA = "#공감왕", TagB = "#현장파" }
+            new Professor { Name = "한석진 교수", Description = "냉철한 숫자파 · 데이터와 근거를 중시", TagA = "#숫자로말해요", TagB = "#근거", Image = "ProfessorHan" },
+            new Professor { Name = "윤소희 교수", Description = "다정한 현장파 · 사람의 마음을 중시", TagA = "#공감왕", TagB = "#현장파", Image = "ProfessorYoon" }
         },
         Chapters = new[] { "", "지각생의 OT", "행운문구", "영수증 속 숫자", "엇갈린 기획", "반쯤 내린 셔터", "신학기 꾸러미" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
@@ -246,7 +246,7 @@ public static class BusinessStory
             "나: 숫자를 배웠는데, 결국 사람 이야기더라고요.\n교수님:\n나: 다음 학기도 잘 부탁드립니다.\n정문 앞 행운문구의 셔터는 이제 아침마다 끝까지 올라가 있었다."
         },
         EndingLines = new[] {
-            new[] { "어려웠던 것을 숫자와 사람 중 어느 쪽인지 나눠 보세요. 다음 상담에서 확인하겠습니다.", "첫 학기를 마쳤습니다. 다음에는 지각 대신 추정 문제를 들고 오세요.", "함께 일할 동료를 찾았군요. 다음에는 역할 분담표까지 만들어 오세요.", "스스로 정리하는 습관이 생겼군요. 다음에는 그 장부로 질문을 만들어 오세요.", "질문의 질이 좋아졌습니다. 몇 개를 줄일지도 생각해 보세요.", "서로의 숫자를 검토하는 팀이 됐군요. 좋은 컨설턴트는 서로를 의심할 줄 압니다.", "방학 시장 골목 현장 연구에 오세요. 인터뷰 질문지는 미리 보내겠습니다.", "숫자로 시작해서 사람에게 도착했군요. 그게 이 학부에서 배우는 일입니다. 다음 학기도 기대하겠습니다." },
+            new[] { "어려웠던 것을 숫자와 사람 중 어느 쪽인지 나눠 보세요. 다음 상담에서 확인하겠습니다.", "첫 학기를 마쳤습니다. 다음에는 지각 대신 추정 문제를 들고 오세요.", "함께 일할 동료를 찾았군요. 다음에는 역할 분담표까지 만들어 오세요.", "스스로 정리하는 습관이 생겼군요. 다음에는 그 장부로 질문을 만들어 오세요.", "질문의 질이 좋아졌습니다. 몇 개를 줄일지도 생각해 보세요.", "서로의 숫자를 검토하는 팀이 됐군요. 좋은 컨설턴트는 서로를 의심할 줄 압니다.", "방학 시장 골목 현장 연구에 오세요. 인터뷰 질문지는 미리 보내겠습니다.", "숫자로 시작해서 사람에게 도착했군요. 그게 이 학과에서 배우는 일입니다. 다음 학기도 기대하겠습니다." },
             new[] { "괜찮아요. 둘 다 어려운 게 정상이에요! 재밌었던 순간 하나부터 같이 찾아봐요.", "첫 학기 클리어! 다음 OT 땐 지각생 말고 MVP로 와요.", "꾸러미 동맹 결성! 다음 학기엔 둘이 사장님 단골 만들어 줘요.", "혼자서도 척척이네요! 장부 보다 심심하면 연구실로 수다 떨러 와요.", "오늘 질문 열 개예요? 좋아요, 커피부터 내릴게요!", "영수증 탐정 콤비! 다음 사건도 둘한테 맡길게요.", "방학에 시장 골목 같이 가요! 사장님들 이야기 들으면 마음이 꽉 차요.", "숫자 뒤에서 사람을 찾았네요. 그게 제일 어려운 건데! 다음 학기에도 그 이야기 들려줘요." }
         },
         Mood = (chapter, stage) => (chapter == 4 || chapter == 5) && stage == 0 ? "Crisis" : chapter <= 2 || chapter >= 6 ? "Campus" : "Study",

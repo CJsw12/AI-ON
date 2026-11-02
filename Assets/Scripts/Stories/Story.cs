@@ -7,7 +7,7 @@ using System;
 public class Story
 {
     public string College;                     // One of Stories.Colleges.
-    public string Name, Short, Tag;            // "AI-SW융합학부", a short tab label, the pill on the title row.
+    public string Name, Short, Tag;            // "컴퓨터공학과", a short tab label, the pill on the title row.
     public string LevelQuestion;               // Asked before the professor is chosen.
     public string[] Levels, LevelNotes;        // { experienced, novice } and what each one plays.
     public Professor[] Professors;             // [0] strict, [1] cheerful; their pictures are shared for now.
@@ -78,6 +78,12 @@ public class Story
 public class Professor
 {
     public string Name, Description, TagA, TagB;
+    // Resources picture name: the game loads Image + "" / "Happy" / "Frown" + "Transparent".
+    // Left empty, professor 0 uses ProfessorKim and professor 1 ProfessorLee.
+    public string Image;
+
+    public static string Picture(Professor info, int who, string mood = "") =>
+        (string.IsNullOrEmpty(info.Image) ? (who == 0 ? "ProfessorKim" : "ProfessorLee") : info.Image) + mood + "Transparent";
 }
 
 // One of the twelve slots: a choice (Options), a quiz (Major/Minor) or a minigame (Game).
@@ -116,7 +122,7 @@ public class Quiz
 public static class Stories
 {
     // The title, the ending book and the practice menu group faculties by college; one with none yet says "준비 중".
-    public static readonly string[] Colleges = { "공과대학", "자연과학대학", "인문사회대학", "예체능대학" };
+    public static readonly string[] Colleges = { "공학부", "자연과학부", "인문사회학부", "예체능학부" };
 
     // Add new faculties at the end only: the index is kept in save slots and the ending book.
     public static readonly Story[] All = { AiSwStory.Data, SmartSystemsStory.Data, BusinessStory.Data, ArtsHealthStory.Data };
