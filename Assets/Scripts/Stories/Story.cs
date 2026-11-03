@@ -10,7 +10,8 @@ public class Story
     public string Name, Short, Tag;            // "컴퓨터공학과", a short tab label, the pill on the title row.
     public string LevelQuestion;               // Asked before the professor is chosen.
     public string[] Levels, LevelNotes;        // { experienced, novice } and what each one plays.
-    public Professor[] Professors;             // [0] strict, [1] cheerful; their pictures are shared for now.
+    public Professor[] Professors;             // Two professors with their own personalities; [0] speaks the first tone.
+    public string[] Fond, Wary;                // [professor] tail added at high affection, head added below zero; null keeps the defaults.
     public string[] Chapters;                  // Chapter titles at [1]..[6].
     public string[][] Dialogue;                // [chapter] lines before the first slot.
     public string[] FollowUp;                  // [chapter] lines between the slots, separated by '\n'.
@@ -142,8 +143,10 @@ public static class Stories
     public static int CollegeOf(int faculty) => Math.Max(0, Array.IndexOf(Colleges, All[faculty].College));
 
     // Wraps a reply with the professor's tone for very high or negative affection.
-    public static string Decorate(int professor, string text, int affection)
+    public static string Decorate(Story story, int professor, string text, int affection)
     {
+        if (affection >= 7 && story.Fond != null) return text + " " + story.Fond[professor];
+        if (affection < 0 && story.Wary != null) return story.Wary[professor] + " " + text;
         if (affection >= 7) return text + (professor == 0 ? " 지난번보다 판단이 좋아졌습니다. 계속 그렇게 해 보세요." : " 다음에 또 이야기해 줘요. 은근히 기다리게 되네요!");
         if (affection < 0) return (professor == 0 ? "원칙부터 확인하겠습니다. " : "잠깐, 이 부분은 짚고 갈게요. ") + text;
         return text;
