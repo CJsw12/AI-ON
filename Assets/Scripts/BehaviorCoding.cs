@@ -46,6 +46,13 @@ public class BehaviorCoding : MiniGame
             state = State.Completed; Done = true;
             Delta = correct >= 7 ? 2 : correct >= 5 ? 1 : 0;
             Summary = "기록 8개 중 " + correct + "개 정확히 코딩";
+            if (Delta == 0)
+            {
+                ExplainFailure(
+                    "정확히 코딩한 기록이 " + correct + "/8개로 기준(5개 이상)에 미치지 못했어요.\n마음을 추측한 인상이나 주관적 수식어를 관찰 행동으로 잘못 분류한 경우가 많아요.",
+                    "행동 관찰 코딩 원칙:\n1. '무엇을 했는가'(눈에 보이는 신체 움직임·발화 내용)만 '행동'(협력·공격·회피)으로 코딩합니다.\n2. '~인 것 같다', '~해서 대충 했다', '불안해 보였다'처럼 주관적 감정·의도 추측은 모두 '해석'으로 분류합니다."
+                );
+            }
         }
         else Begin();
     }
