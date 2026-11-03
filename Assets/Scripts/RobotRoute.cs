@@ -4,11 +4,11 @@ using UnityEngine;
 // 지도 세 장, 지도마다 두 번까지 시도할 수 있다. 도착한 지도 수를 센다.
 public class RobotRoute : MiniGame
 {
-    class Map { public Vector2Int Start, Goal; public Vector2Int[] Walls; }
+    class Map { public Vector2Int Start, Goal; public Vector2Int[] Walls; public string Solution; }
     static readonly Map[] Maps = {
-        new Map { Start = new Vector2Int(0, 2), Goal = new Vector2Int(6, 2), Walls = new[] { new Vector2Int(3, 2), new Vector2Int(5, 3) } },
-        new Map { Start = new Vector2Int(0, 4), Goal = new Vector2Int(6, 0), Walls = new[] { new Vector2Int(2, 4), new Vector2Int(2, 3), new Vector2Int(4, 1), new Vector2Int(4, 0) } },
-        new Map { Start = new Vector2Int(0, 0), Goal = new Vector2Int(0, 4), Walls = new[] { new Vector2Int(0, 2), new Vector2Int(1, 2), new Vector2Int(2, 2), new Vector2Int(4, 2), new Vector2Int(5, 1) } }
+        new Map { Start = new Vector2Int(0, 2), Goal = new Vector2Int(6, 2), Walls = new[] { new Vector2Int(3, 2), new Vector2Int(5, 3) }, Solution = "앞으로 2번 → 왼쪽 → 앞으로 1번 → 오른쪽\n→ 앞으로 4번 → 오른쪽 → 앞으로 1번" },
+        new Map { Start = new Vector2Int(0, 4), Goal = new Vector2Int(6, 0), Walls = new[] { new Vector2Int(2, 4), new Vector2Int(2, 3), new Vector2Int(4, 1), new Vector2Int(4, 0) }, Solution = "왼쪽 → 앞으로 2번 → 오른쪽 → 앞으로 6번\n→ 왼쪽 → 앞으로 2번" },
+        new Map { Start = new Vector2Int(0, 0), Goal = new Vector2Int(0, 4), Walls = new[] { new Vector2Int(0, 2), new Vector2Int(1, 2), new Vector2Int(2, 2), new Vector2Int(4, 2), new Vector2Int(5, 1) }, Solution = "앞으로 3번 → 오른쪽 → 앞으로 4번 → 오른쪽 → 앞으로 3번" }
     };
     static readonly string[] Names = { "▲ 앞으로", "↶ 왼쪽", "↷ 오른쪽" };
     static readonly int[] Dx = { 1, 0, -1, 0 }, Dy = { 0, 1, 0, -1 };   // Facing 0 right, 1 down, 2 left, 3 up.
@@ -43,6 +43,8 @@ public class RobotRoute : MiniGame
         if (ok) cleared++;
         state = State.Feedback; stateAt = Now;
         Judge(ok, new Vector2(202 + pos.x * Cell, 200 + pos.y * Cell), ok ? "배달 완료!" : "쿵!");
+        if (!ok) ExplainFailure(text + "\n" + step + "번째 명령까지 실행했고, 로봇은 " + new[] { "오른쪽", "아래쪽", "왼쪽", "위쪽" }[facing] + "을 보고 있어요.\n현재 위치: 왼쪽에서 " + (pos.x + 1) + "칸, 위에서 " + (pos.y + 1) + "칸 / 목적지: " + (Current.Goal.x + 1) + "칸, " + (Current.Goal.y + 1) + "칸",
+            "회전은 이동이 아니라 로봇 기준 제자리 방향 전환이에요.\n시작 위치에서 가능한 경로 예시:\n" + Current.Solution + "\n실패한 명령 앞뒤의 방향과 벽 위치를 확인해 고쳐 보세요.");
     }
     void Tick()
     {

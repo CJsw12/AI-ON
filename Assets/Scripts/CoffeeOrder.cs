@@ -113,6 +113,36 @@ public class CoffeeOrder : MiniGame
         if (lastCorrect) correct++;
         NovelUI.Sound?.Invoke(lastCorrect ? "Up" : "Down");
         showingResult = true; resultUntil = Now + 1.8f;
+        if (!lastCorrect) ExplainFailure(OrderDifference(), "주문을 다시 확인해요:\n" + Describe(recipes[round], round > 0) + "\n" + (round == 0 ? "순서는 상관없지만 재료별 횟수와 총량이 모두 같아야 해요." : "수량뿐 아니라 처음부터 끝까지 순서도 같아야 해요. 잘못 넣으면 컵을 비우고 다시 담아요."));
     }
-    void Finish() { Done = true; Delta = Mathf.Min(correct, 2); Summary = "3잔 중 " + correct + "잔 주문대로"; }
+    string OrderDifference()
+    {
+        int[] expected = recipes[round];
+        string reason = orders[round] + "\n담은 양 " + cup.Count + "회 / 주문량 " + expected.Length + "회\n";
+        if (round == 0)
+        {
+            for (int ingredient = 0; ingredient < Names.Length; ingredient++)
+            {
+                int needed = 0, actual = 0;
+                foreach (int x in expected) if (x == ingredient) needed++;
+                foreach (int x in cup) if (x == ingredient) actual++;
+                if (needed != actual) reason += Names[ingredient] + " " + actual + "/" + needed + "회(담음/주문)  ";
+            }
+        }
+        else
+        {
+            int i = 0;
+            while (i < cup.Count && i < expected.Length && cup[i] == expected[i]) i++;
+            reason += i >= expected.Length ? "주문에 없는 재료를 더 넣었어요." : i >= cup.Count ? (i + 1) + "번째부터 재료를 덜 넣었어요." : "처음 다른 위치: " + (i + 1) + "번째 / 내 재료 " + Names[cup[i]] + " / 주문 " + Names[expected[i]];
+        }
+        return reason;
+    }
+    void Finish()
+    {
+        Done = true; Delta = Mathf.Min(correct, 2); Summary = "3잔 중 " + correct + "잔 주문대로";
+        int unfinished = showingResult ? round + 1 : round;
+        if (unfinished < recipes.Length && Now >= endsAt)
+            ExplainFailure("전체 제한 시간 60초가 끝나 " + (unfinished + 1) + "번째 주문부터 제출을 마치지 못했어요.\n제출해서 맞힌 잔은 " + correct + "잔이에요.",
+                "다음에 만들 차례였던 주문:\n" + Describe(recipes[unfinished], unfinished > 0) + "\n주문을 먼저 확인하고 필요한 만큼만 담아 제출해요. 컵만 채우고 제출하지 않으면 완료되지 않아요.");
+    }
 }
