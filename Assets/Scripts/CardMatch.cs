@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Chapter 2: match each term from the first lecture with its meaning.
+// Match each term from the first lecture with its meaning; the faculty's theme can bring its own six pairs.
 public class CardMatch : MiniGame
 {
     static readonly string[,] Pairs = {
@@ -18,9 +18,11 @@ public class CardMatch : MiniGame
     Texture2D cardBack;
     GUIStyle hiddenButton;
 
-    public CardMatch()
+    protected override bool ShowStars => false;
+    public CardMatch(MiniGameTheme theme) : base(theme)
     {
-        for (int i = 0; i < 12; i++) { pairOf[i] = i / 2; isTerm[i] = i % 2 == 0; faces[i] = Pairs[i / 2, i % 2]; }
+        string[,] pairs = theme.Pairs ?? Pairs;
+        for (int i = 0; i < 12; i++) { pairOf[i] = i / 2; isTerm[i] = i % 2 == 0; faces[i] = pairs[i / 2, i % 2]; }
     }
 
     void Shuffle()
@@ -33,8 +35,7 @@ public class CardMatch : MiniGame
             (isTerm[i], isTerm[j]) = (isTerm[j], isTerm[i]);
         }
     }
-    public override string Title => MiniGames.Title(2);
-    public override string[][] Replies => new[] {
+    public override string[][] Replies => Theme.Replies ?? new[] {
         new[] { "용어가 아직 섞여 있습니다. 정의만 외우지 말고 예제 코드에서 직접 찾아보세요.", "대부분 맞혔군요. 헷갈린 용어는 예제와 함께 다시 정리하세요.", "다음 수업 퀴즈에서 용어를 정확히 구분하더군요. 정의를 말로 설명할 수 있으면 코드도 읽힙니다." },
         new[] { "디저트 샀다면서요? 괜찮아요, 그만큼 확실히 기억나겠죠. 다음엔 이길 거예요!", "카드 게임으로 복습이라니 좋네요! 헷갈린 건 다음 수업 때 저한테 물어봐요.", "학식에서 용어 카드 했다면서요? 동기가 디저트 사게 됐다고 하던데요!" }
     };
@@ -43,28 +44,29 @@ public class CardMatch : MiniGame
     {
         if (cardBack == null) cardBack = Resources.Load<Texture2D>("CardMatch/DTTCardBack");
         if (hiddenButton == null) hiddenButton = new GUIStyle(GUIStyle.none);
-        if (shuffling && Time.unscaledTime - shuffleAt >= 1.8f)
+        if (shuffling && Now - shuffleAt >= 1.8f)
         {
             Shuffle();
             shuffling = false;
-            startedAt = Time.unscaledTime;
+            startedAt = Now;
         }
         bool playing = !preview && !shuffling;
-        float remaining = playing ? Mathf.Max(0, 60f - (Time.unscaledTime - startedAt)) : 60f;
+        float remaining = playing ? Mathf.Max(0, 60f - (Now - startedAt)) : 60f;
         if (playing && !Done && remaining <= 0) Finish();
-        if (second >= 0 && Time.unscaledTime >= hideAt) first = second = -1;
+        if (second >= 0 && Now >= hideAt) first = second = -1;
         string instruction = preview ? "짝 번호를 보며 용어와 뜻을 익혀 보세요." : shuffling ? "카드를 뒤집어 섞고 있습니다..." : "같은 개념의 용어와 뜻을 짝지으세요.   틀린 횟수 " + mistakes + "   ·   찾은 짝 " + found + "/6";
         GUI.Label(new Rect(100, 120, 1080, 35), instruction, body);
         if (preview && GUI.Button(new Rect(450, 715, 380, 50), "준비 완료", button))
         {
             preview = false;
             shuffling = true;
-            shuffleAt = Time.unscaledTime;
+            shuffleAt = Now;
         }
-        Color timerColor = remaining < 10 ? Color.Lerp(NovelUI.Pink, Color.red, .5f + .5f * Mathf.Sin(Time.unscaledTime * 5)) : NovelUI.Mint;
-        NovelUI.Fill(new Rect(830, 150, 300, 12), NovelUI.Blush, 6);
-        if (remaining > 0) NovelUI.Fill(new Rect(830, 150, 300 * remaining / 60f, 12), timerColor, 6);
-        GUI.Label(new Rect(650, 140, 180, 30), playing ? "남은 시간 " + Mathf.CeilToInt(remaining) + "초" : "시작 전", NovelUI.Text(NovelUI.Soft, 18, timerColor));
+        Color timerColor = remaining < 10 ? Color.Lerp(NovelUI.Pink, Color.red, .5f + .5f * Mathf.Sin(Now * 5)) : NovelUI.Mint;
+        // Timer sits at the right end of the instruction row, clear of the longest instruction.
+        NovelUI.Fill(new Rect(970, 132, 200, 12), NovelUI.Blush, 6);
+        if (remaining > 0) NovelUI.Fill(new Rect(970, 132, 200 * remaining / 60f, 12), timerColor, 6);
+        GUI.Label(new Rect(790, 120, 165, 35), playing ? "남은 시간 " + Mathf.CeilToInt(remaining) + "초" : "시작 전", NovelUI.Text(NovelUI.Soft, 18, timerColor, TextAnchor.MiddleRight));
         for (int i = 0; i < 12; i++)
         {
             Rect rect = new Rect(110 + (i % 4) * 268, 175 + (i / 4) * 175, 250, 155);
@@ -80,7 +82,7 @@ public class CardMatch : MiniGame
                 Rect visual = new Rect(rect.x, rect.y - (hover ? 4 : 0), rect.width, rect.height);
                 if (shuffling)
                 {
-                    float elapsed = Time.unscaledTime - shuffleAt;
+                    float elapsed = Now - shuffleAt;
                     float gather = Mathf.SmoothStep(0, 1, Mathf.Clamp01(elapsed / .5f));
                     float spread = Mathf.SmoothStep(0, 1, Mathf.Clamp01((elapsed - 1.2f) / .6f));
                     float stack = gather * (1 - spread);
@@ -104,12 +106,12 @@ public class CardMatch : MiniGame
             if (++found == 6) Finish();
             return;
         }
-        second = card; mistakes++; hideAt = Time.unscaledTime + .8f;
+        second = card; mistakes++; hideAt = Now + .8f;
     }
     void Finish()
     {
         Done = true;
-        Delta = found == 6 ? (mistakes <= 3 ? 2 : mistakes <= 7 ? 1 : 0) : 0;
+        Delta = found == 6 ? (mistakes <= 3 ? 2 : mistakes <= 7 ? 1 : 0) : found >= 4 ? 1 : 0;   // Most pairs before time out still counts.
         Summary = (found == 6 ? "6쌍 완성" : "시간 종료 · " + found + "/6쌍") + " · 틀린 횟수 " + mistakes;
     }
 }

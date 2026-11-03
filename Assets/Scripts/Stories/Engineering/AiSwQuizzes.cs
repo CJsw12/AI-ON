@@ -1,24 +1,5 @@
-// A problem that replaces one of the twelve fixed choices.
-// Short answer when Accepted is set (Replies[professor] = { wrong, right }),
-// otherwise multiple choice (Replies[professor][option]).
-public class Quiz
-{
-    public string Prompt;
-    public string[] Accepted;   // Normalized answers: lower case, no spaces, no trailing ';'.
-    public string[] Options;
-    public int Answer;
-    public string[][] Replies;
-
-    public bool ShortAnswer => Accepted != null;
-    public bool IsCorrect(string typed)
-    {
-        string text = typed.Replace(" ", "").Trim().TrimEnd(';').ToLowerInvariant();
-        return System.Array.IndexOf(Accepted, text) >= 0;
-    }
-}
-
-// Majors type the missing code. Non-majors get the same bug as an easier, plain-language multiple choice.
-public static class ChapterQuizzes
+// 컴퓨터공학과 problems. Majors type the missing code. Non-majors get the same bug as an easier, plain-language multiple choice.
+public static class AiSwQuizzes
 {
     public static Quiz Find(int chapter, int stage, bool experienced)
     {

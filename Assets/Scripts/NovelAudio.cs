@@ -56,9 +56,11 @@ public class NovelAudio : MonoBehaviour
 
     public void Play(string sound)
     {
+        // "A|B" plays A, or B when A has no file yet.
         if (!clips.TryGetValue(sound, out AudioClip clip))
         {
-            clip = Resources.Load<AudioClip>("Audio/Ui/" + sound) ?? Resources.Load<AudioClip>("Audio/" + sound);
+            foreach (string name in sound.Split('|'))
+                if ((clip = Resources.Load<AudioClip>("Audio/Ui/" + name) ?? Resources.Load<AudioClip>("Audio/" + name)) != null) break;
             clips[sound] = clip;
         }
         if (clip == null) return;
