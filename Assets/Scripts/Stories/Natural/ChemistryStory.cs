@@ -243,10 +243,10 @@ public static class ChemistryStory
         },
         Mood = (chapter, stage) => chapter == 5 && stage == 0 ? "Crisis" : chapter <= 1 || chapter >= 6 ? "Campus" : "Study",
         Background = (chapter, stage, line) =>
-            chapter == 1 ? "Classroom" :
-            chapter == 2 ? (stage == 1 ? "CampusHallway" : "Classroom") :
+            chapter == 1 ? "ChemistryLectureHall" :
+            chapter == 2 ? (stage == 1 ? "CampusHallway" : "ChemistryTeachingLab") :
             chapter == 3 ? "CampusCafe" :
-            chapter == 4 ? "Classroom" :
+            chapter == 4 ? "ChemistryTeachingLab" :
             chapter == 5 ? "DeptLounge" :
             "FestivalStreet"
     };
