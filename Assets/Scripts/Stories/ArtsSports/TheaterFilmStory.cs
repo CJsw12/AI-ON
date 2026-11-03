@@ -24,7 +24,7 @@ public static class TheaterFilmStory
         new[] {
             "나레이션|중간 과제는 3분짜리 단편영화. 이른 아침, 캠퍼스 앞에 카메라와 삼각대를 세웠다.",
             "나레이션|내가 그린 콘티 여섯 장이 클립보드에 꽂혀 있었다.",
-            "교수|촬영 순서는 이렇습니다. 카메라가 돌기 시작하면 10초를 세고 '액션'을 외칩니다.|카메라 롤링! 마음속으로 10초 세고 '액션!' 외치기, 해 볼까요?"
+            "교수|촬영 순서는 이렇습니다. 카메라가 돌기 시작하면 10박을 세고 '액션'을 외칩니다.|카메라 롤링! 마음속으로 10박 세고 '액션!' 외치기, 해 볼까요?"
         },
         new[] {
             "나레이션|촬영 둘째 날. 하필 아침부터 비가 쏟아졌다. 경사로 아래에서 장비를 붙잡고 서 있었다.",
@@ -127,11 +127,11 @@ public static class TheaterFilmStory
         new Slot {
             Stat = 's',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Timing, Title = "롤링 10초 후 액션", Place = "CampusExterior", Note = "챕터 3 · 카메라가 돈 뒤 정확히 10초에 '액션' 외치기",
-                Header = "ROLLING", Rule = "카메라 롤링 → 슬레이트 → 10초 뒤 액션", Counter = "{0}초", Running = "카메라 녹화 중 · 10초에 액션",
-                Button = "●  액션!", Instructions = "카메라가 돈 지 10초가 되는 순간 '액션'을 외치세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8초부터 숫자가 숨겨집니다.",
+                Kind = MiniGameKind.Timing, Title = "롤링 10박 후 액션", Place = "CampusExterior", Note = "챕터 3 · 카메라가 돈 뒤 정확히 10박에 '액션' 외치기",
+                Header = "ROLLING", Rule = "카메라 롤링 → 슬레이트 → 10박 뒤 액션", Counter = "{0}박", Running = "카메라 녹화 중 · 10박에 액션",
+                Button = "●  액션!", Instructions = "카메라가 돈 뒤 박자를 세어 10박째에 '액션'을 외치세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8박부터 숫자가 숨겨집니다.",
                 Levels = new[] { "맑은 아침 촬영", "급해지는 감독", "숫자 없이 감으로" },
-                Hit = "오케이 컷! · 정확히 10초에 액션!", Near = "1초 차이 · 배우가 살짝 먼저 움직였어요.", Miss = "NG · 액션 타이밍을 놓쳤어요.",
+                Hit = "오케이 컷! · 정확히 10박에 액션!", Near = "1박 차이 · 배우가 살짝 먼저 움직였어요.", Miss = "NG · 액션 타이밍을 놓쳤어요.",
                 Replies = new[] {
                     new[] { "타이밍이 흔들리면 배우도 흔들립니다. 숫자를 끝까지 세세요.", "한 번은 맞았습니다. 급해질수록 천천히 세세요.", "정확합니다. 현장의 박자를 잡았군요." },
                     new[] { "괜찮아요! NG도 영화의 일부예요. 다시 가 봐요!", "한 번은 오케이! 다음 테이크도 기대돼요.", "와, 전부 오케이 컷! 오늘 촬영 일찍 끝나겠어요!" }
@@ -177,7 +177,7 @@ public static class TheaterFilmStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "리허설 뒤 분장실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 큐 사고 뒤 분장실에서 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "리허설 뒤 분장실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 큐 사고 뒤 분장실에서 커피 내리기", Customers = new[] { "주연 배우", "조명 스태프" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피입니다. 큐 시트처럼, 순서를 지키는 연습을 하세요.", "제 커피는 정확합니다. 동기 것도 한 번 더 확인하세요.", "모두 정확합니다. 이제 커피와 함께 동기에게 먼저 사과하세요." },
                     new[] { "음, 제 바닐라 라떼가 좀 써요! 그래도 마음은 전해졌어요.", "제 건 완벽해요! 동기 것만 살짝 달랐대요.", "전원 만족! 분장실 공기가 살짝 따뜻해졌어요." }

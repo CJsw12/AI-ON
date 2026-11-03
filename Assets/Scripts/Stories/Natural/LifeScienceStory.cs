@@ -135,7 +135,7 @@ public static class LifeScienceStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "교내 카페 일일 알바", Place = "CampusCafe", Note = "챕터 3 · 조원들과 교내 카페에서 주문대로 내리기",
+                Kind = MiniGameKind.Coffee, Title = "교내 카페 일일 알바", Place = "CampusCafe", Note = "챕터 3 · 조원들과 교내 카페에서 주문대로 내리기", Customers = new[] { "조원", "손님" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피가 나갔습니다. 실험에서도 시약 하나 바뀌면 결과가 바뀝니다.", "제 커피는 정확했습니다. 바빠질 때 실수가 나오는 지점을 기록해 두세요.", "모든 주문이 정확했습니다. 순서와 분량을 지키는 손, 실험대에서도 기대하겠습니다." },
                     new[] { "어라, 제 바닐라 라떼가 아메리카노로 변이했네요! 하하, 그래도 맛있어요.", "제 커피 완벽해요! 조원들이랑 손발이 척척 맞던데요?", "주문 전부 완벽! 이 정도 팀워크면 효모 실험도 문제없겠어요!" }

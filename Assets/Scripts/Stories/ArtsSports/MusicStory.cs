@@ -158,7 +158,7 @@ public static class MusicStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "리허설 끝 휴게실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 지친 밴드를 위해 주문서대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "리허설 끝 휴게실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 지친 밴드를 위해 주문서대로 커피 내리기", Customers = new[] { "밴드 멤버", "보컬 선배" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피가 나왔습니다. 마음이 복잡할수록 순서를 지키세요. 합주도 같습니다.", "제 커피는 정확합니다. 동기 것도 한 번 더 확인하세요.", "모두 정확합니다. 이제 동기에게 커피와 함께 이야기를 건네세요." },
                     new[] { "음… 제 바닐라 라떼가 쓴맛이에요! 그래도 마음은 전해졌어요.", "제 커피 완벽해요! 동기 것만 살짝 달랐대요.", "전원 만족! 따뜻한 커피가 분위기를 살짝 녹였어요." }

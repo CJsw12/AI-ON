@@ -195,7 +195,7 @@ public static class SmartSystemsStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "배달이 첫 배달 커피", Place = "RobotLab", Note = "챕터 6 · 배달이에 실을 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "배달이 첫 배달 커피", Place = "RobotLab", Note = "챕터 6 · 배달이에 실을 커피 내리기", Customers = new[] { "배달 주문", "마지막 배달 주문" },
                 Replies = new[] {
                     new[] { "주문서와 다른 커피가 실렸습니다. 배달은 정확해도 내용물이 틀리면 실패입니다.", "제 잔은 맞았습니다. 나머지 주문은 확인 순서를 정해 두세요.", "모두 주문서대로입니다. 배달이와 학생, 둘 다 정확했습니다." },
                     new[] { "음… 제 라떼가 아메리카노가 됐네요! 그래도 배달이가 정확히 왔으니 반은 성공!", "제 커피는 완벽해요! 동기 것만 살짝 달랐대요.", "주문 전부 완벽! 배달이 재개 기념 커피, 최고의 맛이에요!" }

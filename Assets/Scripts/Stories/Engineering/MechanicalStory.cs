@@ -184,7 +184,7 @@ public static class MechanicalStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "화해의 카페 주문", Place = "CampusCafe", Note = "챕터 5 · 밤샘 전 팀과 교수님 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "화해의 카페 주문", Place = "CampusCafe", Note = "챕터 5 · 밤샘 전 팀과 교수님 커피 내리기", Customers = new[] { "팀원", "팀장" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피가 나갔습니다. 공차를 벗어난 부품과 같습니다.", "제 커피는 정확했습니다. 주문이 몰릴 때 순서를 놓치는 지점을 기억하세요.", "모든 주문이 정확했습니다. 덕분에 팀 회의가 부드럽게 돌아가겠군요." },
                     new[] { "어… 제 바닐라 라떼가 어디 갔죠? 하하, 그래도 팀원들은 웃었어요!", "제 라떼 완벽해요! 팀원들도 한 모금씩 마시고 표정이 풀렸어요.", "주문 전부 완벽! 기어보다 커피가 먼저 맞물렸네요!" }

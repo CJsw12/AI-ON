@@ -38,6 +38,12 @@ public class LoopTiming : MiniGame
         state = State.Result; stateAt = Now;
         NovelUI.Sound?.Invoke(n == 10 ? "Up" : "Down");
     }
+    void Next()
+    {
+        if (attempt == 0) attempt = 1;
+        else round++;
+        if (round >= 3) Finish(); else BeginCountdown();
+    }
     void Finish()
     {
         state = State.Completed; Done = true; Delta = hits >= 2 ? 2 : hits;
@@ -54,12 +60,6 @@ public class LoopTiming : MiniGame
                 value++; NovelUI.Sound?.Invoke("LoopTick");
                 if (value >= 12) Stop(value); else nextStepAt += Interval(value);
             }
-        }
-        if (state == State.Result && now - stateAt >= 1.5f)
-        {
-            if (attempt == 0) attempt = 1;
-            else { round++; }
-            if (round >= 3) Finish(); else BeginCountdown();
         }
         float shake = state == State.Running && value >= 8 && GameSettings.Effects ? Mathf.Sin(now * 45f) * 1.5f : 0;
         NovelUI.Card(new Rect(130 + shake, 150, 1020, 560), new Color(.08f,.1f,.15f), 18, NovelUI.Pink, 2);
@@ -83,6 +83,9 @@ public class LoopTiming : MiniGame
         {
             GUI.Label(new Rect(170, 300, 940, 90), string.Format(counter, stopped), title);
             GUI.Label(new Rect(170, 415, 940, 80), verdict, Face(body));
+            // The verdict stays until the player moves on, so there is time to read why.
+            string next = attempt == 0 ? "본 도전 시작" : round >= 2 ? "결과 보기" : "다음 단계";
+            if (GUI.Button(new Rect(440, 535, 400, 85), next, button)) Next();
         }
         else GUI.Label(new Rect(170, 330, 940, 100), Summary, title);
     }

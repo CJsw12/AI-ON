@@ -24,8 +24,8 @@ public static class MediaStory
         new[] {
             "나레이션|학과 유튜브 채널 '미컴온에어'의 첫 영상은 도서관 소동을 다룬 해설 영상이었다.",
             "나레이션|컴퓨터실 편집 프로그램에서 인터뷰 컷을 이어 붙이는 작업이 한창이었다.",
-            "선배|컷 길이가 들쭉날쭉하면 보는 사람이 피곤해. 한 컷은 10초에 맞춰서 끊어.",
-            "교수|편집은 박자입니다. 10초 지점에서 정확히 자르세요.|편집은 리듬이죠! 10초에 딱! 컷 해 봐요!"
+            "선배|컷 길이가 들쭉날쭉하면 보는 사람이 피곤해. 한 컷은 10박에 맞춰서 끊어.",
+            "교수|편집은 박자입니다. 10박 지점에서 정확히 자르세요.|편집은 리듬이죠! 10박에 딱! 컷 해 봐요!"
         },
         new[] {
             "나레이션|총학생회 선거를 앞두고, 채널에서 후보 인터뷰 영상을 만들기로 했다.",
@@ -127,15 +127,15 @@ public static class MediaStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Timing, Title = "인터뷰 컷 편집", Place = "ComputerLab", Note = "챕터 3 · 타임라인 10초 지점에서 정확히 컷",
+                Kind = MiniGameKind.Timing, Title = "인터뷰 컷 편집", Place = "ComputerLab", Note = "챕터 3 · 타임라인 10박 지점에서 정확히 컷",
                 Header = "EDIT TIMELINE",
-                Rule = "인터뷰 컷 하나는 10초 · 10초 지점에서 자르기",
-                Counter = "{0}초",
-                Running = "타임라인 재생 중 · 10초에서 컷",
+                Rule = "인터뷰 컷 하나는 10박 · 10박 지점에서 자르기",
+                Counter = "{0}박",
+                Running = "타임라인 재생 중 · 10박에서 컷",
                 Button = "●  컷 편집",
-                Instructions = "재생 시간이 10초가 되는 순간 컷 버튼을 누르세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8초부터 숫자가 숨겨집니다.",
+                Instructions = "타임라인 박자를 세어 10박째에 컷 버튼을 누르세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8박부터 숫자가 숨겨집니다.",
                 Levels = new[] { "느린 인터뷰", "빨라지는 말", "타임코드 없이" },
-                Hit = "완벽한 컷! · 정확히 10초입니다.",
+                Hit = "완벽한 컷! · 정확히 10박입니다.",
                 Near = "±1초 차이 · 말끝이 살짝 걸렸어요.",
                 Miss = "컷 실패 · 말이 중간에 잘렸어요.",
                 Replies = new[] {
@@ -191,7 +191,7 @@ public static class MediaStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "화해의 커피", Place = "CampusCafe", Note = "챕터 5 · 선배와 교수님께 주문대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "화해의 커피", Place = "CampusCafe", Note = "챕터 5 · 선배와 교수님께 주문대로 커피 내리기", Customers = new[] { "선배", "편집 선배" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피가 나왔습니다. 취재도 화해도 정확히 듣는 데서 시작합니다.", "제 커피는 맞았습니다. 선배의 주문도 다시 확인하세요.", "모든 주문이 정확했습니다. 좋은 마무리입니다." },
                     new[] { "어… 제 바닐라 라떼가 어디 갔죠? 하하, 그래도 선배가 웃었어요!", "제 커피 딱 맞아요! 선배 표정도 많이 풀렸네요.", "주문 전부 완벽! 화해 성공이에요. 다음 영상도 같이 찍겠대요!" }

@@ -121,7 +121,7 @@ public static class ChemistryStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "교내 카페 추출 실험", Place = "CampusCafe", Note = "챕터 3 · 사장님 대신 주문대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "교내 카페 추출 실험", Place = "CampusCafe", Note = "챕터 3 · 사장님 대신 주문대로 커피 내리기", Customers = new[] { "손님", "사장님" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피가 나갔습니다. 실험이었다면 시약을 잘못 넣은 셈입니다.", "제 커피는 정확했습니다. 바빠질 때 순서를 놓치는 지점을 기록해 두세요.", "모든 주문이 정확했습니다. 조건을 지키면 결과도 같다는 걸 보여 줬군요." },
                     new[] { "어… 제 바닐라 라떼가 어디 갔죠? 하하, 그래도 회의 분위기는 살았어요!", "제 라떼 완벽해요! 사장님이 화학과는 손이 정확하다고 하셨어요.", "주문 전부 완벽! 부스 주제가 커피로 바뀔 뻔했어요!" }

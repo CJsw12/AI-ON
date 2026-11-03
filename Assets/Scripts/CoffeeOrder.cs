@@ -19,11 +19,12 @@ public class CoffeeOrder : MiniGame
 
     public CoffeeOrder(int professor, MiniGameTheme theme, bool practice = false) : base(theme)
     {
-        orders = new[] { professor == 0 ? "교수님 · 진한 아메리카노" : "교수님 · 바닐라 라떼", "동기 · 두 번째 주문", "동기 · 마지막 주문" };
+        orders = new[] { professor == 0 ? "교수님 · 진한 아메리카노" : "교수님 · 바닐라 라떼", Customer(theme, 0) + " · 두 번째 주문", Customer(theme, 1) + " · 마지막 주문" };
         // Kim: two shots and two waters. Lee: a shot, two milks and syrup.
         recipes = new[] { professor == 0 ? new[] { 0, 0, 1, 1 } : new[] { 0, 2, 2, 3 }, MakeRecipe(professor, 1, practice), MakeRecipe(professor, 2, practice) };
         roundStartedAt = Now;
     }
+    static string Customer(MiniGameTheme theme, int i) => theme.Customers != null && i < theme.Customers.Length ? theme.Customers[i] : "동기";
     static int[] MakeRecipe(int professor, int round, bool practice)
     {
         int length = round == 1 ? Random.Range(4, 6) : 6;
@@ -97,7 +98,7 @@ public class CoffeeOrder : MiniGame
     {
         cup.Add(ingredient); pourStartedAt = Now;
         int index = cup.Count - 1;
-        warning = round > 0 && (index >= recipes[round].Length || recipes[round][index] != ingredient) ? "순서가 달라요. 컵을 비우고 다시 시도할 수 있어요." : "";
+        warning = round == 1 && (index >= recipes[round].Length || recipes[round][index] != ingredient) ? "순서가 달라요. 컵을 비우고 다시 시도할 수 있어요." : "";
         NovelUI.Sound?.Invoke("Select");
     }
     static bool Matches(IReadOnlyList<int> actual, int[] expected, bool ordered)

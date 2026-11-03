@@ -125,7 +125,7 @@ public partial class GameController : MonoBehaviour
         GUI.matrix = Canvas;
         GUI.enabled = true;
         if (menu != Menu.None) DrawMenu();
-        else if (InGame && miniGame == null && Pressed(KeyCode.Escape)) OpenMenu(Menu.Settings);
+        else if ((InGame || practice != null) && Pressed(KeyCode.Escape)) OpenMenu(Menu.Settings);   // Minigames pause while it is open.
         Toast();
         NovelUI.EndFrame();
     }

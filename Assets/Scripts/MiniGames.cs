@@ -123,6 +123,7 @@ public class MiniGameTheme
     // the line under the counter, the stop button, the instructions, the three level names and the verdicts.
     public string Header, Rule, Counter, Running, Button, Instructions, Hit, Near, Miss;
     public string[] Levels;
+    public string[] Customers;     // Coffee: who places the second and third orders (default 동기).
     public int ImpactVariant;      // ImpactLab scenario set: 0 demo, 1 lab, 2 festival.
 }
 

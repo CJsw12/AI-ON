@@ -112,7 +112,7 @@ public static class BusinessStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "행운문구 커피 코너", Place = "StationeryCoffee", Note = "챕터 2 · 문구점 커피 코너에서 주문대로 내리기",
+                Kind = MiniGameKind.Coffee, Title = "행운문구 커피 코너", Place = "StationeryCoffee", Note = "챕터 2 · 문구점 커피 코너에서 주문대로 내리기", Customers = new[] { "손님", "단골손님" },
                 Replies = new[] {
                     new[] { "주문서와 다른 커피가 나갔습니다. 손님은 맛보다 실수를 먼저 기억합니다.", "제 커피는 맞았습니다. 바쁠 때 주문을 놓치는 지점을 적어 두세요.", "모든 주문이 정확했습니다. 직접 해 보니 이 가게의 하루가 보이지 않습니까?" },
                     new[] { "음… 제 바닐라 라떼가 어디 갔죠? 하하, 그래도 사장님이 웃으셨어요!", "제 커피 완벽해요! 사장님이 '알바로 와도 되겠네' 하셨어요.", "주문 전부 완벽! 사장님이 커피 코너에 학생 이름표 붙여 주신대요!" }

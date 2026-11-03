@@ -354,7 +354,7 @@ public partial class GameController
         NovelUI.Pill(640 - width / 2, card.y - 24, 50, number, special ? NovelUI.DeepPink : NovelUI.Pink, Color.white, 22);
         Rect photo = new Rect(card.x + 50, card.y + 60, 150, 150);
         NovelUI.Fill(photo, NovelUI.Blush, 30);
-        string picture = Professor.Picture(story.Professors[galleryProfessor], galleryProfessor, "Happy");
+        string picture = Professor.Picture(story.Professors[galleryProfessor], galleryProfessor, galleryEnding == 0 ? "Frown" : "Happy");   // The failed ending keeps its sad face.
         Texture2D portrait = Resources.Load<Texture2D>(picture);
         if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
         NovelUI.Label(new Rect(photo.xMax + 30, card.y + 70, card.width - 300, 64), story.EndingNames[galleryEnding], NovelUI.Round, 42, NovelUI.Berry, TextAnchor.MiddleLeft);

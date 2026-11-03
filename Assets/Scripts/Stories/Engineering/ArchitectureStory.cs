@@ -119,7 +119,7 @@ public static class ArchitectureStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "카페 동선 체험", Place = "CampusCafe", Note = "챕터 3 · 바 안쪽에서 주문대로 커피 내리며 동선 보기",
+                Kind = MiniGameKind.Coffee, Title = "카페 동선 체험", Place = "CampusCafe", Note = "챕터 3 · 바 안쪽에서 주문대로 커피 내리며 동선 보기", Customers = new[] { "손님", "단골손님" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피가 나갔습니다. 동선이 꼬이면 사람도 실수합니다. 그걸 도면에 적으세요.", "제 커피는 정확했습니다. 바쁠 때 몇 걸음을 오갔는지 세어 보세요.", "모든 주문이 정확했습니다. 바 안쪽 동선이 왜 짧은지 몸으로 알았겠군요." },
                     new[] { "어… 제 바닐라 라떼 어디 갔죠? 하하, 그래도 동선은 제대로 체험했네요!", "제 라떼 완벽해요! 몇 걸음 움직였는지 기억나요?", "주문 전부 완벽! 사장님이 동선 분석 보고서 기대한대요!" }
