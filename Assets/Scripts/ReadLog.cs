@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 
 // Lines the player has already read, across all playthroughs, so skip mode can pass over them.
@@ -7,6 +9,14 @@ public static class ReadLog
 {
     const string Key = "AION.Read";
     static HashSet<string> read;
+
+    // Keep position and content together: rewritten lines must be read again.
+    public static string ContentKey(string position, string text)
+    {
+        if (position == null) return null;
+        using (var hash = SHA256.Create())
+            return position + "/" + System.Convert.ToBase64String(hash.ComputeHash(Encoding.UTF8.GetBytes(text)));
+    }
 
     static HashSet<string> Read
     {

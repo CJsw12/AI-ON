@@ -1,9 +1,9 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$storyBase = Get-Content -Raw (Join-Path $repo 'Assets\Scripts\Stories\Story.cs')
-$controller = Get-Content -Raw (Join-Path $repo 'Assets\Scripts\GameController.cs')
-$physics = Get-Content -Raw (Join-Path $repo 'Assets\Scripts\Stories\Natural\PhysicsStory.cs')
-$impact = Get-Content -Raw (Join-Path $repo 'Assets\Scripts\ImpactLab.cs')
+$storyBase = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'Assets\Scripts\Stories\Story.cs')
+$controller = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'Assets\Scripts\GameController.cs')
+$physics = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'Assets\Scripts\Stories\Natural\PhysicsStory.cs')
+$impact = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'Assets\Scripts\ImpactLab.cs')
 
 if ($storyBase -notmatch 'ExperiencedDialogue' -or $storyBase -notmatch 'ExperiencedFollowUp') {
     throw 'Story does not yet support experienced-mode chapter and follow-up lines.'

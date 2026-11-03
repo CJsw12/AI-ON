@@ -222,7 +222,8 @@ public partial class GameController : MonoBehaviour
         CurrentLine(out string speaker, out string text);
         string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
         if (key != lineKey) { lineKey = key; lineStartedAt = Time.unscaledTime; typedAt = -1; AddToBacklog(key, speaker, text); }
-        readKey = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString()) + (experienced ? "/E" : "");
+        string position = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString()) + (experienced ? "/E" : "");
+        readKey = ReadLog.ContentKey(position, text);
         string plain = Tags.Replace(text, "");
         int shown = Mathf.FloorToInt((Time.unscaledTime - lineStartedAt) * GameSettings.LettersPerSecond);
         bool typing = shown < plain.Length;
@@ -403,7 +404,7 @@ public partial class GameController : MonoBehaviour
         Raise(option < slot.Stats.Length ? slot.Stats[option] : '-');
         affection += delta;
         React(delta, true);
-        resultLine = Stories.Decorate(professor, slot.Replies[professor][option], affection);
+        resultLine = Stories.Decorate(S, professor, slot.Replies[professor][option], affection);
         resultKey = "c" + option;
         resultLine += AffectionLine(delta);
         showResult = true;
@@ -430,7 +431,7 @@ public partial class GameController : MonoBehaviour
         React(delta, correct, true);
         typed = "";
         resultKey = "q" + reply;
-        resultLine = (correct ? (retried ? "두 번째에 정답! 호감도 보너스 +1.\n" : "정답! 호감도 보너스 +2.\n") : "오답이어도 감점은 없어요.\n") + Stories.Decorate(professor, quiz.Replies[professor][reply], affection);
+        resultLine = (correct ? (retried ? "두 번째에 정답! 호감도 보너스 +1.\n" : "정답! 호감도 보너스 +2.\n") : "오답이어도 감점은 없어요.\n") + Stories.Decorate(S, professor, quiz.Replies[professor][reply], affection);
         resultLine += AffectionLine(delta);
         showResult = true;
     }
@@ -454,7 +455,7 @@ public partial class GameController : MonoBehaviour
         affection += delta;
         React(delta, true, delta == 2);
         resultKey = "m" + delta;
-        resultLine = miniGame.Summary + "\n" + Stories.Decorate(professor, miniGame.Replies[professor][delta], affection);
+        resultLine = miniGame.Summary + "\n" + Stories.Decorate(S, professor, miniGame.Replies[professor][delta], affection);
         resultLine += AffectionLine(delta);
         miniGame = null;
         showResult = true;
