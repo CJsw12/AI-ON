@@ -431,7 +431,19 @@ public partial class GameController : MonoBehaviour
         React(delta, correct, true);
         typed = "";
         resultKey = "q" + reply;
-        resultLine = (correct ? (retried ? "두 번째에 정답! 호감도 보너스 +1.\n" : "정답! 호감도 보너스 +2.\n") : "오답이어도 감점은 없어요.\n") + Stories.Decorate(S, professor, quiz.Replies[professor][reply], affection);
+        string feedback;
+        if (correct)
+        {
+            feedback = retried ? "두 번째에 정답! 호감도 보너스 +1.\n" : "정답! 호감도 보너스 +2.\n";
+        }
+        else
+        {
+            string answerText = quiz.ShortAnswer
+                ? (quiz.Accepted != null && quiz.Accepted.Length > 0 ? quiz.Accepted[0] : "")
+                : (quiz.Options != null && quiz.Answer >= 0 && quiz.Answer < quiz.Options.Length ? quiz.Options[quiz.Answer] : "");
+            feedback = "오답이어도 감점은 없어요." + (!string.IsNullOrEmpty(answerText) ? " (정답: " + answerText + ")\n" : "\n");
+        }
+        resultLine = feedback + Stories.Decorate(S, professor, quiz.Replies[professor][reply], affection);
         resultLine += AffectionLine(delta);
         showResult = true;
     }
