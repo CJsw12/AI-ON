@@ -50,6 +50,12 @@ public class StretchRhythm : MiniGame
         int score = Mathf.Max(0, Count(3) * 2 + Count(2) - misses), total = times.Length * 2;
         Delta = score >= total * .75f ? 2 : score >= total * .45f ? 1 : 0;
         Summary = "퍼펙트 " + Count(3) + " · 좋아요 " + Count(2) + " · 놓침 " + Count(1) + (misses > 0 ? " · 헛동작 " + misses : "");
+        if (Count(1) > 0 || misses > 0)
+        {
+            string reason = "놓친 동작 " + Count(1) + "개 / 헛동작 " + misses + "회예요.\n놓침은 같은 동작을 판정 시간 안에 누르지 못한 경우이고,\n헛동작은 해당 동작의 판정 시간 밖에서 누른 경우예요.";
+            for (int i = 0; i < judged.Length; i++) if (judged[i] == 1) { reason += "\n처음 놓친 동작: " + (i + 1) + "번째 ‘" + Moves[Pattern[i]] + "’"; break; }
+            ExplainFailure(reason, "카드가 왼쪽 판정선에 닿을 때 같은 동작 버튼이나 방향키를 한 번 눌러요.\n판정선 기준 앞뒤 0.28초까지 인정하고, 0.12초 이내면 퍼펙트예요.\n앞 절반은 0.75초, 뒤 절반은 0.5초 간격이에요. 뒤에서는 박을 조금 빠르게 세어 보세요.\n버튼을 계속 누르기보다 카드 하나에 입력 한 번을 맞춰요.");
+        }
     }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)

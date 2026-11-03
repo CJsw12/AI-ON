@@ -8,6 +8,26 @@ public abstract class MiniGame
     public bool Done;
     public int Delta;            // Affection change, 0 to 2.
     public string Summary;
+    string failureReason, failureCorrection;
+    public bool Reviewing => failureReason != null;
+    protected void ExplainFailure(string reason, string correction)
+    {
+        failureReason = reason;
+        failureCorrection = correction;
+    }
+    void CloseReview() { failureReason = failureCorrection = null; }
+
+    void DrawReview(GUIStyle button)
+    {
+        NovelUI.Card(new Rect(130, 150, 1020, 600), new Color(.08f, .1f, .15f), 18, NovelUI.Mint, 2);
+        NovelUI.Label(new Rect(170, 175, 940, 40), "잠깐 복습 · 다음에는 이렇게 해 봐요", NovelUI.Round, 26, NovelUI.Mint);
+        NovelUI.Label(new Rect(170, 240, 940, 35), "왜 틀렸을까요?", NovelUI.Round, 23, NovelUI.Pink);
+        NovelUI.Label(new Rect(170, 285, 940, 130), failureReason, NovelUI.Soft, 22, NovelUI.Cream);
+        NovelUI.Label(new Rect(170, 435, 940, 35), "어떻게 고칠까요?", NovelUI.Round, 23, NovelUI.Lemon);
+        int correctionSize = NovelUI.Height(failureCorrection, NovelUI.Soft, 22, 940) > 180 ? 20 : 22;
+        NovelUI.Label(new Rect(170, 480, 940, 180), failureCorrection, NovelUI.Soft, correctionSize, NovelUI.Cream);
+        if (GUI.Button(new Rect(440, 675, 400, 55), "확인했어요 · 계속하기", button)) CloseReview();
+    }
     protected readonly MiniGameTheme Theme;
     protected MiniGame(MiniGameTheme theme) { Theme = theme; }
     public string Title => Theme.Title;
@@ -69,10 +89,12 @@ public abstract class MiniGame
     public void Render(GUIStyle title, GUIStyle body, GUIStyle button)
     {
         Matrix4x4 saved = GUI.matrix;
+        if (Reviewing) { DrawReview(button); return; }
         float shake = Now - shakeAt;
         if (shake < .35f && GameSettings.Effects) GUI.matrix = saved * Matrix4x4.Translate(new Vector3(Mathf.Sin(shake * 90) * 10 * (1 - shake / .35f), 0, 0));
         Draw(title, body, button);
         GUI.matrix = saved;
+        if (Reviewing) { DrawReview(button); return; }
         if (Done && doneAt < 0) { doneAt = Now; NovelUI.Sound?.Invoke(Delta == 2 ? "Game/Win|Unlock" : "Chapter"); if (Delta == 2) Burst(new Vector2(640, 460), 60); }
         if (Done && ShowStars) DrawStars();
         DrawEffects();
@@ -129,13 +151,13 @@ public class MiniGameTheme
 
 public static class MiniGames
 {
-    public static MiniGame Create(MiniGameTheme theme, int professor, bool practice = false, bool experienced = false)
+    public static MiniGame Create(MiniGameTheme theme, int professor, bool practice = false, bool experienced = true)
     {
         switch (theme.Kind) {
             case MiniGameKind.Cards: return new CardMatch(theme);
             case MiniGameKind.Timing: return new LoopTiming(theme);
-            case MiniGameKind.BugHunt: return new BugHunt(theme);
-            case MiniGameKind.CircuitProbe: return new CircuitProbe(theme);
+            case MiniGameKind.BugHunt: return new BugHunt(theme, experienced);
+            case MiniGameKind.CircuitProbe: return new CircuitProbe(theme, experienced);
             case MiniGameKind.PriceTag: return new PriceTag(theme);
             case MiniGameKind.Rhythm: return new StretchRhythm(theme);
             case MiniGameKind.Route: return new RobotRoute(theme);

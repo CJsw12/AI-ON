@@ -54,7 +54,7 @@ public partial class GameController : MonoBehaviour
     void Update()
     {
         novelAudio.SetMood(S.Mood(scene, choiceStage));
-        if (menu == Menu.None) MiniGame.Tick(Time.unscaledDeltaTime);
+        if (menu == Menu.None && (miniGame == null || !miniGame.Reviewing)) MiniGame.Tick(Time.unscaledDeltaTime);
     }
     Story S => Stories.All[faculty];   // The chosen faculty's semester.
     string ProfessorName => S.Professors[professor].Name;
@@ -441,7 +441,7 @@ public partial class GameController : MonoBehaviour
         float x = 100 + NovelUI.Pill(100, 58, 44, "MINI GAME", NovelUI.Pink, Color.white, 20) + 12;
         NovelUI.Label(new Rect(x, 58, 700, 44), miniGame.Title, NovelUI.Round, 26, NovelUI.Cream, TextAnchor.MiddleLeft);
         miniGame.Render(NovelUI.MiniTitle, NovelUI.MiniBody, NovelUI.MiniButton);
-        if (!miniGame.Done || !NovelUI.Button(new Rect(980, 790, 210, 50), practice != null ? "돌아가기" : "결과 보기", true, 20)) return;
+        if (!miniGame.Done || miniGame.Reviewing || !NovelUI.Button(new Rect(980, 790, 210, 50), practice != null ? "돌아가기" : "결과 보기", true, 20)) return;
         if (practice != null) EndPractice();
         else FinishMiniGame();
     }

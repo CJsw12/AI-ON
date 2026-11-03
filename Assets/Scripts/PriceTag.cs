@@ -40,6 +40,13 @@ public class PriceTag : MiniGame
         if (index == BestIndex(Days[day])) best++;
         state = State.Result;
         Judge(index == BestIndex(Days[day]), new Vector2(260 + index * 188, 280), index == BestIndex(Days[day]) ? "최고 이익!" : "더 남길 수 있어요");
+        int top = BestIndex(Days[day]);
+        if (index != top)
+        {
+            Day d = Days[day];
+            ExplainFailure("선택한 " + Won(Prices[index]) + "의 이익은 " + Won(Profit(Prices[index], d.Sold[index])) + "이에요.\n" + Won(Prices[top]) + "를 고르면 " + Won(Profit(Prices[top], d.Sold[top])) + "으로 더 많이 남아요.",
+                "이익 = (판매 가격 - 원가) × 판매량\n내 선택: (" + Won(Prices[index]) + " - " + Won(Cost) + ") × " + d.Sold[index] + "개\n최고 이익: (" + Won(Prices[top]) + " - " + Won(Cost) + ") × " + d.Sold[top] + "개\n" + d.Lesson);
+        }
     }
     void Next()
     {
