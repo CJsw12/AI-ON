@@ -218,8 +218,8 @@ public static class ChemistryStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값과 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "정도윤 교수", Description = "엄격한 안전 원칙파 · 기록과 정확성을 중시", TagA = "#안전제일", TagB = "#한방울의차이", Image = "" },
-            new Professor { Name = "오하람 교수", Description = "유쾌한 반응 탐험파 · 호기심과 협업을 중시", TagA = "#색이바뀌는순간", TagB = "#실험대짝꿍", Image = "" }
+            new Professor { Name = "정도윤 교수", Description = "엄격한 안전 원칙파 · 기록과 정확성을 중시", TagA = "#안전제일", TagB = "#한방울의차이", Image = "ProfessorJungChem" },
+            new Professor { Name = "오하람 교수", Description = "유쾌한 반응 탐험파 · 호기심과 협업을 중시", TagA = "#색이바뀌는순간", TagB = "#실험대짝꿍", Image = "ProfessorOhChem" }
         },
         Chapters = new[] { "", "분홍색 플라스크", "지워진 라벨", "축제 부스 회의", "한 방울의 차이", "깨진 결정", "투명했다, 분홍!" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
