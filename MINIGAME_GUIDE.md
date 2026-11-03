@@ -10,23 +10,30 @@
 | 카드 짝맞추기 | `CardMatch.cs` / `CardMatch` | `public CardMatch(MiniGameTheme theme) : base(theme)` |
 | 타이밍 맞추기 | `LoopTiming.cs` / `LoopTiming` | `public LoopTiming(MiniGameTheme theme) : base(theme)` |
 | 커피 제조 | `CoffeeOrder.cs` / `CoffeeOrder` | `public CoffeeOrder(int professor, MiniGameTheme theme) : base(theme)` |
+| 버그 사냥 (컴공 전용) | `BugHunt.cs` / `BugHunt` | `public BugHunt(MiniGameTheme theme) : base(theme)` |
+| 멀티미터 고장 찾기 (스마트 전용) | `CircuitProbe.cs` / `CircuitProbe` | `public CircuitProbe(MiniGameTheme theme) : base(theme)` |
+| 꾸러미 가격 정하기 (경영 전용) | `PriceTag.cs` / `PriceTag` | `public PriceTag(MiniGameTheme theme) : base(theme)` |
+| 스트레칭 리듬 (체육 전용) | `StretchRhythm.cs` / `StretchRhythm` | `public StretchRhythm(MiniGameTheme theme) : base(theme)` |
+| 배달이 길 안내 (스마트 전용) | `RobotRoute.cs` / `RobotRoute` | `public RobotRoute(MiniGameTheme theme) : base(theme)` |
+| 점심 피크 계산대 (경영 전용) | `ChangeMaker.cs` / `ChangeMaker` | `public ChangeMaker(MiniGameTheme theme) : base(theme)` |
+| 학식 식판 짜기 (체육 전용) | `PlateBalance.cs` / `PlateBalance` | `public PlateBalance(MiniGameTheme theme) : base(theme)` |
 
 지금 들어 있는 파일은 동작하는 임시 버전입니다. 참고용으로 같이 AI에게 보여 줘도 됩니다.
 
 ## 1. 게임 배경 (대사·문구를 여기에 맞춰 주세요)
 
 - 장르: 대학교 1학기 연애 시뮬레이션 비주얼 노벨 (Unity 6000.3.23f1). 주인공은 **학과 4개 중 하나**의 신입생입니다.
-- 네 학과 모두 같은 미니게임 3종을 쓰고, **학과마다 제목·대사·카드 내용 같은 글자만 다릅니다**. 그 글자는 `Theme`(`MiniGameTheme`)으로 들어옵니다(아래 2번 규칙 8).
+- 공용 미니게임 3종(카드·타이밍·커피)은 학과마다 글자만 다르고, 각 학과는 그중 두 개와 **학과 전용 미니게임 하나**를 씁니다. 전용 게임은 규칙과 화면 자체가 학과 전공을 닮게 만듭니다. 그 글자는 `Theme`(`MiniGameTheme`)으로 들어옵니다(아래 2번 규칙 8).
 - 공략 교수는 학과마다 두 명. `professor` 값이 0이면 엄격한 교수, 1이면 유쾌한 교수입니다(사진은 학과마다 다름).
   - **0 · 엄격한 원칙파**: 근거·검증·준비를 중시. 말투는 "~합니다/~하세요" (예: "입력을 바꿔 결과를 맞추면 버그를 숨기는 겁니다.")
   - **1 · 유쾌한 소통파**: 호기심·협업을 중시. 말투는 "~해요/~죠!" (예: "앗, 테스트를 버그에 맞추면 안 돼요! 같이 찾아봐요.")
 
-| 학과 | 0번 교수 | 1번 교수 | 카드 짝맞추기 | 타이밍 맞추기 | 커피 제조 |
+| 학과 | 0번 교수 | 1번 교수 | 전용 게임 | 게임 2 | 게임 3 |
 |---|---|---|---|---|---|
-| 컴퓨터공학과 | 김가람 | 이명희 | 챕터 2 · 학식, 프로그래밍 용어 | 챕터 3 · 반복문 `i`가 10일 때 멈춤 | 챕터 5 · 발표 전날 연구실 |
-| 스마트시스템공학과 | 박태준 | 최유나 | 챕터 2 · 실습실, 뜯은 라디오 부품에 이름표 붙이기 | 챕터 3 · 배달 로봇 '배달이'를 10번째 펄스에서 세우기 | 챕터 6 · 운행 재개 첫 배달로 실을 커피 |
-| 경영학과 | 한석진 | 윤소희 | 챕터 3 · 강의실, 영수증 뒷면 경영 용어 카드 | 챕터 5 · 신학기 꾸러미에 문구 10개 담기 | 챕터 2 · 문구점 커피 코너 일일 알바 |
-| 체육학과 | 서진호 | 강하늘 | 챕터 3 · 학식, 몸·표현 용어 (반찬 내기) | 챕터 1 · 새벽 운동장, 열 번째 박에 팔 내리기 | 챕터 5 · 공연 전날 밤 휴게실 |
+| 컴퓨터공학과 | 김가람 | 이명희 | 챕터 3 · 버그 사냥: 코드 세 개에서 버그 줄 찾기 | 챕터 2 · 카드, 편의점에서 프로그래밍 용어 | 챕터 5 · 커피, 발표 전날 과방 |
+| 스마트시스템공학과 | 박태준 | 최유나 | 챕터 2 · 멀티미터로 끊긴 라디오 부품 찾기 | 챕터 3 · 배달이 길 안내(명령 줄 세우기) | 챕터 6 · 커피, 첫 배달로 실을 커피 |
+| 경영학과 | 한석진 | 윤소희 | 챕터 5 · 사흘 시범 판매로 꾸러미 가격 정하기 | 챕터 3 · 교내 카페 계산대 거스름돈 | 챕터 2 · 커피, 문구점 커피 코너 |
+| 체육학과 | 서진호 | 강하늘 | 챕터 1 · 메트로놈에 맞춘 스트레칭 리듬 | 챕터 3 · 학식 식판 짜기 | 챕터 5 · 커피, 공연 전날 휴게실 |
 
 - 커피 제조의 첫 잔은 교수님 것입니다. 0번 교수는 진한 아메리카노(샷 2·물 2), 1번 교수는 바닐라 라떼(샷 1·우유 2·시럽 1)이고, 이어서 동기 주문 두 잔을 만듭니다. 이 레시피는 학과와 상관없이 같습니다.
 - 미니게임은 타이틀의 **"미니게임" 연습 메뉴**에서도 따로 실행됩니다. 학과 탭과 교수님을 고를 수 있고, 결과는 호감도에 반영되지 않습니다. 끝나면 "결과 보기" 자리에 "돌아가기" 버튼이 나옵니다. 미니게임 쪽에서 따로 할 일은 없습니다.

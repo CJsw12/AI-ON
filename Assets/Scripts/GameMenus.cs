@@ -30,6 +30,7 @@ public partial class GameController
     void OpenMenu(Menu next)
     {
         novelAudio.Play("Open");
+        ReadLog.Flush();
         menu = next;
         menuAt = Time.unscaledTime;
         confirmSlot = -1;
@@ -44,6 +45,8 @@ public partial class GameController
         novelAudio.Play("Close");
         if (menu == Menu.Settings) GameSettings.Save();
         menu = Menu.None;
+        // Restart auto mode's wait so a long stay in a menu does not skip the line on close.
+        if (typedAt >= 0) typedAt = Time.unscaledTime;
     }
 
     void ShowToast(string message) { toast = message; toastAt = Time.unscaledTime; }
@@ -232,7 +235,7 @@ public partial class GameController
         {
             Faculty = faculty, Scene = scene, Stage = choiceStage, Line = dialogueIndex, Professor = professor, Affection = affection,
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
-            ShowResult = showResult, ResultLine = resultLine
+            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey
         });
         slots[slot] = GameSave.Read(slot);
         confirmSlot = -1;
@@ -246,7 +249,7 @@ public partial class GameController
         faculty = data.Faculty; scene = data.Scene; choiceStage = data.Stage; professor = data.Professor;
         affection = shownAffection = data.Affection;
         questions = data.Questions; teamwork = data.Teamwork; interest = data.Interest; solo = data.Solo;
-        experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine;
+        experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey;
         // The story may have changed since the save was made, so keep the line inside the chapter.
         dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);
         memorial = 0; introDone = true; portraitAlpha = 0;
@@ -432,7 +435,7 @@ public partial class GameController
     {
         novelAudio.Play("Select");
         practice = theme;
-        miniGame = MiniGames.Create(theme, practiceProfessor);
+        miniGame = MiniGames.Create(theme, practiceProfessor, true);
         menu = Menu.None;
     }
     void EndPractice()

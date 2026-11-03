@@ -14,17 +14,17 @@ public class CoffeeOrder : MiniGame
     readonly float endsAt = Now + Duration;
     int round, correct;
     float roundStartedAt, pourStartedAt = -10, resultUntil;
-    bool professorCorrect, showingResult, lastCorrect;
+    bool showingResult, lastCorrect;
     string warning = "";
 
-    public CoffeeOrder(int professor, MiniGameTheme theme) : base(theme)
+    public CoffeeOrder(int professor, MiniGameTheme theme, bool practice = false) : base(theme)
     {
         orders = new[] { professor == 0 ? "교수님 · 진한 아메리카노" : "교수님 · 바닐라 라떼", "동기 · 두 번째 주문", "동기 · 마지막 주문" };
         // Kim: two shots and two waters. Lee: a shot, two milks and syrup.
-        recipes = new[] { professor == 0 ? new[] { 0, 0, 1, 1 } : new[] { 0, 2, 2, 3 }, MakeRecipe(professor, 1), MakeRecipe(professor, 2) };
+        recipes = new[] { professor == 0 ? new[] { 0, 0, 1, 1 } : new[] { 0, 2, 2, 3 }, MakeRecipe(professor, 1, practice), MakeRecipe(professor, 2, practice) };
         roundStartedAt = Now;
     }
-    static int[] MakeRecipe(int professor, int round)
+    static int[] MakeRecipe(int professor, int round, bool practice)
     {
         int length = round == 1 ? Random.Range(4, 6) : 6;
         int[] recipe = new int[length];
@@ -37,11 +37,11 @@ public class CoffeeOrder : MiniGame
             recipe[recipe.Length - 1] = (recipe[recipe.Length - 1] + Random.Range(1, Names.Length)) % Names.Length;
             current = string.Join(",", recipe);
         }
+        if (practice) return recipe;   // Practice must not change the story's "not the same as last time" record.
         PlayerPrefs.SetString(key, current);
         PlayerPrefs.Save();
         return recipe;
     }
-    public override bool CountsForStat => professorCorrect;
     public override string[][] Replies => Theme.Replies ?? new[] {
         new[] { "주문을 다시 확인해 보세요. 요구 사항을 확인하는 과정이 중요합니다.", "잘한 부분이 있습니다. 다음에는 순서도 확인하세요.", "주문을 꼼꼼히 확인했군요. 요구 사항을 지키는 것도 실력입니다." },
         new[] { "괜찮아요! 다음에는 주문을 같이 확인해 봐요.", "한 잔은 잘 만들었네요. 다음에도 함께 해봐요!", "완벽한 바리스타네요! 덕분에 힘이 나요." }
@@ -110,7 +110,6 @@ public class CoffeeOrder : MiniGame
     {
         lastCorrect = Matches(cup, recipes[round], round > 0);
         if (lastCorrect) correct++;
-        if (round == 0) professorCorrect = lastCorrect;
         NovelUI.Sound?.Invoke(lastCorrect ? "Up" : "Down");
         showingResult = true; resultUntil = Now + 1.8f;
     }

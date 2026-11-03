@@ -115,6 +115,8 @@ public partial class GameController
     // "CHAPTER n" banner that slides in when a chapter starts (or a save is loaded).
     void ChapterCard()
     {
+        // Dialogue() may have just advanced past the last chapter in this same frame (scene 7 = ending).
+        if (scene < 1 || scene >= S.Chapters.Length) return;
         if (chapterShown != scene)
         {
             chapterShown = scene;

@@ -18,6 +18,7 @@ public class CardMatch : MiniGame
     Texture2D cardBack;
     GUIStyle hiddenButton;
 
+    protected override bool ShowStars => false;
     public CardMatch(MiniGameTheme theme) : base(theme)
     {
         string[,] pairs = theme.Pairs ?? Pairs;
@@ -110,7 +111,7 @@ public class CardMatch : MiniGame
     void Finish()
     {
         Done = true;
-        Delta = found == 6 ? (mistakes <= 3 ? 2 : mistakes <= 7 ? 1 : 0) : 0;
+        Delta = found == 6 ? (mistakes <= 3 ? 2 : mistakes <= 7 ? 1 : 0) : found >= 4 ? 1 : 0;   // Most pairs before time out still counts.
         Summary = (found == 6 ? "6쌍 완성" : "시간 종료 · " + found + "/6쌍") + " · 틀린 횟수 " + mistakes;
     }
 }

@@ -29,7 +29,7 @@
 1. 챕터 6개 × 선택 자리 2개 = **선택 자리 12개**. 자리 번호는 `(챕터 - 1) × 2 + 단계`입니다.
    - 단계 0: `Dialogue[챕터]`의 대사가 끝나면 첫 번째 선택 자리가 나옵니다.
    - 단계 1: 결과 대사 뒤 `FollowUp[챕터]`(줄은 `\n`으로 구분)가 끝나면 두 번째 선택 자리가 나옵니다.
-2. 12자리 구성은 **선택지 6 · 문제 3 · 미니게임 3**입니다. 미니게임은 카드·타이밍·커피를 하나씩 씁니다. 순서와 위치는 자유이니 다른 학과와 다르게 배치해 주세요.
+2. 12자리 구성은 **선택지 6 · 문제 3 · 미니게임 3**입니다. 미니게임은 학과 전용 게임 하나와 공용 게임(카드·타이밍·커피) 중 두 개를 씁니다. 전용 게임은 `MiniGameKind`에 새 값을 추가하고 `MiniGames.Create`에 연결합니다. 순서와 위치는 자유이니 다른 학과와 다르게 배치해 주세요.
 3. 엔딩은 8개입니다. 어느 엔딩이 나올지는 공통 규칙으로 정해집니다(4번).
 4. 선택지 결과와 문제 결과는 **교수님이 말합니다**. 그래서 선택지·문제 자리 직전의 마지막 줄에는 교수님이 그 자리에 있어야 합니다. 교수님이 말하거나, 교수님 앞에서 일어나는 장면이어야 합니다.
 5. 대사 한 줄은 대화창 두 줄 안쪽(대략 60자 이내)으로 씁니다. 선택지는 한 줄(30자 안팎)로 씁니다.
@@ -147,7 +147,13 @@ public static readonly Story Data = new Story {
     Background = (chapter, stage, line) => chapter == 1 ? "CampusExterior" : "Classroom"
 };
 ```
-- `Background`와 미니게임 `Place`에 쓸 수 있는 배경은 `CampusExterior`(캠퍼스 밖), `CampusHallway`(복도), `Classroom`(강의실), `Cafeteria`(학식), `ComputerLab`(실습실·연구실), `Auditorium`(강당) 여섯 개입니다. `chapter == 7`은 엔딩 화면입니다.
+- `Background`와 미니게임 `Place`에는 `Assets/Resources/`의 배경 이름을 씁니다. `chapter == 7`은 엔딩 화면입니다.
+- **배경은 학과끼리 겹치지 않게 씁니다.** 지금 학과별로 쓰는 배경은 다음과 같습니다. 새 학과는 아래에 없는 배경을 쓰고, 필요하면 1698×926 PNG를 영문 이름으로 `Assets/Resources/`에 추가합니다.
+  - 컴퓨터공학: `MainGate`(정문), `ElevatorLobby`(엘리베이터 앞), `Classroom`(강의실), `DeptLounge`(과방), `ConvenienceStore`(교내 편의점), `ComputerLab`(컴퓨터 실습실), `Library`(도서관), `FestivalStreet`(축제 부스 거리)
+  - 스마트시스템: `CampusHallway`(복도), `RobotLab`(로봇 실습실), `RainyRamp`(비 오는 학생식당 경사로), `MeetingRoom`(회의실), `CampusExterior`(캠퍼스 밖)
+  - 경영: `Auditorium`(강당), `StationeryOutside`·`StationeryInside`·`StationeryCoffee`(행운문구 밖·안·커피 코너), `CampusCafe`(교내 카페), `Cafeteria`(학식), `ProfessorOffice`(교수 상담실)
+  - 체육: `ArtsField`(운동장), `ArtsStudio`(거울 실기실), `ArtsCafeteriaStairs`(학생식당 밖 계단), `ArtsStage`(공연장), `ArtsGreenRoom`(공연장 휴게실)
+  - 타이틀 화면은 `CampusExterior`를 씁니다.
 - `Mood`(배경음)는 `Campus`(밝음), `Study`(차분), `Crisis`(긴장) 중 하나입니다. 갈등이 터지는 챕터에 `Crisis`를 씁니다.
 - 교수님 사진: `Image = "ProfessorPark"`이면 `Assets/Resources/`에서 `ProfessorParkTransparent.png`(기본), `ProfessorParkHappyTransparent.png`(웃음), `ProfessorParkFrownTransparent.png`(화남) 세 장을 씁니다. 이름은 영문으로 짓고 다른 교수와 겹치지 않게 합니다. 지금 쓰는 이름: `ProfessorKim`, `ProfessorLee`, `ProfessorPark`, `ProfessorChoi`, `ProfessorHan`, `ProfessorYoon`, `ProfessorSeo`, `ProfessorKang`.
   - 형식은 배경을 지운 투명 PNG, 1698×926입니다. 상반신이 가운데에 오고, 머리 위 끝은 위에서 60px 지점, 몸은 690px쯤에서 아래로 흐려지게 합니다. 게임이 이 그림을 화면 전체에 그리고, 카드·엔딩 사진은 이 위치를 기준으로 얼굴을 잘라 씁니다. 세 표정의 크기와 위치가 같아야 표정이 바뀔 때 튀지 않습니다.
@@ -162,7 +168,7 @@ public static readonly Story Data = new Story {
 
 ## 8. 넘기기 전 확인
 
-- [ ] 12자리 = 선택지 6 · 문제 3 · 미니게임 3(카드·타이밍·커피 하나씩)이고, 배치가 다른 학과와 다르다
+- [ ] 12자리 = 선택지 6 · 문제 3 · 미니게임 3(전용 1 · 공용 2)이고, 배치가 다른 학과와 다르다
 - [ ] 모든 배열 길이가 맞다: 선택지마다 `Scores`·`Replies`가 2×보기 수, 입력형 문제 `Replies` 2×2, 객관식 문제 2×보기 수, 미니게임 2×3, 카드 6쌍, 엔딩 8·8·2×8
 - [ ] 스탯 `q`·`t`·`i`·`s`가 각각 3곳 이상에서 오른다. 음수 점수가 있는 선택지가 2곳 이상이다
 - [ ] 선택지·문제 직전의 마지막 줄에 교수님이 있다. 교수님이 없는 줄은 Hidden 목록에 있다

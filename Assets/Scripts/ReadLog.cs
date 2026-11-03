@@ -22,6 +22,15 @@ public static class ReadLog
     public static void Mark(string line)
     {
         if (line == null || !Read.Add(line)) return;
+        dirty = true;   // Written by Flush, not per line: skip mode marks a line every 0.06 s.
+    }
+
+    static bool dirty;
+    // Called on chapter change, when a menu opens, and on pause/quit.
+    public static void Flush()
+    {
+        if (!dirty) return;
+        dirty = false;
         PlayerPrefs.SetString(Key, string.Join("\n", read));
         PlayerPrefs.Save();
     }

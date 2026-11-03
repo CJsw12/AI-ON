@@ -63,10 +63,22 @@ public partial class GameController : MonoBehaviour
         {
             string mood = ReactionFace;
             if (mood == null) mood = affection < 0 ? "Frown" : affection >= 3 ? "Happy" : "";
-            return Resources.Load<Texture2D>(Professor.Picture(S.Professors[professor], professor, mood));
+            return Load(Professor.Picture(S.Professors[professor], professor, mood));
         }
     }
-    Texture2D Background => Resources.Load<Texture2D>(S.Background(scene, choiceStage, dialogueIndex));
+    Texture2D Background => Load(S.Background(scene, choiceStage, dialogueIndex));
+
+    // OnGUI asks for the same few pictures many times a frame; keep them by path.
+    static readonly System.Collections.Generic.Dictionary<string, Texture2D> textures = new System.Collections.Generic.Dictionary<string, Texture2D>();
+    static Texture2D Load(string path)
+    {
+        if (path == null) return null;
+        if (!textures.TryGetValue(path, out Texture2D texture)) textures[path] = texture = Resources.Load<Texture2D>(path);
+        return texture;
+    }
+
+    void OnApplicationPause(bool paused) { if (paused) { ReadLog.Flush(); GameSettings.Save(); } }
+    void OnApplicationQuit() { ReadLog.Flush(); GameSettings.Save(); }
 
     void DrawScene(bool portrait = true)
     {
@@ -232,7 +244,8 @@ public partial class GameController : MonoBehaviour
             NovelUI.Heart(new Rect(box.xMax - 58, box.yMax - 46 + bob, 28, 28), NovelUI.DeepPink);
         }
 
-        LineButtons(box);
+        // Back on the first line returns to professor select; stop here so nothing reads scene 0's slots.
+        if (LineButtons(box)) return;
         if (!typing && AtChoice) Choices();
         // Click the box, or press Space/Enter, to finish the line or move on.
         bool pressed = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
@@ -264,12 +277,12 @@ public partial class GameController : MonoBehaviour
         if (!showResult) { dialogueIndex++; return; }
         showResult = false;
         if (choiceStage == 0) { choiceStage = 1; dialogueIndex = 0; }
-        else { choiceStage = dialogueIndex = 0; scene++; }
+        else { choiceStage = dialogueIndex = 0; scene++; ReadLog.Flush(); }
     }
 
     // Skip, backlog and back buttons on the dialogue box's top edge.
     // Back steps one line and never crosses a choice: once chosen, its affection change is final.
-    void LineButtons(Rect box)
+    bool LineButtons(Rect box)
     {
         Rect button = new Rect(box.xMax - 394, box.y - 22, 110, 44);
         if (NovelUI.Button(button, "스킵", skip, 19))
@@ -282,10 +295,11 @@ public partial class GameController : MonoBehaviour
         if (NovelUI.Button(button, "기록", false, 19)) OpenMenu(Menu.Backlog);
         button.x += 122;
         bool canGoBack = !showResult && (dialogueIndex > 0 || (scene == 1 && choiceStage == 0));
-        if (!canGoBack || !NovelUI.Button(button, "이전", false, 19)) return;
+        if (!canGoBack || !NovelUI.Button(button, "이전", false, 19)) return false;
         novelAudio.Play("Back");
-        if (dialogueIndex > 0) dialogueIndex--;
-        else { scene = 0; professor = -1; }
+        if (dialogueIndex > 0) { dialogueIndex--; return false; }
+        scene = 0; professor = -1;
+        return true;
     }
 
     void Choices()
@@ -392,7 +406,7 @@ public partial class GameController : MonoBehaviour
         NovelUI.Card(new Rect(60, 40, 1160, 830), new Color(.22f, .09f, .16f, .95f), 36, NovelUI.Alpha(NovelUI.Pink, .8f));
         float x = 100 + NovelUI.Pill(100, 58, 44, "MINI GAME", NovelUI.Pink, Color.white, 20) + 12;
         NovelUI.Label(new Rect(x, 58, 700, 44), miniGame.Title, NovelUI.Round, 26, NovelUI.Cream, TextAnchor.MiddleLeft);
-        miniGame.Draw(NovelUI.MiniTitle, NovelUI.MiniBody, NovelUI.MiniButton);
+        miniGame.Render(NovelUI.MiniTitle, NovelUI.MiniBody, NovelUI.MiniButton);
         if (!miniGame.Done || !NovelUI.Button(new Rect(980, 790, 210, 50), practice != null ? "돌아가기" : "결과 보기", true, 20)) return;
         if (practice != null) EndPractice();
         else FinishMiniGame();
@@ -573,6 +587,7 @@ public partial class GameController : MonoBehaviour
     {
         novelAudio.Play("Bonus");
         professor = chosen; scene = 1;
+        backlog.Clear();   // A different professor reuses the same line keys.
         portraitAlpha = 0; lineKey = null; chapterShown = 0;
     }
 

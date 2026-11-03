@@ -22,8 +22,8 @@ public static class GameSettings
         AutoSpeed = PlayerPrefs.GetInt("AION.AutoSpeed", 1);
         Auto = PlayerPrefs.GetInt("AION.Auto", 0) == 1;
         Effects = PlayerPrefs.GetInt("AION.Effects", 1) == 1;
-        Music = PlayerPrefs.GetFloat("AION.Music", .8f);
-        Sfx = PlayerPrefs.GetFloat("AION.Sfx", .9f);
+        Music = Mathf.Clamp01(PlayerPrefs.GetFloat("AION.Music", .8f));
+        Sfx = Mathf.Clamp01(PlayerPrefs.GetFloat("AION.Sfx", .9f));
     }
     public static void Save()
     {
