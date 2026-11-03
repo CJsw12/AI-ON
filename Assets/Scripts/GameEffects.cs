@@ -93,7 +93,7 @@ public partial class GameController
         float w = full.width * (1 + grow), h = full.height * (1 + grow);
         float x = full.x - (w - full.width) / 2 + Mathf.Sin(t * .07f) * (w - full.width) * .45f;
         float y = full.y - (h - full.height) / 2 + Mathf.Cos(t * .05f) * (h - full.height) * .45f;
-        return new Rect(x, y, w, h);
+        return new Rect(Mathf.Round(x), Mathf.Round(y), Mathf.Round(w), Mathf.Round(h));
     }
 
     // Where the professor's picture goes: breathing, a slide up as they appear, a hop or a shake after a reaction.
@@ -108,8 +108,8 @@ public partial class GameController
         if (reactDelta > 0 && k < .5f) y -= Mathf.Sin(k / .5f * Mathf.PI) * 30 * unit;
         if ((reactDelta < 0 || !reactCorrect) && k < .55f) x += Mathf.Sin(k * 46) * 14 * unit * (1 - k / .55f);
         float w = full.width * scale, h = full.height * scale;
-        // Scale around the bottom centre so the feet stay put.
-        return new Rect(x + (full.width - w) / 2, y + full.height - h, w, h);
+        // Scale around the bottom centre so the feet stay put; pixel-snap to avoid subpixel raster jitter.
+        return new Rect(Mathf.Round(x + (full.width - w) / 2), Mathf.Round(y + full.height - h), Mathf.Round(w), Mathf.Round(h));
     }
 
     // "CHAPTER n" banner that slides in when a chapter starts (or a save is loaded).

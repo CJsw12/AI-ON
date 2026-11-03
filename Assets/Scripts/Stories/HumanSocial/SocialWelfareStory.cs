@@ -186,7 +186,7 @@ public static class SocialWelfareStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "비 오는 날의 커피", Place = "CampusCafe", Note = "챕터 5 · 지친 동기와 교수님께 주문대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "비 오는 날의 커피", Place = "CampusCafe", Note = "챕터 5 · 지친 동기와 교수님께 주문대로 커피 내리기", Customers = new[] { "실습 동기", "복지관 반장" },
                 Replies = new[] {
                     new[] { "에헴, 내 건 따뜻한 거라고 했잖나. 위로도 상대가 원하는 걸 들어야 한다. 잔소리 같아도 맞는 말이다.", "내 커피는 맞았다. 친구 주문도 한 번 더 확인해라. 비 오는 날엔 다들 말이 작아.", "허허, 다 맞혔구먼. 잘 듣는 사람이 잘 돕는다. 이 커피, 오래 기억하마." },
                     new[] { "…괜찮아요. …웃었으니까요.", "…맞아요, 제 거. …동기도 풀렸어요.", "……따뜻해요. …고마워요." }
@@ -237,8 +237,8 @@ public static class SocialWelfareStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "원칙과 용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "권도경 교수", Description = "엄하지만 정 많은 옛날 선생님형 · 잔소리 속에 숨은 속정", TagA = "#에헴", TagB = "#내실습때는", Image = "" },
-            new Professor { Name = "백소담 교수", Description = "말수 적은 경청가 · 침묵 끝의 따뜻한 한마디", TagA = "#조용히", TagB = "#잘듣기", Image = "" }
+            new Professor { Name = "권도경 교수", Description = "엄하지만 정 많은 옛날 선생님형 · 잔소리 속에 숨은 속정", TagA = "#에헴", TagB = "#내실습때는", Image = "ProfessorKwonDoKyung" },
+            new Professor { Name = "백소담 교수", Description = "말수 적은 경청가 · 침묵 끝의 따뜻한 한마디", TagA = "#조용히", TagB = "#잘듣기", Image = "ProfessorBaekSoDam" }
         },
         Chapters = new[] { "", "이름표의 이름", "단톡방의 사진", "말을 끊는 사람", "멈춘 냉장고", "닫힌 문", "동네 자원 지도" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

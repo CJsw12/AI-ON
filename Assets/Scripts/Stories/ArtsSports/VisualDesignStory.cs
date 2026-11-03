@@ -184,7 +184,7 @@ public static class VisualDesignStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "크리틱 끝 실기실 커피", Place = "CampusCafe", Note = "챕터 5 · 크리틱 뒤 서먹한 동기와 교수님 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "크리틱 끝 실기실 커피", Place = "CampusCafe", Note = "챕터 5 · 크리틱 뒤 서먹한 동기와 교수님 커피 내리기", Customers = new[] { "동기", "실기실 선배" },
                 Replies = new[] {
                     new[] { "주문과 다른 잔이군요. 마음이 어지러울수록 절차를 지키시지요.", "제 잔은 정확합니다. 동기의 잔도 한 번 더 살피시지요.", "모두 정확합니다. 이제 커피와 함께, 먼저 말을 건네시지요." },
                     new[] { "음 제 바닐라 라떼 좀 씀 ㅋㅋ 그래도 마음은 달달했음.", "제 건 갓벽! 동기 거만 살짝 달랐대요.", "전원 만족! 동기가 '아까 미안' 하고 웃음. 훈훈 그 자체." }

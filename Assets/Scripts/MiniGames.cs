@@ -151,7 +151,7 @@ public class MiniGameTheme
 
 public static class MiniGames
 {
-    public static MiniGame Create(MiniGameTheme theme, int professor, bool practice = false, bool experienced = true)
+    public static MiniGame Create(MiniGameTheme theme, int professor, bool practice = false, bool experienced = false)
     {
         switch (theme.Kind) {
             case MiniGameKind.Cards: return new CardMatch(theme);

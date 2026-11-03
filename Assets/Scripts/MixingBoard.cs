@@ -76,19 +76,27 @@ public class MixingBoard : MiniGame
         else if (e.type == EventType.MouseUp) dragging = -1;
     }
 
+    void Next()
+    {
+        if (++round >= Briefs.Length)
+        {
+            state = State.Completed; Done = true;
+            Delta = score >= 8 ? 2 : score >= 5 ? 1 : 0;
+            Summary = "브리프 조건 9개 중 " + score + "개 달성";
+            if (Delta == 0)
+            {
+                ExplainFailure(
+                    "총 9개 브리프 조건 중 달성한 조건이 " + score + "개로 기준(5개 이상)에 미치지 못했어요.\n각 악기 페이더의 상대적 크기 조건과 최대/최소 제한을 동시에 만족해야 해요.",
+                    "믹싱 콘솔 조절 요령:\n1. '가장 크게': 해당 채널을 8~10 정도로 확실히 높이고 다른 채널을 그보다 낮게 둡니다.\n2. 'A는 B보다 크게': A 페이더 위치가 B보다 무조건 위에 있어야 합니다.\n3. '기타와 베이스는 같은 크기': 두 채널 페이더의 숫자 단계를 똑같이 맞춥니다.\n4. '드럼은 4 이하': 슬라이더를 0~4 구간 안에 위치시킵니다."
+                );
+            }
+        }
+        else StartRound();
+    }
+
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {
         if (state == State.Mixing && TimeLeft <= 0) Submit();
-        if (state == State.Feedback && Now - stateAt >= 2.8f)
-        {
-            if (++round >= Briefs.Length)
-            {
-                state = State.Completed; Done = true;
-                Delta = score >= 8 ? 2 : score >= 5 ? 1 : 0;
-                Summary = "브리프 조건 9개 중 " + score + "개 달성";
-            }
-            else StartRound();
-        }
         NovelUI.Card(new Rect(130, 150, 1020, 600), NovelUI.Cream, 18, NovelUI.Pink, 2);
         string head = "MIXING CONSOLE  ·  " + (Done ? "완료" : (Mathf.Min(round, 2) + 1) + "/3곡") + "  ·  조건 " + score;
         if (state == State.Mixing) head += "  ·  남은 시간 " + Mathf.CeilToInt(Real(TimeLeft)) + "초";
@@ -128,6 +136,10 @@ public class MixingBoard : MiniGame
             NovelUI.Label(new Rect(800, 290 + k * 82, 300, 76), mark + b.Rules[k].Text, NovelUI.Soft, 21, NovelUI.Berry);
         }
         if (state == State.Mixing) { if (NovelUI.Button(new Rect(800, 600, 300, 60), "믹스 확정", true, 22)) Submit(); }
-        else NovelUI.Label(new Rect(780, 590, 340, 80), met[0] && met[1] && met[2] ? "밴드 소리가 하나로 모였어요!" : "표시된 조건을 다시 들어 봐요.", NovelUI.Round, 22, NovelUI.Berry, TextAnchor.MiddleCenter);
+        else
+        {
+            NovelUI.Label(new Rect(780, 565, 340, 65), met[0] && met[1] && met[2] ? "볼륨 조건을 모두 맞췄어요!" : "표시된 조건과 수치를 다시 확인해요.", NovelUI.Round, 22, NovelUI.Berry, TextAnchor.MiddleCenter);
+            if (GUI.Button(new Rect(800, 655, 300, 65), round == Briefs.Length - 1 ? "결과 보기" : "다음 곡", button)) Next();
+        }
     }
 }

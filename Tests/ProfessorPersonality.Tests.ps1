@@ -26,6 +26,8 @@ $managed = [Security.SecurityElement]::Escape((Join-Path $UnityManagedPath '*.dl
 @'
 using System;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 class Check {
     static int lines;
     static void Require(bool ok, string message) { if (!ok) throw new Exception(message); }
@@ -34,6 +36,21 @@ class Check {
         foreach (var row in rows) Require(row != null && row.Length == count && row.All(x => !string.IsNullOrWhiteSpace(x)), context + ": incomplete reply row");
     }
     static void Main() {
+        // Final manual-next buttons must complete each game with the same score thresholds.
+        foreach (var type in new[] {typeof(ChordProgression),typeof(MixingBoard),typeof(BehaviorCoding)}) {
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            foreach (int points in new[] {0,4,5,7,8,9}) {
+                var game = (MiniGame)RuntimeHelpers.GetUninitializedObject(type);
+                string progress = type == typeof(ChordProgression) ? "song" : type == typeof(MixingBoard) ? "round" : "item";
+                type.GetField(progress,flags).SetValue(game,type == typeof(ChordProgression) ? 4 : type == typeof(MixingBoard) ? 2 : 7);
+                if (type == typeof(ChordProgression)) type.GetField("blank",flags).SetValue(game,1);
+                type.GetField(type == typeof(MixingBoard) ? "score" : "correct",flags).SetValue(game,points);
+                type.GetMethod("Next",flags).Invoke(game,null);
+                int high = type == typeof(MixingBoard) ? 8 : 7;
+                int low = type == typeof(ChordProgression) ? 4 : 5;
+                Require(game.Done && game.Delta == (points >= high ? 2 : points >= low ? 1 : 0), type.Name + ": manual final result");
+            }
+        }
         var key = ReadLog.ContentKey("0/0/1/0/0", "original");
         Require(key == ReadLog.ContentKey("0/0/1/0/0", "original"), "Read keys must be stable");
         Require(key != ReadLog.ContentKey("0/0/1/0/0", "rewritten"), "Rewritten dialogue must not inherit read status");

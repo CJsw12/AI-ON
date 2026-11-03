@@ -50,6 +50,13 @@ public class StroopTest : MiniGame
         float mean = hits > 0 ? (congruentRt + incongruentRt) / hits : 0;
         Delta = correct >= 17 && mean < (Easy ? 1.6f : 1.2f) ? 2 : correct >= 12 ? 1 : 0;
         Summary = "정확도 " + correct + "/20 · 평균 반응 시간 " + (hits > 0 ? mean.ToString("0.00") + "초" : "-");
+        if (Delta == 0)
+        {
+            ExplainFailure(
+                "정답 수 " + correct + "/20개 (기준: 12개 이상) · 오반응 " + wrong + "개\n글자의 뜻이 잉크 색과 충돌할 때 무의식적인 단어 읽기 자동화로 인해 오답이 발생했어요.",
+                "스트룹 효과 극복 팁:\n1. 글자 전체를 하나의 단어로 읽으려 하지 말고, 글자의 외곽선이나 모서리의 잉크 색깔에만 시선을 두세요.\n2. 키보드(1:빨강, 2:파랑, 3:초록, 4:노랑) 위치를 손가락에 미리 올려두면 반응 속도가 빨라집니다."
+            );
+        }
     }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)

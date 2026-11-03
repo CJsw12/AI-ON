@@ -31,7 +31,6 @@ public class ChordProgression : MiniGame
     enum State { Instructions, Asking, Feedback, Completed }
     State state = State.Instructions;
     int song, blank, correct, picked = -1;
-    float stateAt;
     string[] options;
     int answer;
 
@@ -46,7 +45,7 @@ public class ChordProgression : MiniGame
         Song s = Songs[song];
         string right = s.Bars[s.Blanks[blank]];
         string[] wrong = s.Wrong[blank];
-        answer = (song + blank * 2) % 3;
+        answer = Random.Range(0, 3);
         options = new string[3];
         options[answer] = right;
         for (int i = 0, w = 0; i < 3; i++) if (i != answer) options[i] = wrong[w++];
@@ -59,23 +58,31 @@ public class ChordProgression : MiniGame
         picked = i;
         bool good = i == answer;
         if (good) correct++;
-        state = State.Feedback; stateAt = Now;
+        state = State.Feedback;
         Judge(good, new Vector2(640, 330), good ? "딱 어울려요!" : "정답은 " + options[answer]);
+    }
+
+    void Next()
+    {
+        if (++blank >= Songs[song].Blanks.Length) { blank = 0; song++; }
+        if (song >= Songs.Length)
+        {
+            state = State.Completed; Done = true;
+            Delta = correct >= 7 ? 2 : correct >= 4 ? 1 : 0;
+            Summary = "빈칸 " + Total + "개 중 " + correct + "개 정답";
+            if (Delta == 0)
+            {
+                ExplainFailure(
+                    "빈칸 8개 중 맞힌 개수가 " + correct + "개로 기준(4개 이상)에 미치지 못했어요.\n조성(Key)에 따른 다이어토닉 화음 구조를 파악하는 것이 필요해요.",
+                    "다이어토닉 코드(Diatonic Chord) 가이드:\n1. 로마 숫자 표기: I, IV, V는 장화음(Major, 대문자) / ii, iii, vi는 단화음(Minor, 소문자m) / vii°는 감화음(dim)\n2. C장조 기준: I=C, ii=Dm, iii=Em, IV=F, V=G, vi=Am, vii°=Bdim\n3. 4도 상행 진행: 근음이 4도씩 위로 이동하며 진행 (라 Am → 레 Dm → 솔 G → 도 C)"
+                );
+            }
+        }
+        else Prepare();
     }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {
-        if (state == State.Feedback && Now - stateAt >= 2.2f)
-        {
-            if (++blank >= Songs[song].Blanks.Length) { blank = 0; song++; }
-            if (song >= Songs.Length)
-            {
-                state = State.Completed; Done = true;
-                Delta = correct >= 7 ? 2 : correct >= 4 ? 1 : 0;
-                Summary = "빈칸 " + Total + "개 중 " + correct + "개 정답";
-            }
-            else Prepare();
-        }
         NovelUI.Card(new Rect(130, 150, 1020, 600), NovelUI.Cream, 18, NovelUI.Sky, 2);
         NovelUI.Label(new Rect(160, 168, 950, 35), "CHORD CHART  ·  " + (Done ? "완료" : (Mathf.Min(song, Songs.Length - 1) + 1) + "/" + Songs.Length + "곡") + "  ·  정답 " + correct, NovelUI.Round, 21, NovelUI.Berry);
         if (state == State.Instructions)
@@ -109,6 +116,7 @@ public class ChordProgression : MiniGame
             if (state == State.Asking && GUI.Button(r, GUIContent.none, GUIStyle.none)) { NovelUI.Sound?.Invoke("Select"); Pick(i); }
         }
         string line = state == State.Asking ? (now + 1) + "마디에 어울리는 코드를 골라요." : s.Why[blank];
-        NovelUI.Label(new Rect(170, 590, 940, 60), line, NovelUI.Round, 24, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(170, 575, 940, 60), line, NovelUI.Round, 24, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (state == State.Feedback && GUI.Button(new Rect(440, 655, 400, 65), song == Songs.Length - 1 && blank == Songs[song].Blanks.Length - 1 ? "결과 보기" : "다음 문제", button)) Next();
     }
 }

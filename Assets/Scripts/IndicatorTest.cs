@@ -43,6 +43,13 @@ public class IndicatorTest : MiniGame
         Delta = correct == Tubes ? 2 : correct >= 2 ? 1 : 0;
         Summary = "용액 " + Tubes + "개 중 " + correct + "개 판별 · 남은 지시약 " + left + "방울";
         Judge(correct == Tubes, new Vector2(640, 260), correct == Tubes ? "모두 정답!" : correct + "개 정답");
+        if (Delta == 0)
+        {
+            ExplainFailure(
+                "용액 " + Tubes + "개 중 맞힌 개수가 " + correct + "개로 기준(2개 이상)에 미치지 못했어요.\n각 지시약이 액성(산성·중성·염기성)에 따라 어떤 색으로 변하는지 정리가 필요해요.",
+                "pH 지시약 변색 정리:\n1. BTB 용액 (가장 만능): 산성(노랑) / 중성(초록) / 염기성(파랑) - 한 방울로 액성 바로 확정 가능!\n2. 페놀프탈레인 용액: 오직 염기성에서만 '분홍색' (산성과 중성은 둘 다 '무색')\n3. 리트머스: 산성(붉은색) / 중성(보라색) / 염기성(푸른색)"
+            );
+        }
     }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
@@ -54,7 +61,7 @@ public class IndicatorTest : MiniGame
         NovelUI.Label(new Rect(160, 168, 950, 35), head, NovelUI.Round, 21, NovelUI.Berry);
         if (state == State.Instructions)
         {
-            NovelUI.Label(new Rect(175, 230, 930, 300), "정체 모를 용액 네 개를 산성·중성·염기성으로 나누세요.\n위에서 지시약을 고르고 시험관을 누르면 한 방울 떨어져 색이 변해요.\n리트머스: 산성 붉은색 · 중성 보라색 · 염기성 푸른색\n페놀프탈레인: 염기성에서만 분홍색 (산성·중성은 무색)\nBTB: 산성 노란색 · 중성 초록색 · 염기성 파란색\n지시약은 모두 " + Drops + "방울, 제한 시간은 " + (int)Limit + "초예요.", NovelUI.Soft, 22, NovelUI.Berry);
+            NovelUI.Label(new Rect(175, 230, 930, 300), "정체 모를 용액 네 개를 산성·중성·염기성으로 나누세요.\n위에서 지시약을 고르고 시험관을 누르면 한 방울 떨어져 색이 변해요.\n리트머스: 산성 붉은색 · 중성 보라색 · 염기성 푸른색\n페놀프탈레인: 염기성에서만 분홍색 (산성·중성은 무색)\nBTB: 산성 노란색 · 중성 초록색 · 염기성 파란색\n지시약은 모두 " + Drops + "방울, 제한 시간은 " + Mathf.CeilToInt(Real(Limit)) + "초예요.", NovelUI.Soft, 22, NovelUI.Berry);
             if (GUI.Button(new Rect(440, 580, 400, 75), "시작하기", button)) { startedAt = Now; state = State.Playing; }
             return;
         }

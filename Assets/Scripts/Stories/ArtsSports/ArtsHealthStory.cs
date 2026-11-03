@@ -184,7 +184,7 @@ public static class ArtsHealthStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "리허설 끝 휴게실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 공연 전날 주문서대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "리허설 끝 휴게실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 공연 전날 주문서대로 커피 내리기", Customers = new[] { "안무 동기", "무대 선배" },
                 Replies = new[] {
                     new[] { "주문과 다르다! 피곤할수록 확인 순서! 내일 무대도 똑같다!", "내 커피는 정확하다! 좋아! 나머지도 같은 순서로 확인!", "전원 정확! 부상병이 보급 임무 완수! 내일 무대도 이긴다!" },
                     new[] { "음~ 제 라떼가 조금 진하네요. 괜찮아요, 오늘은 다들 지쳤잖아요.", "제 건 따뜻하고 좋아요~ 동기 것만 살짝 달랐대요.", "모두 한 모금씩 마시고 숨이 풀렸어요~ 참 다정한 커피였어요." }

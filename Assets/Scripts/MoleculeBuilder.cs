@@ -53,6 +53,13 @@ public class MoleculeBuilder : MiniGame
         state = State.Completed; Done = true;
         Delta = correct >= 5 ? 2 : correct >= 3 ? 1 : 0;
         Summary = "분자 " + Rounds + "개 중 " + correct + "개 조립 성공";
+        if (Delta == 0)
+        {
+            ExplainFailure(
+                "조립에 성공한 분자가 " + correct + "/" + Rounds + "개로 기준(3개 이상)에 미치지 못했거나 시간이 초과되었어요.\n원소 기호 뒤에 붙은 숫자가 해당 원자의 개수예요.",
+                "분자식 읽기 가이드:\n1. 기호 뒤에 숫자가 없으면 1개입니다. (예: H2O → 수소(H) 2개, 산소(O) 1개)\n2. 에탄올(C2H5OH) 같은 분자는 H가 나뉘어 적혀 있어도 총 개수를 합산합니다: C 2개, H (5+1)=6개, O 1개\n3. 제한 시간(75초) 내에 당황하지 말고 H·C·N·O 카드 순서대로 숫자를 맞추세요."
+            );
+        }
     }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
@@ -68,7 +75,7 @@ public class MoleculeBuilder : MiniGame
         NovelUI.Label(new Rect(160, 168, 950, 35), head, NovelUI.Round, 21, NovelUI.Berry);
         if (state == State.Instructions)
         {
-            NovelUI.Label(new Rect(175, 240, 930, 260), "위에 나온 분자식대로 원자를 조립하세요.\n원자 아래 + / − 버튼으로 개수를 바꿔요. 원소 기호 뒤 숫자가 그 원자의 개수예요.\n(숫자가 없으면 1개, 예: H2O = H 2개 + O 1개)\n다 맞췄다면 '조립 완료'! 분자 다섯 개, 제한 시간은 " + (int)Limit + "초예요.", NovelUI.Soft, 23, NovelUI.Berry);
+            NovelUI.Label(new Rect(175, 240, 930, 260), "위에 나온 분자식대로 원자를 조립하세요.\n원자 아래 + / − 버튼으로 개수를 바꿔요. 원소 기호 뒤 숫자가 그 원자의 개수예요.\n(숫자가 없으면 1개, 예: H2O = H 2개 + O 1개)\n다 맞췄다면 '조립 완료'! 분자 다섯 개, 제한 시간은 " + Mathf.CeilToInt(Real(Limit)) + "초예요.", NovelUI.Soft, 23, NovelUI.Berry);
             if (GUI.Button(new Rect(440, 560, 400, 75), "시작하기", button)) { startedAt = Now; Begin(); }
             return;
         }

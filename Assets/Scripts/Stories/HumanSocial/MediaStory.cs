@@ -234,8 +234,8 @@ public static class MediaStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "조민혁 교수", Description = "속사포 기자형 · 짧고 빠른 말, 팩트와 마감에 쫓기는 바쁨", TagA = "#팩트!", TagB = "#마감!", Image = "" },
-            new Professor { Name = "송다온 교수", Description = "감성적인 시인형 · 은유와 여운, 이야기와 사람의 결을 중시", TagA = "#은유", TagB = "#사람의결", Image = "" }
+            new Professor { Name = "조민혁 교수", Description = "속사포 기자형 · 짧고 빠른 말, 팩트와 마감에 쫓기는 바쁨", TagA = "#팩트!", TagB = "#마감!", Image = "ProfessorJoMinHyuk" },
+            new Professor { Name = "송다온 교수", Description = "감성적인 시인형 · 은유와 여운, 이야기와 사람의 결을 중시", TagA = "#은유", TagB = "#사람의결", Image = "ProfessorSongDaOn" }
         },
         Chapters = new[] { "", "폭등이라는 제목", "출처 없는 캡처", "썸네일 전쟁", "잘린 인터뷰", "댓글 창의 불", "같은 축제, 다른 화면" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

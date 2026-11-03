@@ -88,6 +88,13 @@ public class MicroscopeFocus : MiniGame
                 state = State.Completed; Done = true;
                 Delta = points >= 5 ? 2 : points >= 3 ? 1 : 0;
                 Summary = "판별 " + correctCount + "/3 · 선명한 초점 " + focusedCount + "/3";
+                if (Delta == 0)
+                {
+                    ExplainFailure(
+                        "획득 점수가 " + points + "/6점으로 기준(3점 이상)에 미치지 못했어요.\n조동 나사로 큰 윤곽을 잡지 못했거나, 시료의 형태적 특징(양파 표피/구강 상피/짚신벌레) 판별에서 실수가 있었어요.",
+                        "현미경 조작 및 시료 구별 팁:\n1. 조동 나사(←, →): 크게 움직이므로 화면에 상의 윤곽이 어렴풋이 보일 때까지 빠르게 이동시킵니다.\n2. 미동 나사(↑, ↓): 상의 테두리가 가장 또렷해지는 지점을 미세하게 맞춥니다.\n3. 시료 특징: 양파 표피(규칙적인 직사각형 벽돌 모양 식물 세포), 구강 상피(불규칙한 판 모양 동물 세포와 중심 핵), 짚신벌레(가장자리에 섬모가 있는 유선형 단세포 생물)"
+                    );
+                }
             }
             else NewSlide();
         }

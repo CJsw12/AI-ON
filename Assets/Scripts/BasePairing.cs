@@ -103,6 +103,13 @@ public class BasePairing : MiniGame
                 // Accuracy first, speed as a bonus for the top grade.
                 Delta = totalDone == total && firstTry >= 18 && usedTime <= 36f ? 2 : firstTry >= 12 ? 1 : 0;
                 Summary = "첫 시도 정답 " + firstTry + "/" + total + " · 실수 " + mistakes + " · " + Real(usedTime).ToString("0.0") + "초";
+                if (Delta == 0)
+                {
+                    ExplainFailure(
+                        "첫 시도 정답이 " + firstTry + "/" + total + "개로 기준(12개 이상)에 미치지 못했거나 시간 안에 가닥을 다 완성하지 못했어요.\nDNA 상보적 결합 규칙과 RNA 전사 규칙을 구분해야 해요.",
+                        "염기 결합(Base Pairing) 핵심 규칙:\n1. DNA 복제: A(아데닌) ↔ T(티민), G(구아닌) ↔ C(사이토신)\n2. RNA 전사: RNA에는 티민(T) 대신 유라실(U)이 쓰입니다!\n   • DNA의 A → RNA는 'U'\n   • DNA의 T → RNA는 'A'\n   • DNA의 G → RNA는 'C', C → 'G'"
+                    );
+                }
             }
             else StartRound();
         }
