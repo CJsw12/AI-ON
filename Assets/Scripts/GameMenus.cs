@@ -267,7 +267,8 @@ public partial class GameController
         if (picture.StartsWith("ProfessorKim")) return square ? new Rect(.418f, .66f, .164f, .3f) : new Rect(.31f, .6f, .38f, .4f);
         if (picture.StartsWith("ProfessorLee")) return square ? new Rect(.385f, .55f, .229f, .42f) : new Rect(.22f, .4f, .56f, .6f);
         if (picture.StartsWith("ProfessorJungChem") || picture.StartsWith("ProfessorOhChem") ||
-            picture.StartsWith("ProfessorGuMath") || picture.StartsWith("ProfessorSeolMath"))
+            picture.StartsWith("ProfessorGuMath") || picture.StartsWith("ProfessorSeolMath") ||
+            picture.StartsWith("ProfessorMoonBio") || picture.StartsWith("ProfessorLimBio"))
             return square ? new Rect(.05f, .38f, .9f, .6f) : new Rect(.03f, .64f, .94f, .34f);
         return square ? new Rect(.382f, .514f, .236f, .432f) : new Rect(.218f, .352f, .564f, .605f);
     }

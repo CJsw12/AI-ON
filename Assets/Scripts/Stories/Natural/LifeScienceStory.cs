@@ -224,8 +224,8 @@ public static class LifeScienceStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "문혜원 교수", Description = "느긋한 자연주의자 · 천천히 오래 바라보는 관찰을 중시", TagA = "#서두를것없어요", TagB = "#연못산책", Image = "" },
-            new Professor { Name = "임초롱 교수", Description = "승부욕 강한 경쟁파 · 기록과 도전, 1등을 사랑함", TagA = "#신기록도전", TagB = "#오늘도1등", Image = "" }
+            new Professor { Name = "문혜원 교수", Description = "느긋한 자연주의자 · 천천히 오래 바라보는 관찰을 중시", TagA = "#서두를것없어요", TagB = "#연못산책", Image = "ProfessorMoonBio" },
+            new Professor { Name = "임초롱 교수", Description = "승부욕 강한 경쟁파 · 기록과 도전, 1등을 사랑함", TagA = "#신기록도전", TagB = "#오늘도1등", Image = "ProfessorLimBio" }
         },
         Fond = new[] { "학생이랑 있으면 시간이 천천히 흐르는 것 같아요~", "역시 내 라이벌감이야. 다음 판도 붙자!" },
         Wary = new[] { "음… 오늘은 바람이 좀 차네요.", "이대로면 꼴찌야. 정신 차려!" },
@@ -249,10 +249,10 @@ public static class LifeScienceStory
         },
         Mood = (chapter, stage) => (chapter == 4 || chapter == 5) && stage == 0 ? "Crisis" : chapter <= 1 || chapter >= 6 ? "Campus" : "Study",
         Background = (chapter, stage, line) =>
-            chapter == 1 ? (stage == 1 ? "Classroom" : line == 0 ? "MainGate" : "CampusExterior") :
-            chapter == 2 ? "Classroom" :
+            chapter == 1 ? "BiologyPond" :
+            chapter == 2 ? "BiologyLab" :
             chapter == 3 ? (stage == 0 ? "Library" : "CampusCafe") :
-            chapter == 4 ? (stage == 0 ? "Classroom" : "Cafeteria") :
+            chapter == 4 ? (stage == 0 ? "BiologyLab" : "Cafeteria") :
             chapter == 5 ? (stage == 0 ? (line < 4 ? "CampusHallway" : "ProfessorOffice") : (line < 3 ? "CampusHallway" : "ProfessorOffice")) :
             chapter == 6 ? "FestivalStreet" : "CampusExterior"
     };

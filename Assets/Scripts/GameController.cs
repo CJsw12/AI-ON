@@ -93,7 +93,22 @@ public partial class GameController : MonoBehaviour
         if (portraitAlpha > 0)
         {
             GUI.color = new Color(1, 1, 1, portraitAlpha);
-            GUI.DrawTexture(PortraitRect(), Portrait, ScaleMode.ScaleAndCrop);
+            string professorImage = professor >= 0 ? S.Professors[professor].Image : "";
+            bool fullFigure = professorImage.StartsWith("ProfessorJungChem") || professorImage.StartsWith("ProfessorOhChem") ||
+                professorImage.StartsWith("ProfessorGuMath") || professorImage.StartsWith("ProfessorSeolMath") ||
+                professorImage.StartsWith("ProfessorMoonBio") || professorImage.StartsWith("ProfessorLimBio");
+            if (fullFigure)
+            {
+                Texture2D professorTexture = Portrait;
+                if (professorTexture != null)
+                {
+                    float height = Screen.height * .82f;
+                    float width = height * professorTexture.width / professorTexture.height * 1.45f;
+                    GUI.DrawTexture(new Rect((Screen.width - width) / 2, Screen.height - height, width, height), professorTexture, ScaleMode.StretchToFill, true);
+                }
+            }
+            else
+                GUI.DrawTexture(PortraitRect(), Portrait, ScaleMode.ScaleAndCrop);
             GUI.color = Color.white;
         }
         float fade = 1f - Mathf.Clamp01((Time.unscaledTime - backgroundChangedAt) / .45f);
