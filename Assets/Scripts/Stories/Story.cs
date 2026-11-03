@@ -14,6 +14,8 @@ public class Story
     public string[] Chapters;                  // Chapter titles at [1]..[6].
     public string[][] Dialogue;                // [chapter] lines before the first slot.
     public string[] FollowUp;                  // [chapter] lines between the slots, separated by '\n'.
+    public string[][] ExperiencedDialogue;     // Optional alternate chapter lines for experienced players.
+    public string[] ExperiencedFollowUp;       // Optional experienced-mode follow-up lines; keep line counts aligned.
     public int[][] HiddenDialogue, HiddenFollowUp;   // [chapter] lines where the professor is not on stage.
     public Slot[] Slots;                       // Twelve, at (chapter - 1) * 2 + stage.
     public string[] EndingNames, EndingText;   // EndingText's "교수님:" line is filled from EndingLines.
@@ -32,18 +34,20 @@ public class Story
     }
 
     // Speaker "교수" stands for the chosen professor; the caller puts the name in.
-    public void Line(int professor, int chapter, int index, out string speaker, out string text)
+    public void Line(int professor, int chapter, int index, out string speaker, out string text, bool experienced = false)
     {
-        string[] lines = Dialogue[chapter];
+        string[][] source = experienced && ExperiencedDialogue != null ? ExperiencedDialogue : Dialogue;
+        string[] lines = source[chapter];
         string[] parts = lines[Math.Min(index, lines.Length - 1)].Split('|');
         speaker = parts[0];
         text = parts.Length > 2 ? parts[1 + professor] : parts[1];
         if (speaker == "교수") text = Spoken(professor, text);
     }
 
-    public string FollowUpLine(int professor, int chapter, int index)
+    public string FollowUpLine(int professor, int chapter, int index, bool experienced = false)
     {
-        string text = FollowUp[chapter].Split('\n')[index];
+        string[] source = experienced && ExperiencedFollowUp != null ? ExperiencedFollowUp : FollowUp;
+        string text = source[chapter].Split('\n')[index];
         const string prefix = "교수님: ";
         return text.StartsWith(prefix) ? prefix + Spoken(professor, Pick(professor, text.Substring(prefix.Length))) : text;
     }
@@ -125,7 +129,7 @@ public static class Stories
     public static readonly string[] Colleges = { "공학부", "자연과학부", "인문사회학부", "예체능학부" };
 
     // Add new faculties at the end only: the index is kept in save slots and the ending book.
-    public static readonly Story[] All = { AiSwStory.Data, SmartSystemsStory.Data, BusinessStory.Data, ArtsHealthStory.Data };
+    public static readonly Story[] All = { AiSwStory.Data, SmartSystemsStory.Data, BusinessStory.Data, ArtsHealthStory.Data, PhysicsStory.Data };
 
     // Faculty indexes in one college, in the order above.
     public static int[] In(int college)

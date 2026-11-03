@@ -30,6 +30,7 @@ public partial class GameController : MonoBehaviour
     float skippedAt;
     MiniGameTheme practice;            // The minigame being practised from the title, or null.
     int practiceCollege, practiceFaculty, practiceProfessor;
+    bool practiceExperienced;
     int titleCollege;                  // The college tab on the title's faculty list.
     static readonly Regex Tags = new Regex("<[^>]+>");
     static Matrix4x4 Canvas => NovelUI.Canvas;
@@ -201,7 +202,7 @@ public partial class GameController : MonoBehaviour
         {
             // Follow-up lines are narration, but some open with "동기: " or "교수님: ".
             speaker = "나레이션";
-            text = S.FollowUpLine(professor, scene, dialogueIndex);
+            text = S.FollowUpLine(professor, scene, dialogueIndex, experienced);
             int colon = text.IndexOf(": ");
             if (colon > 0 && colon <= 3)
             {
@@ -210,7 +211,7 @@ public partial class GameController : MonoBehaviour
             }
             return;
         }
-        S.Line(professor, scene, dialogueIndex, out speaker, out text);
+        S.Line(professor, scene, dialogueIndex, out speaker, out text, experienced);
         if (speaker == "교수") speaker = ProfessorName;
     }
     bool AtChoice => !showResult && dialogueIndex >= S.Lines(scene, choiceStage) - 1;
@@ -313,7 +314,7 @@ public partial class GameController : MonoBehaviour
             float width = NovelUI.Width("미니게임", NovelUI.Round, 18) + 36;
             NovelUI.Pill(card.center.x - width / 2, card.y - 18, 36, "미니게임", NovelUI.Lemon, NovelUI.Berry, 18);
             NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 50), slot.Game.Title, NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); miniGame = MiniGames.Create(slot.Game, professor); }
+            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); miniGame = MiniGames.Create(slot.Game, professor, false, experienced); }
             return;
         }
         Quiz quiz = slot.Quiz(experienced);

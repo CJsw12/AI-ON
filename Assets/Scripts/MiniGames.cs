@@ -105,7 +105,7 @@ public abstract class MiniGame
     }
 }
 
-public enum MiniGameKind { Cards, Timing, Coffee, BugHunt, CircuitProbe, PriceTag, Rhythm, Route, Cashier, Tray }
+public enum MiniGameKind { Cards, Timing, Coffee, BugHunt, CircuitProbe, PriceTag, Rhythm, Route, Cashier, Tray, ImpactLab }
 
 // One faculty's words for a minigame. Fields left null keep the game's own AI-SW text.
 public class MiniGameTheme
@@ -119,11 +119,12 @@ public class MiniGameTheme
     // the line under the counter, the stop button, the instructions, the three level names and the verdicts.
     public string Header, Rule, Counter, Running, Button, Instructions, Hit, Near, Miss;
     public string[] Levels;
+    public int ImpactVariant;      // ImpactLab scenario set: 0 demo, 1 lab, 2 festival.
 }
 
 public static class MiniGames
 {
-    public static MiniGame Create(MiniGameTheme theme, int professor, bool practice = false)
+    public static MiniGame Create(MiniGameTheme theme, int professor, bool practice = false, bool experienced = false)
     {
         switch (theme.Kind) {
             case MiniGameKind.Cards: return new CardMatch(theme);
@@ -135,6 +136,7 @@ public static class MiniGames
             case MiniGameKind.Route: return new RobotRoute(theme);
             case MiniGameKind.Cashier: return new ChangeMaker(theme);
             case MiniGameKind.Tray: return new PlateBalance(theme);
+            case MiniGameKind.ImpactLab: return new ImpactLab(theme, professor, experienced, practice);
             default: return new CoffeeOrder(professor, theme, practice);
         }
     }
