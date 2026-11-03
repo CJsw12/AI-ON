@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Three short orders: the professor's usual drink first, then two random ones for the classmate.
+// Three short orders: a randomized professor order first, then two orders for the classmate.
 public class CoffeeOrder : MiniGame
 {
     const float Duration = 60f;
@@ -14,35 +14,42 @@ public class CoffeeOrder : MiniGame
     readonly float endsAt = Now + Duration;
     int round, correct;
     float roundStartedAt, pourStartedAt = -10, resultUntil;
-    bool showingResult, lastCorrect;
+    bool professorCorrect, showingResult, lastCorrect;
     string warning = "";
 
     public CoffeeOrder(int professor, MiniGameTheme theme, bool practice = false) : base(theme)
     {
-        orders = new[] { professor == 0 ? "교수님 · 진한 아메리카노" : "교수님 · 바닐라 라떼", Customer(theme, 0) + " · 두 번째 주문", Customer(theme, 1) + " · 마지막 주문" };
-        // Kim: two shots and two waters. Lee: a shot, two milks and syrup.
-        recipes = new[] { professor == 0 ? new[] { 0, 0, 1, 1 } : new[] { 0, 2, 2, 3 }, MakeRecipe(professor, 1, practice), MakeRecipe(professor, 2, practice) };
+        orders = new[] { "교수님 · 오늘의 주문", Customer(theme, 0) + " · 두 번째 주문", Customer(theme, 1) + " · 마지막 주문" };
+        recipes = new[] { MakeRecipe(professor, 0, practice), MakeRecipe(professor, 1, practice), MakeRecipe(professor, 2, practice) };
         roundStartedAt = Now;
     }
     static string Customer(MiniGameTheme theme, int i) => theme.Customers != null && i < theme.Customers.Length ? theme.Customers[i] : "동기";
     static int[] MakeRecipe(int professor, int round, bool practice)
     {
-        int length = round == 1 ? Random.Range(4, 6) : 6;
+        int length = round == 0 ? Random.Range(3, 5) : round == 1 ? Random.Range(4, 6) : 6;
         int[] recipe = new int[length];
         for (int i = 0; i < recipe.Length; i++) recipe[i] = Random.Range(0, Names.Length);
         string key = "AION.Coffee.LastOrder." + professor + "." + round;
         string previous = PlayerPrefs.GetString(key, "");
-        string current = string.Join(",", recipe);
+        string current = RecipeKey(recipe, round == 0);
         if (current == previous)
         {
             recipe[recipe.Length - 1] = (recipe[recipe.Length - 1] + Random.Range(1, Names.Length)) % Names.Length;
-            current = string.Join(",", recipe);
+            current = RecipeKey(recipe, round == 0);
         }
         if (practice) return recipe;   // Practice must not change the story's "not the same as last time" record.
         PlayerPrefs.SetString(key, current);
         PlayerPrefs.Save();
         return recipe;
     }
+    static string RecipeKey(int[] recipe, bool unordered)
+    {
+        if (!unordered) return string.Join(",", recipe);
+        int[] counts = new int[Names.Length];
+        foreach (int ingredient in recipe) counts[ingredient]++;
+        return string.Join(",", counts);
+    }
+    public override bool CountsForStat => professorCorrect;
     public override string[][] Replies => Theme.Replies ?? new[] {
         new[] { "주문을 다시 확인해 보세요. 요구 사항을 확인하는 과정이 중요합니다.", "잘한 부분이 있습니다. 다음에는 순서도 확인하세요.", "주문을 꼼꼼히 확인했군요. 요구 사항을 지키는 것도 실력입니다." },
         new[] { "괜찮아요! 다음에는 주문을 같이 확인해 봐요.", "한 잔은 잘 만들었네요. 다음에도 함께 해봐요!", "완벽한 바리스타네요! 덕분에 힘이 나요." }
@@ -98,7 +105,7 @@ public class CoffeeOrder : MiniGame
     {
         cup.Add(ingredient); pourStartedAt = Now;
         int index = cup.Count - 1;
-        warning = round == 1 && (index >= recipes[round].Length || recipes[round][index] != ingredient) ? "순서가 달라요. 컵을 비우고 다시 시도할 수 있어요." : "";
+        warning = round > 0 && (index >= recipes[round].Length || recipes[round][index] != ingredient) ? "순서가 달라요. 컵을 비우고 다시 시도할 수 있어요." : "";
         NovelUI.Sound?.Invoke("Select");
     }
     static bool Matches(IReadOnlyList<int> actual, int[] expected, bool ordered)
@@ -111,6 +118,7 @@ public class CoffeeOrder : MiniGame
     {
         lastCorrect = Matches(cup, recipes[round], round > 0);
         if (lastCorrect) correct++;
+        if (round == 0) professorCorrect = lastCorrect;
         NovelUI.Sound?.Invoke(lastCorrect ? "Up" : "Down");
         showingResult = true; resultUntil = Now + 1.8f;
         if (!lastCorrect) ExplainFailure(OrderDifference(), "주문을 다시 확인해요:\n" + Describe(recipes[round], round > 0) + "\n" + (round == 0 ? "순서는 상관없지만 재료별 횟수와 총량이 모두 같아야 해요." : "수량뿐 아니라 처음부터 끝까지 순서도 같아야 해요. 잘못 넣으면 컵을 비우고 다시 담아요."));
