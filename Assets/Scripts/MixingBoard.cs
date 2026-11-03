@@ -76,19 +76,20 @@ public class MixingBoard : MiniGame
         else if (e.type == EventType.MouseUp) dragging = -1;
     }
 
+    void Next()
+    {
+        if (++round >= Briefs.Length)
+        {
+            state = State.Completed; Done = true;
+            Delta = score >= 8 ? 2 : score >= 5 ? 1 : 0;
+            Summary = "브리프 조건 9개 중 " + score + "개 달성";
+        }
+        else StartRound();
+    }
+
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {
         if (state == State.Mixing && TimeLeft <= 0) Submit();
-        if (state == State.Feedback && Now - stateAt >= 2.8f)
-        {
-            if (++round >= Briefs.Length)
-            {
-                state = State.Completed; Done = true;
-                Delta = score >= 8 ? 2 : score >= 5 ? 1 : 0;
-                Summary = "브리프 조건 9개 중 " + score + "개 달성";
-            }
-            else StartRound();
-        }
         NovelUI.Card(new Rect(130, 150, 1020, 600), NovelUI.Cream, 18, NovelUI.Pink, 2);
         string head = "MIXING CONSOLE  ·  " + (Done ? "완료" : (Mathf.Min(round, 2) + 1) + "/3곡") + "  ·  조건 " + score;
         if (state == State.Mixing) head += "  ·  남은 시간 " + Mathf.CeilToInt(Real(TimeLeft)) + "초";
@@ -128,6 +129,10 @@ public class MixingBoard : MiniGame
             NovelUI.Label(new Rect(800, 290 + k * 82, 300, 76), mark + b.Rules[k].Text, NovelUI.Soft, 21, NovelUI.Berry);
         }
         if (state == State.Mixing) { if (NovelUI.Button(new Rect(800, 600, 300, 60), "믹스 확정", true, 22)) Submit(); }
-        else NovelUI.Label(new Rect(780, 590, 340, 80), met[0] && met[1] && met[2] ? "밴드 소리가 하나로 모였어요!" : "표시된 조건을 다시 들어 봐요.", NovelUI.Round, 22, NovelUI.Berry, TextAnchor.MiddleCenter);
+        else
+        {
+            NovelUI.Label(new Rect(780, 565, 340, 65), met[0] && met[1] && met[2] ? "볼륨 조건을 모두 맞췄어요!" : "표시된 조건과 수치를 다시 확인해요.", NovelUI.Round, 22, NovelUI.Berry, TextAnchor.MiddleCenter);
+            if (GUI.Button(new Rect(800, 655, 300, 65), round == Briefs.Length - 1 ? "결과 보기" : "다음 곡", button)) Next();
+        }
     }
 }

@@ -16,7 +16,7 @@ public class BehaviorCoding : MiniGame
         new Item { Text = "참가자 G가 짝에게 \"너 때문에 망쳤어\"라고 소리쳤다.", Code = 1, Why = "들은 말을 그대로 옮겼어요. 언어적 공격 행동으로 코딩해요." },
         new Item { Text = "참가자 H는 불안해 보였고 자신감이 없었다.", Code = 3, Why = "'불안해 보임'은 인상이에요. 손을 떨었다, 3초간 말이 없었다처럼 행동으로 바꿔 적어요." }
     };
-    const float Limit = 12f, Read = 5f;
+    const float Limit = 12f;
     enum State { Instructions, Coding, Feedback, Completed }
     State state = State.Instructions;
     int item, correct, lastPick;
@@ -75,13 +75,12 @@ public class BehaviorCoding : MiniGame
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {
         if (state == State.Coding && Now - stateAt >= Limit) Answer(-1);
-        if (state == State.Feedback && Now - stateAt >= Read) Next();
         NovelUI.Card(new Rect(130, 150, 1020, 600), NovelUI.Cream, 18, NovelUI.Pink, 2);
         NovelUI.Label(new Rect(160, 168, 950, 35), "OBSERVATION LOG  ·  " + (Done ? "완료" : "기록 " + (Mathf.Min(item, 7) + 1) + "/8") + "  ·  정확 " + correct, NovelUI.Round, 21, NovelUI.Berry);
 
         if (state == State.Instructions)
         {
-            NovelUI.Label(new Rect(175, 240, 930, 260), "실험 참가자를 관찰한 기록이 한 줄씩 나와요.\n눈에 보이는 행동이면 <b>협력 · 공격 · 회피</b> 중 하나로,\n마음을 짐작한 문장이면 <b>해석</b>으로 분류하세요.\n키보드 1~4 또는 버튼, 기록마다 12초예요.", NovelUI.Soft, 23, NovelUI.Berry);
+            NovelUI.Label(new Rect(175, 240, 930, 260), "실험 참가자를 관찰한 기록이 한 줄씩 나와요.\n눈에 보이는 행동이면 <b>협력 · 공격 · 회피</b> 중 하나로,\n마음을 짐작한 문장이면 <b>해석</b>으로 분류하세요.\n키보드 1~4 또는 버튼, 기록마다 " + Mathf.CeilToInt(Real(Limit)) + "초예요.", NovelUI.Soft, 23, NovelUI.Berry);
             if (GUI.Button(new Rect(440, 560, 400, 75), "시작하기", button)) Begin();
             return;
         }

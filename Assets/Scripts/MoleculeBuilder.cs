@@ -68,7 +68,7 @@ public class MoleculeBuilder : MiniGame
         NovelUI.Label(new Rect(160, 168, 950, 35), head, NovelUI.Round, 21, NovelUI.Berry);
         if (state == State.Instructions)
         {
-            NovelUI.Label(new Rect(175, 240, 930, 260), "위에 나온 분자식대로 원자를 조립하세요.\n원자 아래 + / − 버튼으로 개수를 바꿔요. 원소 기호 뒤 숫자가 그 원자의 개수예요.\n(숫자가 없으면 1개, 예: H2O = H 2개 + O 1개)\n다 맞췄다면 '조립 완료'! 분자 다섯 개, 제한 시간은 " + (int)Limit + "초예요.", NovelUI.Soft, 23, NovelUI.Berry);
+            NovelUI.Label(new Rect(175, 240, 930, 260), "위에 나온 분자식대로 원자를 조립하세요.\n원자 아래 + / − 버튼으로 개수를 바꿔요. 원소 기호 뒤 숫자가 그 원자의 개수예요.\n(숫자가 없으면 1개, 예: H2O = H 2개 + O 1개)\n다 맞췄다면 '조립 완료'! 분자 다섯 개, 제한 시간은 " + Mathf.CeilToInt(Real(Limit)) + "초예요.", NovelUI.Soft, 23, NovelUI.Berry);
             if (GUI.Button(new Rect(440, 560, 400, 75), "시작하기", button)) { startedAt = Now; Begin(); }
             return;
         }
