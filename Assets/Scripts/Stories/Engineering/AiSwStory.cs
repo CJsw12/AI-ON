@@ -153,7 +153,7 @@ public static class AiSwStory
             new[] { "못 찾았네요. 조건부터 다시 읽어요. …급하게 보니까 그래요.", "몇 개는 찾았네요. …눈은 있어요. 나머진 천천히.", "다 잡았네요. …제가 말한 거 듣긴 했나 보네요." },
             new[] { "앗, 이번 판은 버그 쪽이 이겼네요! 괜찮아요, 버그는 원래 리스폰이 빠른 몹이에요. 한 판 더!", "몇 마리는 잡았네요! 남은 놈들은 조건문 뒤에 숨어 있어요. 다음엔 거기부터 수색!", "퍼펙트 클리어! 버그 헌터 칭호 획득이에요. 이 정도면 랭킹 1위 아닌가요?" }
         } };
-    static readonly MiniGameTheme Coffee = new MiniGameTheme { Kind = MiniGameKind.Coffee, Title = "발표 전날 과방 커피", Place = "DeptLounge", Note = "챕터 5 · 과방 커피 머신으로 주문서대로 만들기",
+    static readonly MiniGameTheme Coffee = new MiniGameTheme { Kind = MiniGameKind.Coffee, Title = "발표 전날 과방 커피", Place = "DeptLounge", Note = "챕터 5 · 과방 커피 머신으로 주문서대로 만들기", Customers = new[] { "팀원", "발표 담당 동기" },
         Replies = new[] {
             new[] { "…이거 제가 시킨 거 아닌데요. 됐어요, 마실게요.", "제 건 맞네요. …다른 건 주문서 다시 봐요.", "다 맞네요. …커피는 잘 타네요. 고마워요." },
             new[] { "어… 이건 제 주문이 아닌데요? 하하, 랜덤 박스 뽑은 기분이에요. 이것도 맛있어요!", "제 커피는 완벽해요! 동기 것만 살짝 다른 버전으로 패치됐네요.", "주문 전부 완벽! 버그 없는 커피, 이게 바로 무결점 빌드죠!" }

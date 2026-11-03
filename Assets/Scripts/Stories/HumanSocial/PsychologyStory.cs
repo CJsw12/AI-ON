@@ -175,7 +175,7 @@ public static class PsychologyStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "화해의 커피", Place = "CampusCafe", Note = "챕터 5 · 교내 카페에서 주문대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "화해의 커피", Place = "CampusCafe", Note = "챕터 5 · 교내 카페에서 주문대로 커피 내리기", Customers = new[] { "동기", "실험 짝꿍" },
                 Replies = new[] {
                     new[] { "주문과 다른 커피. 듣는 척과 듣는 것은 다르죠. 동기도 그걸 느꼈을 거예요.", "제 커피는 맞았어요. 동기 주문은 반쯤만 들었네요. 아직 조금 긴장했나 봐요.", "모든 주문이 정확했어요. 끝까지 들은 사람의 커피는 맛이 달라요." },
                     new[] { "어… 제 바닐라 라떼가… 아, 아니에요, 이것도 좋아요! 둘이 웃었으니 됐어요.", "제 커피 완벽해요! 동기도 반쯤은 풀린 얼굴이고… 다행이다.", "주문 전부 완벽! 화해 성공이에요… 아, 괜히 제가 눈물이." }

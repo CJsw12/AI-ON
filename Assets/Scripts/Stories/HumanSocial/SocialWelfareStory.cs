@@ -186,7 +186,7 @@ public static class SocialWelfareStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "비 오는 날의 커피", Place = "CampusCafe", Note = "챕터 5 · 지친 동기와 교수님께 주문대로 커피 내리기",
+                Kind = MiniGameKind.Coffee, Title = "비 오는 날의 커피", Place = "CampusCafe", Note = "챕터 5 · 지친 동기와 교수님께 주문대로 커피 내리기", Customers = new[] { "실습 동기", "복지관 반장" },
                 Replies = new[] {
                     new[] { "에헴, 내 건 따뜻한 거라고 했잖나. 위로도 상대가 원하는 걸 들어야 한다. 잔소리 같아도 맞는 말이다.", "내 커피는 맞았다. 친구 주문도 한 번 더 확인해라. 비 오는 날엔 다들 말이 작아.", "허허, 다 맞혔구먼. 잘 듣는 사람이 잘 돕는다. 이 커피, 오래 기억하마." },
                     new[] { "…괜찮아요. …웃었으니까요.", "…맞아요, 제 거. …동기도 풀렸어요.", "……따뜻해요. …고마워요." }
