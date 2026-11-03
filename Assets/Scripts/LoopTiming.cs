@@ -61,7 +61,7 @@ public class LoopTiming : MiniGame
             else { round++; }
             if (round >= 3) Finish(); else BeginCountdown();
         }
-        float shake = state == State.Running && value >= 8 ? Mathf.Sin(now * 45f) * 1.5f : 0;
+        float shake = state == State.Running && value >= 8 && GameSettings.Effects ? Mathf.Sin(now * 45f) * 1.5f : 0;
         NovelUI.Card(new Rect(130 + shake, 150, 1020, 560), new Color(.08f,.1f,.15f), 18, NovelUI.Pink, 2);
         GUI.Label(new Rect(155, 170, 950, 35), header + "  ·  " + (Done ? "완료" : (round + 1) + "/3  " + levelNames[round]) + "  ·  " + (attempt == 0 ? "연습" : "본 도전"), body);
         GUI.Label(new Rect(155, 220, 960, 38), rule, body);

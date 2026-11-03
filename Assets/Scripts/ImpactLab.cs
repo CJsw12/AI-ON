@@ -192,7 +192,7 @@ public class ImpactLab : MiniGame
             if (experienced)
             {
                 float stopTime = 2 * round.Pads[selectedPad] / round.Speed;
-                NovelUI.Label(new Rect(200, 600, 880, 30), "Δp = " + (round.Mass * round.Speed).ToString("0.#") + " N·s   ·   Δt ≈ " + stopTime.ToString("0.##") + " s   ·   F평균 = " + averageForce.ToString("0.#") + " N",
+                NovelUI.Label(new Rect(200, 600, 880, 30), "|Δp| = " + (round.Mass * round.Speed).ToString("0.#") + " N·s   ·   Δt ≈ " + stopTime.ToString("0.##") + " s   ·   |F평균| = " + averageForce.ToString("0.#") + " N",
                     NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
             }
             string next = tutorial ? (lastOk ? "본 실험 시작" : "연습 다시 하기") : roundIndex + 1 >= rounds.Length ? "결과 보기" : "다음 실험";

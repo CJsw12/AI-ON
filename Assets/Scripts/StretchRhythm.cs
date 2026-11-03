@@ -68,8 +68,9 @@ public class StretchRhythm : MiniGame
         for (int i = 0; i < times.Length; i++)
             if (judged[i] == 0 && song > times[i] + Good) { judged[i] = 1; flash = "놓쳤어요"; flashAt = Now; }
         if (song > times[times.Length - 1] + .8f) { Finish(); return; }
-        int beat = Mathf.FloorToInt((song + Lead) / .75f);
-        if (song < times[8] - .3f && beat != lastBeat && NovelUI.Repaint) { lastBeat = beat; NovelUI.Sound?.Invoke("LoopTick"); }
+        // The metronome follows the beat: every .75 s, then every .5 s from the ninth move on.
+        int beat = song < times[8] ? Mathf.FloorToInt((song + Lead) / .75f) : 1000 + Mathf.FloorToInt((song - times[8]) / .5f);
+        if (song <= times[times.Length - 1] + .1f && beat != lastBeat && NovelUI.Repaint) { lastBeat = beat; NovelUI.Sound?.Invoke("LoopTick"); }
 
         // Keyboard input; menus turn these events into Ignore, so nothing fires while settings are open.
         Event e = Event.current;
