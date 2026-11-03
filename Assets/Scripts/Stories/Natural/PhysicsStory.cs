@@ -167,8 +167,8 @@ public static class PhysicsStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.ImpactLab, Title = "멈춰라, 운동량!", Place = "PhysicsLectureHall", Note = "2장 · 카트의 운동량을 안전하게 멈춰요", ImpactVariant = 0,
-                Replies = new[] { new[] { "허용 힘과 stopping distance를 모두 만족했습니다. 이 기준으로 시연하세요.", "절반은 안전했습니다. momentum과 cushion length를 다시 대조하세요.", "완벽합니다. 실험 조건과 result가 일치합니다." }, new[] { "카트가 잘 멈췄어요. 다음엔 관객에게 이유도 설명해 봐요!", "조금 아쉬워요. 긴 쿠션과 힘의 관계를 다시 볼까요?", "세 번 다 성공! 축제 시연 준비가 끝났어요." } }
+                Kind = MiniGameKind.ImpactLab, Title = "멈춰라, 운동량! · 강의실 시연", Place = "PhysicsLectureHall", Note = "챕터 2 · 카트의 운동량을 안전하게 멈춰요", ImpactVariant = 0,
+                Replies = new[] { new[] { "세 번 모두 기준을 넘었습니다. 허용 힘과 정지 구간부터 다시 계산하세요.", "절반은 안전했습니다. momentum과 cushion length를 다시 대조하세요.", "완벽합니다. 실험 조건과 result가 일치합니다." }, new[] { "카트가 한 번도 제대로 안 멈췄네요. 쿠션 길이부터 같이 다시 볼까요?", "조금 아쉬워요. 긴 쿠션과 힘의 관계를 다시 볼까요?", "세 번 다 성공! 축제 시연 준비가 끝났어요." } }
             }
         },
         new Slot {
@@ -203,8 +203,8 @@ public static class PhysicsStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.ImpactLab, Title = "멈춰라, 운동량!", Place = "PhysicsOpticsLab", Note = "4장 · 렌즈 상자를 싣고 안전하게 정지", ImpactVariant = 1,
-                Replies = new[] { new[] { "렌즈의 허용 힘을 넘지 않았습니다. 다음 측정에도 이 조건을 쓰세요.", "조건 일부가 맞지 않습니다. mass와 average force를 함께 확인하세요.", "세 라운드 모두 안전합니다. 기록을 보고서에 옮기세요." }, new[] { "렌즈가 무사해요! 조심스럽게 잘 다뤘어요.", "다음엔 한 번 더 비교해 봐요. 원인이 보일 거예요!", "성공이에요! 렌즈도 관객도 안심하겠어요." } }
+                Kind = MiniGameKind.ImpactLab, Title = "멈춰라, 운동량! · 렌즈 운반", Place = "PhysicsOpticsLab", Note = "챕터 4 · 렌즈 상자를 싣고 안전하게 정지", ImpactVariant = 1,
+                Replies = new[] { new[] { "렌즈의 허용 힘을 매번 넘었습니다. 질량과 속도를 다시 확인하세요.", "조건 일부가 맞지 않습니다. mass와 average force를 함께 확인하세요.", "세 라운드 모두 안전합니다. 기록을 보고서에 옮기세요." }, new[] { "앗, 렌즈가 위험했어요! 다음엔 더 긴 쿠션도 비교해 봐요.", "다음엔 한 번 더 비교해 봐요. 원인이 보일 거예요!", "성공이에요! 렌즈도 관객도 안심하겠어요." } }
             }
         },
         new Slot {
@@ -239,8 +239,8 @@ public static class PhysicsStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.ImpactLab, Title = "멈춰라, 운동량!", Place = "PhysicsResearchLounge", Note = "6장 · 축제 마지막 카트 시연", ImpactVariant = 2,
-                Replies = new[] { new[] { "최종 조건을 검증했습니다. 축제 시연을 시작해도 좋습니다.", "마지막 한계값을 놓쳤습니다. 안전 기준부터 다시 확인하세요.", "재현 가능한 결과입니다. 관객에게 data를 설명하세요." }, new[] { "관객 앞에서도 완벽했어요! 우리가 같이 준비한 보람이 있네요.", "아쉬워요. 마지막 실험은 늘 침착하게 다시 보면 돼요.", "멋진 시연이에요! 모두가 물리의 재미를 느꼈을 거예요." } }
+                Kind = MiniGameKind.ImpactLab, Title = "멈춰라, 운동량! · 축제 무대", Place = "PhysicsResearchLounge", Note = "챕터 6 · 축제 마지막 카트 시연", ImpactVariant = 2,
+                Replies = new[] { new[] { "최종 조건을 하나도 통과하지 못했습니다. 시연 전에 안전 기준을 다시 검토하세요.", "마지막 한계값을 놓쳤습니다. 안전 기준부터 다시 확인하세요.", "재현 가능한 결과입니다. 관객에게 data를 설명하세요." }, new[] { "관객 앞이라 많이 떨렸죠? 괜찮아요, 리허설 때 다시 맞춰 봐요.", "아쉬워요. 마지막 실험은 늘 침착하게 다시 보면 돼요.", "멋진 시연이에요! 모두가 물리의 재미를 느꼈을 거예요." } }
             }
         },
         new Slot {

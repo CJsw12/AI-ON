@@ -35,6 +35,7 @@ public class ImpactLab : MiniGame
 
     readonly bool experienced, practice;
     readonly Round[] rounds;
+    readonly int[] padOrder = { 0, 1, 2 };
     State state = State.Instructions;
     bool tutorial = true, lastOk;
     int roundIndex, passed, selectedPad = -1;
@@ -48,7 +49,15 @@ public class ImpactLab : MiniGame
         this.experienced = experienced;
         this.practice = practice;
         int variant = Mathf.Clamp(theme.ImpactVariant, 0, 2);
-        rounds = (experienced ? ExperiencedRounds : BeginnerRounds)[variant];
+        // A fresh copy in random order, so the answers never come in a fixed sequence.
+        rounds = (Round[])(experienced ? ExperiencedRounds : BeginnerRounds)[variant].Clone();
+        Shuffle(rounds);
+        Shuffle(padOrder);
+    }
+
+    static void Shuffle<T>(T[] items)
+    {
+        for (int i = items.Length - 1; i > 0; i--) { int j = Random.Range(0, i + 1); (items[i], items[j]) = (items[j], items[i]); }
     }
 
     public override string[][] Replies => Theme.Replies ?? DefaultReplies;
@@ -98,8 +107,11 @@ public class ImpactLab : MiniGame
     void Advance()
     {
         selectedPad = -1;
+        Shuffle(padOrder);
         if (tutorial)
         {
+            // A missed practice is tried again before the scored rounds.
+            if (!lastOk) { state = State.Selecting; return; }
             tutorial = false;
             state = State.Selecting;
             return;
@@ -119,7 +131,6 @@ public class ImpactLab : MiniGame
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {
         if (state == State.Traveling && Now - stateAt >= .75f) FinishTravel();
-        if (state == State.Feedback && Now - stateAt >= 1.65f) Advance();
 
         NovelUI.Card(new Rect(130, 150, 1020, 600), NovelUI.Cream, 18, NovelUI.Mint, 2);
         NovelUI.Label(new Rect(160, 168, 950, 36), "IMPACT LAB  ·  " + (tutorial ? "연습" : Done ? "완료" : (roundIndex + 1) + "/3 라운드") + "  ·  성공 " + passed,
@@ -137,8 +148,8 @@ public class ImpactLab : MiniGame
 
         if (state == State.Completed)
         {
-            NovelUI.Label(new Rect(180, 345, 920, 90), Summary, NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-            NovelUI.Label(new Rect(190, 450, 900, 70), experienced
+            NovelUI.Label(new Rect(180, 225, 920, 90), Summary, NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
+            NovelUI.Label(new Rect(190, 315, 900, 70), experienced
                 ? "Δp = J = F평균·Δt  ·  정지 구간을 늘리면 평균힘은 줄어듭니다."
                 : "운동량 변화가 같다면 멈추는 시간이 길수록 평균힘이 작아져요.",
                 NovelUI.Soft, 22, NovelUI.Plum, TextAnchor.MiddleCenter);
@@ -165,13 +176,14 @@ public class ImpactLab : MiniGame
             for (int i = 0; i < round.Pads.Length; i++)
             {
                 float x = 210 + i * 290;
-                if (NovelUI.Button(new Rect(x, 555, 250, 66), round.Pads[i].ToString("0.#") + " m 쿠션", false, 22)) Launch(i);
+                int pad = padOrder[i];
+                if (NovelUI.Button(new Rect(x, 555, 250, 66), round.Pads[pad].ToString("0.#") + " m 쿠션", false, 22)) Launch(pad);
             }
         }
         else if (state == State.Traveling)
         {
             float t = Mathf.Clamp01((Now - stateAt) / .75f);
-            float x = Mathf.Lerp(250, 450 + round.Pads[selectedPad] * 120, t);
+            float x = Mathf.Lerp(250, StopX(round), t);
             DrawCart(x);
         }
         else if (state == State.Feedback)
@@ -183,6 +195,8 @@ public class ImpactLab : MiniGame
                 NovelUI.Label(new Rect(200, 600, 880, 30), "Δp = " + (round.Mass * round.Speed).ToString("0.#") + " N·s   ·   Δt ≈ " + stopTime.ToString("0.##") + " s   ·   F평균 = " + averageForce.ToString("0.#") + " N",
                     NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
             }
+            string next = tutorial ? (lastOk ? "본 실험 시작" : "연습 다시 하기") : roundIndex + 1 >= rounds.Length ? "결과 보기" : "다음 실험";
+            if (NovelUI.Button(new Rect(440, 650, 400, 66), next, true, 24)) Advance();
         }
     }
 
@@ -197,8 +211,12 @@ public class ImpactLab : MiniGame
         float pad = selectedPad >= 0 ? round.Pads[selectedPad] : 1f;
         NovelUI.Fill(new Rect(cushionStart, 413, pad * scale, 42), state == State.Feedback && lastOk ? NovelUI.Mint : NovelUI.Alpha(NovelUI.Sky, .75f), 12);
         NovelUI.Label(new Rect(cushionStart, 453, pad * scale, 24), selectedPad >= 0 ? pad.ToString("0.#") + " m 쿠션" : "쿠션 구간", NovelUI.Soft, 15, NovelUI.Berry, TextAnchor.MiddleCenter);
-        if (state != State.Traveling) DrawCart(250);
+        if (state == State.Feedback) DrawCart(StopX(round));
+        else if (state != State.Traveling) DrawCart(250);
     }
+
+    // The cart's left edge where its front (72 px wide) meets the end of the chosen cushion.
+    float StopX(Round round) => 450 + round.Pads[selectedPad] * 120 - 72;
 
     void DrawCart(float x)
     {

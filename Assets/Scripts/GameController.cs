@@ -222,7 +222,7 @@ public partial class GameController : MonoBehaviour
         CurrentLine(out string speaker, out string text);
         string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
         if (key != lineKey) { lineKey = key; lineStartedAt = Time.unscaledTime; typedAt = -1; AddToBacklog(key, speaker, text); }
-        readKey = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString());
+        readKey = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString()) + (experienced ? "/E" : "");
         string plain = Tags.Replace(text, "");
         int shown = Mathf.FloorToInt((Time.unscaledTime - lineStartedAt) * GameSettings.LettersPerSecond);
         bool typing = shown < plain.Length;
