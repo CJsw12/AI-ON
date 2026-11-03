@@ -218,6 +218,8 @@ public static class ChemistryStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값과 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
+            // [NOTE FOR NopepYCO / Codex]: 아래 Image("ProfessorJungDoYoon", "ProfessorOhHaRam")는 세션 간 소통 착오로 임시 생성된 에셋입니다.
+            // NopepYCO님이 제작 중이신 정식 에셋 파일로 자유롭게 교체·덮어쓰시거나 Image=""로 초기화하셔도 됩니다.
             new Professor { Name = "정도윤 교수", Description = "걱정 많은 안전 지킴이 · 보안경 확인은 세 번, 학생은 끝까지 믿어 줌", TagA = "#보안경썼죠", TagB = "#환기확인", Image = "ProfessorJungDoYoon" },
             new Professor { Name = "오하람 교수", Description = "쇼맨십 넘치는 실험 마술사 · 반응도 관객 반응도 즐김", TagA = "#자보세요", TagB = "#색변신쇼", Image = "ProfessorOhHaRam" }
         },
