@@ -35,6 +35,12 @@ public class ChangeMaker : MiniGame
         if (lastOk) correct++;
         state = State.Feedback; stateAt = Now;
         Judge(lastOk, new Vector2(885, 300), lastOk ? "딱 맞아요!" : "틀렸어요");
+        if (!lastOk)
+        {
+            int expected = Current.Paid - Current.Price;
+            ExplainFailure("건넨 돈은 " + Won(given) + ", 필요한 거스름돈은 " + Won(expected) + "이에요.\n" + Won(Mathf.Abs(given - expected)) + (given < expected ? " 부족해요." : " 더 건넸어요."),
+                string.Join("\n", Current.Lines) + "\n할인까지 적용한 합계: " + Won(Current.Price) + "\n받은 돈 " + Won(Current.Paid) + " - 합계 " + Won(Current.Price) + " = " + Won(expected) + "\n큰 지폐부터 담고, 남은 금액을 동전으로 맞춰요.");
+        }
     }
     static string Won(int v) => v.ToString("N0") + "원";
 

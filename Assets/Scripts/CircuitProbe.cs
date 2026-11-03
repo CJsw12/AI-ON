@@ -12,8 +12,9 @@ public class CircuitProbe : MiniGame
     float stateAt;
     readonly string[] order = new string[8];
     readonly int[] reading = new int[7];   // Test point k sits after part k: 0 not measured, 1 = ON, 2 = OFF.
+    readonly bool beginner;
 
-    public CircuitProbe(MiniGameTheme theme) : base(theme) { }
+    public CircuitProbe(MiniGameTheme theme, bool experienced = true) : base(theme) { beginner = !experienced; }
     public override string[][] Replies => Theme.Replies ?? new[] {
         new[] { "측정 없이 부품을 뜯었습니다. 가운데부터 재서 범위를 반씩 줄이세요.", "찾기는 했습니다. 측정 횟수를 줄이려면 매번 남은 구간의 가운데를 재세요.", "정확합니다. 세 번 측정으로 범위를 좁혔군요. 이것이 고장 진단의 기본입니다." },
         new[] { "범인이 도망갔어요! 가운데부터 콕 찍어 보면 금방 잡혀요.", "범인 검거! 조금만 더 아껴 재면 탐정 레벨 업이에요.", "멀티미터 명탐정! 세 번 만에 딱딱 찾아냈어요!" }
@@ -42,6 +43,26 @@ public class CircuitProbe : MiniGame
         if (ok) good++;
         state = State.Feedback; stateAt = Now;
         Judge(part == broken, new Vector2(262 + part * 113, 320), part == broken ? "수리 완료!" : "멀쩡한 부품이에요");
+        if (!ok)
+        {
+            string reason = part == broken
+                ? "고장 부품은 맞혔지만 측정을 " + probes + "번 했어요. 성공 기준은 3번 이내예요."
+                : "교체한 " + order[part] + "(왼쪽에서 " + (part + 1) + "번째)은 정상이에요.\n실제 고장은 " + order[broken] + "(" + (broken + 1) + "번째)이에요." + (probes == 0 ? " 측정 없이 교체했어요." : " 측정 결과와 고장 위치를 함께 확인해요.");
+            ExplainFailure(reason, RepairSteps());
+        }
+    }
+    string RepairSteps()
+    {
+        int low = 0, high = 7;
+        string steps = "가운데를 재서 후보를 반씩 줄여요. ON이면 오른쪽, OFF이면 왼쪽(바로 앞 부품 포함)이에요.\n";
+        while (low < high)
+        {
+            int point = (low + high) / 2;
+            bool on = broken > point;
+            steps += (point + 1) + "번 부품 뒤 " + (on ? "ON → 오른쪽" : "OFF → 왼쪽") + "  /  ";
+            if (on) low = point + 1; else high = point;
+        }
+        return steps + "\n" + (broken + 1) + "번째 " + order[broken] + "를 교체하면 돼요. (이 판의 해결 예시)";
     }
     void Finish()
     {
@@ -60,11 +81,14 @@ public class CircuitProbe : MiniGame
         GUI.Label(new Rect(155, 170, 950, 35), "MULTIMETER  ·  " + (Done ? "완료" : "라디오 " + (Mathf.Min(round, 2) + 1) + "/3") + "  ·  측정 " + probes + "회", body);
         if (state == State.Instructions)
         {
-            GUI.Label(new Rect(175, 240, 930, 220), "라디오 안 부품 여덟 개가 한 줄로 이어져 있고, 그중 하나가 끊겼어요.\n부품 사이의 ● 지점을 누르면 전기가 오는지 재요. 오면 ON, 안 오면 OFF.\n전원 쪽에서 보면 ON, ON… 하다가 끊긴 부품 뒤부터 OFF가 돼요.\nON과 OFF 사이의 부품을 눌러 교체하세요. 측정 3번 안에 찾으면 성공!", body);
-            if (GUI.Button(new Rect(440, 560, 400, 75), "시작하기", button)) Begin();
+            GUI.Label(new Rect(175, beginner ? 230 : 240, 930, beginner ? 380 : 220), beginner
+                ? "멀티미터는 전기가 전달되는지 확인하는 도구예요.\n이 게임에서는 전기가 왼쪽에서 오른쪽으로 흐르고, 고장 뒤쪽은 OFF가 돼요.\n\n① 작은 ●를 누르면 측정해요. 부품 이름을 누르면 바로 교체해요.\n② ON(전기 옴)이면 그 지점 오른쪽에 고장이 있어요.\n③ OFF(전기 안 옴)이면 그 지점 왼쪽에 고장이 있어요. 바로 앞 부품도 포함해요.\n예: [1번] 뒤 ON, [2번] 뒤 OFF라면 → 2번 부품이 끊겼어요.\n\n가운데부터 재고 남은 후보의 가운데를 다시 재면, 3번 안에 찾을 수 있어요."
+                : "라디오 안 부품 여덟 개가 한 줄로 이어져 있고, 그중 하나가 끊겼어요.\n부품 사이의 ● 지점을 누르면 전기가 오는지 재요. 오면 ON, 안 오면 OFF.\n전원 쪽에서 보면 ON, ON… 하다가 끊긴 부품 뒤부터 OFF가 돼요.\nON과 OFF 사이의 부품을 눌러 교체하세요. 측정 3번 안에 찾으면 성공!", body);
+            if (GUI.Button(new Rect(440, beginner ? 650 : 560, 400, beginner ? 60 : 75), "시작하기", button)) Begin();
             return;
         }
         if (state == State.Completed) { GUI.Label(new Rect(170, 330, 940, 100), Summary, title); return; }
+        if (beginner) GUI.Label(new Rect(170, 225, 940, 75), "작은 ● = 측정 / 부품 이름 = 교체\nON이면 오른쪽, OFF이면 왼쪽(바로 앞 부품 포함)을 살펴보세요.", body);
 
         // Battery on the left feeds the chain; the wire runs under the parts.
         NovelUI.Label(new Rect(150, 330, 60, 90), "전원", NovelUI.Round, 20, NovelUI.Lemon, TextAnchor.MiddleCenter);

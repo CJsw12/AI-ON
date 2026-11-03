@@ -37,6 +37,8 @@ public class LoopTiming : MiniGame
         else verdict = miss;
         state = State.Result; stateAt = Now;
         NovelUI.Sound?.Invoke(n == 10 ? "Up" : "Down");
+        if (n != 10) ExplainFailure("목표는 10인데 " + n + "에서 멈췄어요.\n" + (n < 10 ? (10 - n) + "번의 증가가 남은 상태에서 너무 일찍 눌렀어요." : "목표보다 " + (n - 10) + "번 더 증가한 뒤에 멈췄어요."),
+            "0부터 세기 시작해 숫자가 10이 되는 순간 정지 버튼을 눌러요.\n9에서는 아직 i < 10이 참이고, 10에서 거짓이 돼요.\n" + (round == 1 ? "두 번째 단계는 중간부터 증가 간격이 짧아져요. 마지막 숫자를 눈으로 확인해요." : round == 2 ? "마지막 단계는 8부터 숫자가 숨겨져요. 0.25초 간격으로 8 → 9 → 10의 박자를 이어 세어 보세요." : "첫 단계는 약 0.33초마다 1씩 증가해요. 9 다음 박자가 10이에요."));
     }
     void Finish()
     {

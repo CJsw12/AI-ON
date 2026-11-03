@@ -38,6 +38,28 @@ public class PlateBalance : MiniGame
         if (lastOk) passed++;
         state = State.Feedback; stateAt = Now;
         Judge(lastOk, new Vector2(950, 260), lastOk ? "완벽한 식판!" : "균형이 깨졌어요");
+        if (!lastOk)
+        {
+            Meal m = Meals[meal];
+            string comparison = "";
+            for (int k = 0; k < 3; k++) comparison += Labels[k] + ": 내 식판 " + Sum(k) + " / 목표 " + m.Min[k] + "~" + m.Max[k] + "\n";
+            ExplainFailure(m.Note + "\n" + Missed(), comparison + Solution() + "\n다른 조합도 세 범위를 모두 맞추면 정답이에요. 숫자는 게임용 영양 점수예요.");
+        }
+    }
+    string Solution()
+    {
+        Meal m = Meals[meal];
+        for (int a = 0; a < Dishes.Length - 2; a++)
+            for (int b = a + 1; b < Dishes.Length - 1; b++)
+                for (int c = b + 1; c < Dishes.Length; c++)
+                {
+                    Dish x = Dishes[a], y = Dishes[b], z = Dishes[c];
+                    int[] sums = { x.C + y.C + z.C, x.P + y.P + z.P, x.F + y.F + z.F };
+                    bool valid = true;
+                    for (int k = 0; k < 3; k++) if (sums[k] < m.Min[k] || sums[k] > m.Max[k]) valid = false;
+                    if (valid) return "성공 조합 예시: " + x.Name + " + " + y.Name + " + " + z.Name;
+                }
+        return "목표 범위와 음식별 점수를 비교해 조합을 바꿔 보세요.";
     }
 
     string Missed()

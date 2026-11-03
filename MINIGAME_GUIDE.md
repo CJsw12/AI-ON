@@ -10,8 +10,8 @@
 | 카드 짝맞추기 | `CardMatch.cs` / `CardMatch` | `public CardMatch(MiniGameTheme theme) : base(theme)` |
 | 타이밍 맞추기 | `LoopTiming.cs` / `LoopTiming` | `public LoopTiming(MiniGameTheme theme) : base(theme)` |
 | 커피 제조 | `CoffeeOrder.cs` / `CoffeeOrder` | `public CoffeeOrder(int professor, MiniGameTheme theme) : base(theme)` |
-| 버그 사냥 (컴공 전용) | `BugHunt.cs` / `BugHunt` | `public BugHunt(MiniGameTheme theme) : base(theme)` |
-| 멀티미터 고장 찾기 (스마트 전용) | `CircuitProbe.cs` / `CircuitProbe` | `public CircuitProbe(MiniGameTheme theme) : base(theme)` |
+| 버그 사냥 (컴공 전용) | `BugHunt.cs` / `BugHunt` | `public BugHunt(MiniGameTheme theme, bool experienced = true) : base(theme)` |
+| 멀티미터 고장 찾기 (스마트 전용) | `CircuitProbe.cs` / `CircuitProbe` | `public CircuitProbe(MiniGameTheme theme, bool experienced = true) : base(theme)` |
 | 꾸러미 가격 정하기 (경영 전용) | `PriceTag.cs` / `PriceTag` | `public PriceTag(MiniGameTheme theme) : base(theme)` |
 | 스트레칭 리듬 (체육 전용) | `StretchRhythm.cs` / `StretchRhythm` | `public StretchRhythm(MiniGameTheme theme) : base(theme)` |
 | 배달이 길 안내 (스마트 전용) | `RobotRoute.cs` / `RobotRoute` | `public RobotRoute(MiniGameTheme theme) : base(theme)` |
@@ -19,6 +19,10 @@
 | 학식 식판 짜기 (체육 전용) | `PlateBalance.cs` / `PlateBalance` | `public PlateBalance(MiniGameTheme theme) : base(theme)` |
 
 지금 들어 있는 파일은 동작하는 임시 버전입니다. 참고용으로 같이 AI에게 보여 줘도 됩니다.
+
+버그 사냥은 스토리에서 선택한 전공 경험 여부를 `MiniGames.Create(..., experienced: experienced)`로 전달합니다. 비전공자는 문제별 사전 설명(시간 제한 없음), 코드 줄별 쉬운 설명, 풀이 확인 후 다음 문제 이동을 사용합니다. 전공자의 20초 제한·3초 자동 풀이 전환·점수는 유지합니다. 경험 선택이 없는 타이틀의 미니게임 연습은 기존 전공자 방식입니다. `Tools → Checks → Bug Hunt Guidance`에서 모드별 진행과 점수를 검사할 수 있습니다(Play 모드를 끈 상태).
+
+멀티미터도 같은 경험 값을 전달합니다. 입문자에게만 ON/OFF의 의미, 측정과 교체의 차이, 작은 예시를 추가하며 3회 측정 성공 기준은 같습니다. 전체 미니게임은 실패 시 `ExplainFailure(원인, 해결 방법)`으로 복습을 표시합니다. 호스트는 `Draw` 대신 `Render`를 호출하고, `Reviewing` 동안 시계를 멈추고 결과 버튼을 숨깁니다. 카드·리듬은 종료 시 복습하고, 다른 게임은 실패한 문제의 피드백에서 복습합니다. 해설 확인은 점수나 성공 판정을 바꾸지 않습니다. `Tools → Checks → Minigame Failure Lessons`에서 데이터와 해결 예시를 검사할 수 있습니다.
 
 ## 1. 게임 배경 (대사·문구를 여기에 맞춰 주세요)
 
