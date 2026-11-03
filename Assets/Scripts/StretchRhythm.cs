@@ -58,8 +58,7 @@ public class StretchRhythm : MiniGame
         GUI.Label(new Rect(155, 170, 950, 35), "METRONOME  ·  " + (Done ? "완료" : state == State.Playing && times.Length > 8 && Song > times[8] - .3f ? "빨라지는 박" : "느린 박"), body);
         if (state == State.Instructions)
         {
-            GUI.Label(new Rect(175, 240, 930, 220), "동작 카드가 왼쪽 선에 닿는 순간 같은 동작을 누르세요.\n버튼을 누르거나 방향키 ↑ ← ↓ 를 써도 돼요.\n동작은 16개, 뒤 절반은 박이 빨라집니다.
-동작이 없을 때 누르면 헛동작으로 점수가 깎여요.", body);
+            GUI.Label(new Rect(175, 240, 930, 220), "동작 카드가 왼쪽 선에 닿는 순간 같은 동작을 누르세요.\n버튼을 누르거나 방향키 ↑ ← ↓ 를 써도 돼요.\n동작은 16개, 뒤 절반은 박이 빨라집니다.\n동작이 없을 때 누르면 헛동작으로 점수가 깎여요.", body);
             if (GUI.Button(new Rect(440, 560, 400, 75), "시작하기", button)) { state = State.Playing; startedAt = Now; }
             return;
         }
