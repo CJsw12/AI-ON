@@ -83,6 +83,13 @@ public class MixingBoard : MiniGame
             state = State.Completed; Done = true;
             Delta = score >= 8 ? 2 : score >= 5 ? 1 : 0;
             Summary = "브리프 조건 9개 중 " + score + "개 달성";
+            if (Delta == 0)
+            {
+                ExplainFailure(
+                    "총 9개 브리프 조건 중 달성한 조건이 " + score + "개로 기준(5개 이상)에 미치지 못했어요.\n각 악기 페이더의 상대적 크기 조건과 최대/최소 제한을 동시에 만족해야 해요.",
+                    "믹싱 콘솔 조절 요령:\n1. '가장 크게': 해당 채널을 8~10 정도로 확실히 높이고 다른 채널을 그보다 낮게 둡니다.\n2. 'A는 B보다 크게': A 페이더 위치가 B보다 무조건 위에 있어야 합니다.\n3. '기타와 베이스는 같은 크기': 두 채널 페이더의 숫자 단계를 똑같이 맞춥니다.\n4. '드럼은 4 이하': 슬라이더를 0~4 구간 안에 위치시킵니다."
+                );
+            }
         }
         else StartRound();
     }

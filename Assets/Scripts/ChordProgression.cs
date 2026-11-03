@@ -70,6 +70,13 @@ public class ChordProgression : MiniGame
             state = State.Completed; Done = true;
             Delta = correct >= 7 ? 2 : correct >= 4 ? 1 : 0;
             Summary = "빈칸 " + Total + "개 중 " + correct + "개 정답";
+            if (Delta == 0)
+            {
+                ExplainFailure(
+                    "빈칸 8개 중 맞힌 개수가 " + correct + "개로 기준(4개 이상)에 미치지 못했어요.\n조성(Key)에 따른 다이어토닉 화음 구조를 파악하는 것이 필요해요.",
+                    "다이어토닉 코드(Diatonic Chord) 가이드:\n1. 로마 숫자 표기: I, IV, V는 장화음(Major, 대문자) / ii, iii, vi는 단화음(Minor, 소문자m) / vii°는 감화음(dim)\n2. C장조 기준: I=C, ii=Dm, iii=Em, IV=F, V=G, vi=Am, vii°=Bdim\n3. 4도 상행 진행: 근음이 4도씩 위로 이동하며 진행 (라 Am → 레 Dm → 솔 G → 도 C)"
+                );
+            }
         }
         else Prepare();
     }
