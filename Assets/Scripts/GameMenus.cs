@@ -235,7 +235,7 @@ public partial class GameController
         {
             Faculty = faculty, Scene = scene, Stage = choiceStage, Line = dialogueIndex, Professor = professor, Affection = affection,
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
-            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey
+            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick
         });
         slots[slot] = GameSave.Read(slot);
         confirmSlot = -1;
@@ -249,7 +249,7 @@ public partial class GameController
         faculty = data.Faculty; scene = data.Scene; choiceStage = data.Stage; professor = data.Professor;
         affection = shownAffection = data.Affection;
         questions = data.Questions; teamwork = data.Teamwork; interest = data.Interest; solo = data.Solo;
-        experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey;
+        experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey; wrongPick = data.WrongPick;
         // The story may have changed since the save was made, so keep the line inside the chapter.
         dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);
         memorial = 0; introDone = true; portraitAlpha = 0;
@@ -435,6 +435,7 @@ public partial class GameController
     {
         novelAudio.Play("Select");
         practice = theme;
+        MiniGame.Easy = false;
         miniGame = MiniGames.Create(theme, practiceProfessor, true);
         menu = Menu.None;
     }

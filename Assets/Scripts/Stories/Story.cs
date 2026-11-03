@@ -125,7 +125,8 @@ public static class Stories
     public static readonly string[] Colleges = { "공학부", "자연과학부", "인문사회학부", "예체능학부" };
 
     // Add new faculties at the end only: the index is kept in save slots and the ending book.
-    public static readonly Story[] All = { AiSwStory.Data, SmartSystemsStory.Data, BusinessStory.Data, ArtsHealthStory.Data };
+    public static readonly Story[] All = { AiSwStory.Data, SmartSystemsStory.Data, BusinessStory.Data, ArtsHealthStory.Data, ChemistryStory.Data, LifeScienceStory.Data, PsychologyStory.Data, MusicStory.Data,
+        MechanicalStory.Data, ArchitectureStory.Data, MathStory.Data, PhysicsStory.Data, SocialWelfareStory.Data, MediaStory.Data, VisualDesignStory.Data, TheaterFilmStory.Data };
 
     // Faculty indexes in one college, in the order above.
     public static int[] In(int college)

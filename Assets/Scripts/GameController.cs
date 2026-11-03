@@ -11,6 +11,7 @@ public partial class GameController : MonoBehaviour
     int choiceStage, questions, teamwork, interest, solo;
     int entryStep;
     bool experienced;
+    int wrongPick = -1;   // Beginners get a second try at a multiple-choice quiz; this is the option already ruled out.
     Texture2D previousBackground;
     float backgroundChangedAt;
     NovelAudio novelAudio;
@@ -313,7 +314,7 @@ public partial class GameController : MonoBehaviour
             float width = NovelUI.Width("미니게임", NovelUI.Round, 18) + 36;
             NovelUI.Pill(card.center.x - width / 2, card.y - 18, 36, "미니게임", NovelUI.Lemon, NovelUI.Berry, 18);
             NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 50), slot.Game.Title, NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); miniGame = MiniGames.Create(slot.Game, professor); }
+            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); MiniGame.Easy = !experienced; miniGame = MiniGames.Create(slot.Game, professor); }
             return;
         }
         Quiz quiz = slot.Quiz(experienced);
@@ -323,11 +324,18 @@ public partial class GameController : MonoBehaviour
             bool enter = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
             Rect field = new Rect(250, bottom - 66, 580, 62);
             NovelUI.Card(field, Color.clear, 31);
-            NovelUI.Ring(field, NovelUI.Pink, 31, 3);
+            // The default IMGUI caret is white, invisible on the cream field; tint it so typing is visibly active.
+            GUI.skin.settings.cursorColor = NovelUI.DeepPink;
+            GUI.skin.settings.cursorFlashSpeed = 1.2f;
             GUI.SetNextControlName("Answer");
             typed = GUI.TextField(field, typed, 40, NovelUI.Input);
             GUI.FocusControl("Answer");
-            if (typed == "") NovelUI.Label(new Rect(field.x + 28, field.y, 400, field.height), "정답을 입력하세요", NovelUI.Soft, 20, NovelUI.Alpha(NovelUI.Plum, .6f), TextAnchor.MiddleLeft);
+            bool active = GUI.GetNameOfFocusedControl() == "Answer";
+            // A pulsing deep-pink ring and an "입력 중" tag show the field is taking keys.
+            float pulse = .65f + .35f * Mathf.Sin(Time.unscaledTime * 4);
+            NovelUI.Ring(field, active ? NovelUI.Alpha(NovelUI.DeepPink, pulse) : NovelUI.Pink, 31, active ? 4 : 3);
+            if (active) NovelUI.Pill(field.x + 24, field.y - 16, 32, "입력 중 · 바로 타자를 치세요", NovelUI.DeepPink, Color.white, 15);
+            if (typed == "") NovelUI.Label(new Rect(field.x + 40, field.y, 400, field.height), "정답을 입력하세요", NovelUI.Soft, 20, NovelUI.Alpha(NovelUI.Plum, .6f), TextAnchor.MiddleLeft);
             GUI.enabled = typed.Trim() != "";
             if (NovelUI.Button(new Rect(850, bottom - 66, 180, 62), "제출", true, 24) || (enter && GUI.enabled))
             {
@@ -342,12 +350,23 @@ public partial class GameController : MonoBehaviour
         float y = bottom - available.Length * (height + gap) + gap;
         if (quiz != null) Prompt(quiz, y - 20);
         for (int i = 0; i < available.Length; i++)
-            if (NovelUI.Choice(new Rect(190, y + i * (height + gap), 900, height), i + 1, available[i])) { Choose(i); return; }
+        {
+            Rect row = new Rect(190, y + i * (height + gap), 900, height);
+            if (quiz != null && i == wrongPick)
+            {
+                // The ruled-out answer stays visible but faded, and can't be picked again.
+                Color saved = GUI.color; GUI.color = new Color(1, 1, 1, .35f);
+                NovelUI.Choice(row, i + 1, available[i]);
+                GUI.color = saved;
+                continue;
+            }
+            if (NovelUI.Choice(row, i + 1, available[i])) { Choose(i); return; }
+        }
         // Number keys pick an answer too.
         Event e = Event.current;
         int picked = e.type == EventType.KeyDown ? e.keyCode - KeyCode.Alpha1 : -1;
         if (picked < 0 || picked >= available.Length) picked = e.type == EventType.KeyDown ? e.keyCode - KeyCode.Keypad1 : -1;
-        if (picked >= 0 && picked < available.Length) { e.Use(); Choose(picked); }
+        if (picked >= 0 && picked < available.Length && !(quiz != null && picked == wrongPick)) { e.Use(); Choose(picked); }
     }
 
     // Draws the question card so that it ends at `bottom`; returns its top.
@@ -366,7 +385,19 @@ public partial class GameController : MonoBehaviour
     {
         Slot slot = S.Slot(scene, choiceStage);
         Quiz quiz = slot.Quiz(experienced);
-        if (quiz != null) { Answer(quiz, option, option == quiz.Answer); return; }
+        if (quiz != null)
+        {
+            // Beginners: the first wrong pick is ruled out and they choose again for a smaller bonus.
+            if (!experienced && option != quiz.Answer && wrongPick < 0)
+            {
+                wrongPick = option;
+                novelAudio.Play("Down");
+                ShowToast("아쉬워요! 그 답은 아니에요. 한 번 더 골라 보세요");
+                return;
+            }
+            Answer(quiz, option, option == quiz.Answer);
+            return;
+        }
         int delta = slot.Scores[professor][option];
         Raise(option < slot.Stats.Length ? slot.Stats[option] : '-');
         affection += delta;
@@ -390,13 +421,15 @@ public partial class GameController : MonoBehaviour
     // reply indexes Replies[professor]: the chosen option, or 0/1 (wrong/right) for short answers.
     void Answer(Quiz quiz, int reply, bool correct)
     {
-        int delta = correct ? 2 : 0;
+        bool retried = wrongPick >= 0;
+        wrongPick = -1;
+        int delta = correct ? (retried ? 1 : 2) : 0;
         if (correct) Raise(S.Slot(scene, choiceStage).Stat);
         affection += delta;
         React(delta, correct, true);
         typed = "";
         resultKey = "q" + reply;
-        resultLine = (correct ? "정답! 호감도 보너스 +2.\n" : "오답이어도 감점은 없어요.\n") + Stories.Decorate(professor, quiz.Replies[professor][reply], affection);
+        resultLine = (correct ? (retried ? "두 번째에 정답! 호감도 보너스 +1.\n" : "정답! 호감도 보너스 +2.\n") : "오답이어도 감점은 없어요.\n") + Stories.Decorate(professor, quiz.Replies[professor][reply], affection);
         resultLine += AffectionLine(delta);
         showResult = true;
     }
@@ -677,7 +710,7 @@ public partial class GameController : MonoBehaviour
     void ResetRun()
     {
         scene = affection = entryStep = dialogueIndex = choiceStage = questions = teamwork = interest = solo = 0;
-        professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear();
+        professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear(); wrongPick = -1;
         shownAffection = lastDelta = 0; lineKey = null; miniGame = null;
         endingRecorded = endingNew = false; chapterShown = 0; reactAt = -10; sparks.Clear();
     }

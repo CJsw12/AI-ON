@@ -66,7 +66,7 @@ public class CardMatch : MiniGame
         // Timer sits at the right end of the instruction row, clear of the longest instruction.
         NovelUI.Fill(new Rect(970, 132, 200, 12), NovelUI.Blush, 6);
         if (remaining > 0) NovelUI.Fill(new Rect(970, 132, 200 * remaining / 60f, 12), timerColor, 6);
-        GUI.Label(new Rect(790, 120, 165, 35), playing ? "남은 시간 " + Mathf.CeilToInt(remaining) + "초" : "시작 전", NovelUI.Text(NovelUI.Soft, 18, timerColor, TextAnchor.MiddleRight));
+        GUI.Label(new Rect(790, 120, 165, 35), playing ? "남은 시간 " + Mathf.CeilToInt(Real(remaining)) + "초" : "시작 전", NovelUI.Text(NovelUI.Soft, 18, timerColor, TextAnchor.MiddleRight));
         for (int i = 0; i < 12; i++)
         {
             Rect rect = new Rect(110 + (i % 4) * 268, 175 + (i / 4) * 175, 250, 155);

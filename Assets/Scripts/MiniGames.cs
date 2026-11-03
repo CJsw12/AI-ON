@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// A minigame that replaces one of the twelve fixed choices. Majors and non-majors play the same game.
+// A minigame that replaces one of the twelve fixed choices. Non-majors play the same game with a slower clock (Easy).
 // Drawn on the 1280x900 canvas; GameController shows the professor's reply once Done.
 // Each faculty plays the same three games with its own words (MiniGameTheme).
 public abstract class MiniGame
@@ -18,7 +18,11 @@ public abstract class MiniGame
 
     // Minigame clock in seconds. It stands still while a menu (settings) is open, so use it instead of Time.unscaledTime.
     public static float Now { get; private set; }
-    public static void Tick(float seconds) => Now += seconds;
+    // Beginner (non-major) runs play every minigame a quarter slower: more time on every timer, slower notes.
+    public static bool Easy;
+    // Game seconds shown as real seconds, so a beginner's countdown and times read true.
+    protected static float Real(float gameSeconds) => Easy ? gameSeconds / .75f : gameSeconds;
+    public static void Tick(float seconds) => Now += Easy ? seconds * .75f : seconds;
 
     static GUIStyle face;
     protected static GUIStyle Face(GUIStyle body)
@@ -105,7 +109,7 @@ public abstract class MiniGame
     }
 }
 
-public enum MiniGameKind { Cards, Timing, Coffee, BugHunt, CircuitProbe, PriceTag, Rhythm, Route, Cashier, Tray }
+public enum MiniGameKind { Cards, Timing, Coffee, BugHunt, CircuitProbe, PriceTag, Rhythm, Route, Cashier, Tray, Molecule, Indicator, Microscope, BasePair, Stroop, Observation, Chord, Mixer }
 
 // One faculty's words for a minigame. Fields left null keep the game's own AI-SW text.
 public class MiniGameTheme
@@ -135,6 +139,14 @@ public static class MiniGames
             case MiniGameKind.Route: return new RobotRoute(theme);
             case MiniGameKind.Cashier: return new ChangeMaker(theme);
             case MiniGameKind.Tray: return new PlateBalance(theme);
+            case MiniGameKind.Molecule: return new MoleculeBuilder(theme);
+            case MiniGameKind.Indicator: return new IndicatorTest(theme);
+            case MiniGameKind.Microscope: return new MicroscopeFocus(theme);
+            case MiniGameKind.BasePair: return new BasePairing(theme);
+            case MiniGameKind.Stroop: return new StroopTest(theme);
+            case MiniGameKind.Observation: return new BehaviorCoding(theme);
+            case MiniGameKind.Chord: return new ChordProgression(theme);
+            case MiniGameKind.Mixer: return new MixingBoard(theme);
             default: return new CoffeeOrder(professor, theme, practice);
         }
     }

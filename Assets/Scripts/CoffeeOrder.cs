@@ -57,10 +57,10 @@ public class CoffeeOrder : MiniGame
             if (round >= 3) { Finish(); return; }
             roundStartedAt = now;
         }
-        GUI.Label(new Rect(100, 120, 1080, 35), "주문 " + (round + 1) + "/3   ·   남은 시간 " + Mathf.CeilToInt(endsAt - now) + "초", body);
+        GUI.Label(new Rect(100, 120, 1080, 35), "주문 " + (round + 1) + "/3   ·   남은 시간 " + Mathf.CeilToInt(Real(endsAt - now)) + "초", body);
         Rect cupRect = new Rect(200, 200, 260, 300);
         float age = now - pourStartedAt;
-        float shake = age < .3f ? Mathf.Sin(age * 65) * (1 - age / .3f) * 4 : 0;
+        float shake = GameSettings.Effects && age < .3f ? Mathf.Sin(age * 65) * (1 - age / .3f) * 4 : 0;
         cupRect.x += shake;
         NovelUI.Card(cupRect, new Color(.95f,.97f,1f,.3f), 15, NovelUI.Cream, 3);
         float height = 240f / Capacity;

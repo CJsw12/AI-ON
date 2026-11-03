@@ -14,7 +14,8 @@ public static class GameSave
         public int Faculty, Scene, Stage, Line, Professor, Affection, Questions, Teamwork, Interest, Solo;
         public bool Experienced, ShowResult;
         public string ResultLine = "";
-        public string ResultKey;   // Which reply resultLine is, for skip mode; absent in older saves.
+        public string ResultKey;
+        public int WrongPick = -1;   // Beginner quiz option already ruled out; absent in older saves.   // Which reply resultLine is, for skip mode; absent in older saves.
         public DateTime SavedAt;
     }
 
@@ -26,7 +27,7 @@ public static class GameSave
             Version, DateTime.Now.Ticks.ToString(), d.Faculty.ToString(), d.Scene.ToString(), d.Stage.ToString(), d.Line.ToString(),
             d.Professor.ToString(), d.Affection.ToString(), d.Questions.ToString(), d.Teamwork.ToString(), d.Interest.ToString(), d.Solo.ToString(),
             d.Experienced ? "1" : "0", d.ShowResult ? "1" : "0", Convert.ToBase64String(Encoding.UTF8.GetBytes(d.ResultLine ?? "")),
-            d.ResultKey ?? ""
+            d.ResultKey ?? "", d.WrongPick.ToString()
         };
         PlayerPrefs.SetString(Key(slot), string.Join("|", fields));
         PlayerPrefs.Save();
@@ -37,8 +38,8 @@ public static class GameSave
     public static Data Read(int slot)
     {
         string[] f = PlayerPrefs.GetString(Key(slot), "").Split('|');
-        // 15 fields: saves made before ResultKey was added; they still load.
-        if ((f.Length != 15 && f.Length != 16) || f[0] != Version) return null;
+        // 15 or 16 fields: saves made before ResultKey / WrongPick were added; they still load.
+        if (f.Length < 15 || f.Length > 17 || f[0] != Version) return null;
         try
         {
             Data d = new Data
@@ -48,7 +49,8 @@ public static class GameSave
                 Professor = int.Parse(f[6]), Affection = int.Parse(f[7]), Questions = int.Parse(f[8]), Teamwork = int.Parse(f[9]),
                 Interest = int.Parse(f[10]), Solo = int.Parse(f[11]), Experienced = f[12] == "1", ShowResult = f[13] == "1",
                 ResultLine = Encoding.UTF8.GetString(Convert.FromBase64String(f[14])),
-                ResultKey = f.Length > 15 && f[15] != "" ? f[15] : null
+                ResultKey = f.Length > 15 && f[15] != "" ? f[15] : null,
+                WrongPick = f.Length > 16 ? int.Parse(f[16]) : -1
             };
             bool valid = d.Faculty >= 0 && d.Faculty < Stories.All.Length && d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
             return valid ? d : null;
