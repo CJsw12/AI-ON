@@ -237,8 +237,8 @@ public static class SocialWelfareStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "원칙과 용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "권도경 교수", Description = "엄하지만 정 많은 옛날 선생님형 · 잔소리 속에 숨은 속정", TagA = "#에헴", TagB = "#내실습때는", Image = "" },
-            new Professor { Name = "백소담 교수", Description = "말수 적은 경청가 · 침묵 끝의 따뜻한 한마디", TagA = "#조용히", TagB = "#잘듣기", Image = "" }
+            new Professor { Name = "권도경 교수", Description = "엄하지만 정 많은 옛날 선생님형 · 잔소리 속에 숨은 속정", TagA = "#에헴", TagB = "#내실습때는", Image = "ProfessorKwonDoKyung" },
+            new Professor { Name = "백소담 교수", Description = "말수 적은 경청가 · 침묵 끝의 따뜻한 한마디", TagA = "#조용히", TagB = "#잘듣기", Image = "ProfessorBaekSoDam" }
         },
         Chapters = new[] { "", "이름표의 이름", "단톡방의 사진", "말을 끊는 사람", "멈춘 냉장고", "닫힌 문", "동네 자원 지도" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
