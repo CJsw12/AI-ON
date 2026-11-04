@@ -228,7 +228,7 @@ public partial class GameController
                 string advice = webcamRate > 0 && webcamRate < 12 && accurate ? " · 끊기면 기본 모델을 써 보세요" : "";
                 NovelUI.Label(new Rect(140, 582, 1000, 28), $"{speed}{advice} · 모델을 바꾸면 다시 보정해야 해요.", NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
 
-                if (tracking && lastGazeSequence > 0)
+                if (tracking && lastGazeSequence > 0 && (!webcamFitted || webcamMarkerValid))
                 {
                     Vector2 point = WebcamCanvasGaze;
                     if (point.x >= 0 && point.x <= 1280 && point.y >= 0 && point.y <= 900)

@@ -38,7 +38,9 @@ public partial class GameController
         }
         point = default;
         blinking = false;
-        if (gazeTracker == null || !gazeTracker.IsUserPresent || lastGazeSequence == 0 || Time.unscaledTime - lastGazeAt > StarLiveSeconds) return false;
+        // A slow webcam model may space samples further apart than StarLiveSeconds; allow ~2.5 frames, still under a catch.
+        float live = Mathf.Min(StarDwell * .9f, Mathf.Max(StarLiveSeconds, 2.5f / Mathf.Max(1, webcamRate)));
+        if (gazeTracker == null || !gazeTracker.IsUserPresent || lastGazeSequence == 0 || Time.unscaledTime - lastGazeAt > live) return false;
         point = WebcamCanvasGaze;
         blinking = webcamBlinking;   // only real blinks: a long half-closure is a look at the bottom of the screen
         return !webcamFitted || webcamMarkerValid;

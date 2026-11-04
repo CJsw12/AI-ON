@@ -40,6 +40,8 @@ public partial class GameController
     // Called once per fresh UnitEye sample.
     void OnWebcamSample()
     {
+        // Without a face the head pose and blendshapes are stale; never fit or point with them.
+        if (!gazeTracker.IsUserPresent) { webcamMarkerValid = false; return; }
         Vector2 raw = WebcamRawCanvasGaze;
         Vector3 pose = gazeTracker.Provider.HeadPoseEuler;   // pitch, yaw, roll
         Vector2 look = Vector2.zero;
