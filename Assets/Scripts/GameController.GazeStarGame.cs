@@ -21,6 +21,8 @@ public partial class GameController
     float starStartedAt, starDwell, starLastTick, starSpawnedAt, starPopAt = -100f;
     int starScore, starCaught, starBest = -1, starPopPoints;
     Vector2 starTarget, starVelocity, starPopPos, starGazeSum;
+    float starGazeSquareSum;
+    long starLastAnchorSequence;
     int starGazeCount;
 
     bool StarScreenOpen => starGameActive || starGameFinished;
@@ -80,7 +82,9 @@ public partial class GameController
         starDwell = 0f;
         starInside = false;
         starGazeSum = Vector2.zero;
+        starGazeSquareSum = 0f;
         starGazeCount = 0;
+        starLastAnchorSequence = -1;
         // A new star pops up: the webcam tracker treats a gaze that settles on it as a light drift anchor.
         if (!gazeUseIphone && gazeTracker != null)
         {
@@ -121,10 +125,23 @@ public partial class GameController
         if (starInside)
         {
             starDwell += dt / StarDwell;
-            starGazeSum += gaze - starTarget;   // relative to the star, so a moving star doesn't smear it
-            starGazeCount++;
+            long sequence = gazeUseIphone ? iphoneSource.Sequence : lastGazeSequence;
+            if (elapsed <= StarMoveAfter && sequence != starLastAnchorSequence)
+            {
+                Vector2 miss = gaze - starTarget;
+                starGazeSum += miss;
+                starGazeSquareSum += miss.sqrMagnitude;
+                starGazeCount++;
+                starLastAnchorSequence = sequence;
+            }
         }
-        else starDwell = Mathf.Max(0f, starDwell - dt * 1.5f / StarDwell);   // drains instead of resetting
+        else
+        {
+            starDwell = Mathf.Max(0f, starDwell - dt * 1.5f / StarDwell);
+            starGazeSum = Vector2.zero;
+            starGazeSquareSum = 0f;
+            starGazeCount = 0;
+        }
         if (starDwell < 1f) return;
 
         bool quick = now - starSpawnedAt <= StarQuickCatch;
@@ -133,11 +150,13 @@ public partial class GameController
         starCaught++;
         starPopAt = now;
         starPopPos = starTarget;
-        if (starGazeCount > 0 && (gazeUseIphone || webcamFitted))
+        if (elapsed <= StarMoveAfter && starGazeCount >= 3 && (gazeUseIphone || webcamFitted))
         {
-            // The player was looking at the star: nudge the mapping by the average miss.
             Vector2 miss = starGazeSum / starGazeCount;
-            (gazeUseIphone ? iphoneMapper : webcamMapper).AddAnchor(new Vector2(-miss.x / 1280f, -miss.y / 900f));
+            float variance = Mathf.Max(0f, starGazeSquareSum / starGazeCount - miss.sqrMagnitude);
+            // A stationary target with stable, fresh samples is a safer inferred anchor.
+            if (variance <= 45f * 45f)
+                (gazeUseIphone ? iphoneMapper : webcamMapper).AddAnchor(new Vector2(-miss.x / 1280f, -miss.y / 900f));
         }
         NovelUI.Sound?.Invoke(quick ? "Game/Coin|Up" : "Game/Correct|Up");
         SpawnStar(starTarget);

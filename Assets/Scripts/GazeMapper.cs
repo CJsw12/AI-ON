@@ -20,8 +20,8 @@ public sealed class GazeMapper
         EyeX2 = 6, EyeY2 = 7, EyeXY = 8, EyeX3 = 9, EyeY3 = 10;
     const double Ridge = .005;
     const double MinSpread = 1e-6;
-    const float ExtraInputPenalty = .04f;          // each extra input must buy 4% lower error to be chosen
-    const float DriftRate = .35f;                  // share of each known miss applied to the drift offset
+    const float ExtraInputPenalty = .08f;          // prefer simpler fits unless extra features clearly help
+    const float DriftRate = .15f;                  // conservative correction from an inferred game target
     const float MaxDrift = .15f;                   // the offset never exceeds 15% of the screen
     const float MaxAnchorMiss = .2f;               // a bigger miss is more likely a wrong anchor than drift
 

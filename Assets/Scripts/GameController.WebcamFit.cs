@@ -58,7 +58,11 @@ public partial class GameController
         webcamBlinking = ShortBlink(webcamLidsDown, hasShapes && lids >= WebcamBlinkClosed, ref webcamBlinkSince);
 
         double[] features = GazeMapper.Features(new Vector2(raw.x / 1280f, raw.y / 900f), new Vector2(pose.y, pose.x), look);
-        if (webcamFitMeasuring && !webcamLidsDown && Time.unscaledTime <= webcamMeasureAt + IPhoneCalibrationCaptureSeconds)
+        // A sustained partial closure while looking down can be eyelid occlusion rather than a blink.
+        // Only accept it when blendshapes confirm a downward look and the eye is not strongly closed.
+        bool usableDownwardLook = hasShapes && look.y < -.1f && lids < WebcamBlinkClosed && !webcamBlinking;
+        bool usableForFit = !webcamLidsDown || usableDownwardLook;
+        if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + IPhoneCalibrationCaptureSeconds)
             webcamCapture.Add(features);
 
         if (!webcamFitted) return;
