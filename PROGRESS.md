@@ -10,6 +10,9 @@
 ---
 
 ## 1. 완료된 작업 (Done)
+- **원격 최신 작업 동기화 (`021d25c`)**:
+  - AI 프록시 모델 고정(`gemini-3.1-flash-lite`): `-latest` 별칭 이동으로 인한 응답 지연(15~40초) 및 504 타임아웃 해결 반영.
+  - 웹캠 및 iPhone 측면/하단 시선 매핑 정밀도 개선 (`GazeMapper.cs`, `GameController.GazeStarGame.cs`, `GameController.WebcamFit.cs`) 반영.
 - **원격 저장소 동기화**: `origin/main`의 최신 커밋들(`817ac2f` 교수 상반신/프레이밍 개편, iPhone 시선 추적 UDP 및 캘리브레이션/별잡기 미니게임, 웹캠 시선 추적, Cloudflare 릴레이 AI 모드, 자연과학부/예체능학부 신규 비주얼 에셋 등) 병합 완료.
 - **`.gitignore` 충돌 해결**: 로컬의 `.serena/` 항목과 원격의 AI 키/Cloudflare Worker 캐시 제외 설정을 통합.
 - **단위 테스트 스크립트 빌드 복구 (`Tests/ProfessorPersonality.Tests.ps1`)**:
