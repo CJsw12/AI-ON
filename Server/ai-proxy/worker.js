@@ -10,7 +10,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 const UPSTREAM = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const MODEL = "gemini-flash-lite-latest";
+const MODEL = "gemini-3.1-flash-lite";  // pinned: the "-latest" alias moved to a model that took 15-40 s per reply (2026-11-05)
 const CLIENT = "dugeun-campus";        // The game's X-AION-Client header; turns away casual requests.
 const MAX_SYSTEM = 12000;              // The game's prompts are about 3,000 characters.
 const MAX_USER = 400;                  // A typed answer or question is at most 80 characters plus a label.

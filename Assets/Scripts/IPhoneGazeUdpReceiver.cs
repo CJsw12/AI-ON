@@ -27,8 +27,17 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
     {
         public long Timestamp;
         public bool FaceFound;
+        public Vector3 Rotation;
         public Vector3 EyeLeft;
         public Vector3 EyeRight;
+        public BlendShape[] BlendShapes;
+    }
+
+    [Serializable]
+    public sealed class BlendShape
+    {
+        public string k;
+        public float v;
     }
 
     readonly ConcurrentQueue<string> packets = new ConcurrentQueue<string>();
@@ -44,6 +53,9 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
     float startedAt;
     public string Error { get; private set; }
     public Vector2 EyeFeature => Latest == null ? Vector2.zero : new Vector2((Latest.EyeLeft.y + Latest.EyeRight.y) * .5f, (Latest.EyeLeft.x + Latest.EyeRight.x) * .5f);
+    public Vector2 HeadFeature => Latest == null ? Vector2.zero : new Vector2(Latest.Rotation.y, Latest.Rotation.x);
+    public float Blink { get; private set; } = -1f;
+    public Vector2 LookFeature { get; private set; }
     public bool FaceFound => Latest != null && Latest.FaceFound;
     public bool HasFreshSample => HasFreshPacket;
     public string Status => Error ?? (Latest != null
@@ -148,6 +160,8 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
                 return;
             }
             Latest = data;
+            Blink = ReadBlink(data.BlendShapes);
+            LookFeature = ReadLook(data.BlendShapes);
             LastPacketAt = Time.unscaledTime;
             Sequence++;
             Error = null;
@@ -156,6 +170,38 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
         {
             Error = "아이폰 추적 데이터 형식을 읽지 못했어요: " + e.Message;
         }
+    }
+
+    static float ReadBlink(BlendShape[] shapes)
+    {
+        if (shapes == null) return -1f;
+        float blink = -1f;
+        foreach (BlendShape shape in shapes)
+            if (shape != null && (shape.k == "EyeBlinkLeft" || shape.k == "EyeBlinkRight")) blink = Mathf.Max(blink, shape.v);
+        return blink;
+    }
+
+    // Horizontal: the left eye looking "out" and the right eye looking "in" both mean looking to the user's left.
+    static Vector2 ReadLook(BlendShape[] shapes)
+    {
+        if (shapes == null) return Vector2.zero;
+        float inL = 0, outL = 0, inR = 0, outR = 0, upL = 0, upR = 0, downL = 0, downR = 0;
+        foreach (BlendShape shape in shapes)
+        {
+            if (shape == null) continue;
+            switch (shape.k)
+            {
+                case "EyeLookInLeft": inL = shape.v; break;
+                case "EyeLookOutLeft": outL = shape.v; break;
+                case "EyeLookInRight": inR = shape.v; break;
+                case "EyeLookOutRight": outR = shape.v; break;
+                case "EyeLookUpLeft": upL = shape.v; break;
+                case "EyeLookUpRight": upR = shape.v; break;
+                case "EyeLookDownLeft": downL = shape.v; break;
+                case "EyeLookDownRight": downR = shape.v; break;
+            }
+        }
+        return new Vector2((outL - inL + inR - outR) * .5f, (upL + upR - downL - downR) * .5f);
     }
 
     public bool HasFreshPacket => Latest != null && Time.unscaledTime - LastPacketAt <= 1f;
@@ -176,6 +222,8 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
         while (packets.TryDequeue(out _)) { }
         while (errors.TryDequeue(out _)) { }
         Latest = null;
+        Blink = -1f;
+        LookFeature = Vector2.zero;
         LastPacketAt = -100f;
         Sequence = 0;
         Interlocked.Exchange(ref _receivedPackets, 0);

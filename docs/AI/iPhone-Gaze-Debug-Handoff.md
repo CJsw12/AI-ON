@@ -106,10 +106,21 @@ Select-String C:\Temp\gaze.txt -Pattern '11125|DropReason|unreachable'
 
 ## 방향/보정 관련 주의
 
-- 현재 포인터는 VTube Studio의 `EyeLeft`/`EyeRight` 회전값을 사용한다. 얼굴 `Rotation`은 시선 좌표 계산에 포함하지 않는다.
-- 9지점 보정은 고개를 화면 정면에 두고 눈으로 점을 따라간다. 고개를 좌우/상하로 움직이는 동작과 눈동자 시선 변화는 같은 입력이 아니다.
+- 2026-11-05부터 포인터는 눈 회전(`EyeLeft`/`EyeRight`, USB는 `EyeLeftX/Y`·`EyeRightX/Y`)과 얼굴 회전(`Rotation`, USB는 `FaceAngleX/Y`)을 함께 쓴다. `GazeMapper`가 눈만·고개만·눈+고개 모델 중 leave-one-out 오차가 가장 작은 것을 고르므로, 보정 때 고개를 움직인 사람도 맞춰진다.
+- 눈 깜박임(`EyeBlinkLeft/Right` ≥ 0.7, USB는 `EyeOpenLeft/Right` ≤ 0.3) 프레임은 보정 표본에서 빠지고 포인터를 움직이지 않는다. 눈 뜬 표본이 점당 10개 미만이면 그 점을 다시 측정한다. 별잡기에서는 눈을 감은 동안 응시 진행도가 늘지도 줄지도 않는다.
+- 보정 후 상태 줄의 "오차 약 Npx"는 보정점 예측 오차와 프레임 단위 흔들림을 합친 추정치다. 실기기 정확도는 아직 측정하지 않았다.
 - 무보정 보기는 원시 눈 회전값에 고정 배율을 적용한 방향 확인용 미리보기다. 화면의 실제 응시 위치를 맞추려면 보정이 필요하다.
-- 시선 별잡기는 보정 후에 실행한다. 30초 제한, 0.65초 dwell, 큰 포인터, 넉넉한 판정 반경으로 설계됐다.
+- 시선 별잡기(`GameController.GazeStarGame.cs`)는 웹캠과 iPhone 모두에서 된다. 보정 후 실행. 3초 카운트다운, 30초 제한, 0.65초 dwell, 들어갈 때 165px·나갈 때 215px 판정, 잠깐 벗어나면 진행도가 줄어들 뿐 리셋되지 않음, 눈 감는 동안 진행도 정지. 나타난 지 1.2초 안에 잡으면 2점, 10초 뒤부터 별이 움직이고 마지막 10초엔 더 빨라진다. 최고 점수는 PlayerPrefs `GazeTest.StarBestScore`.
+- 게임 중 자동 보정(드리프트 보정): 별을 잡았다는 건 그 별을 보고 있었다는 뜻이므로, iPhone은 잡는 동안의 평균 빗나감만큼 `GazeMapper.AddAnchor`로 위치를 옮긴다(한 번에 35%, 최대 화면 15%, 화면 20% 넘게 빗나간 건 무시, 재보정 시 초기화). 웹캠은 UnitEye의 `onlineDriftCorrection`을 켜고(클릭 앵커는 끔) 별이 나타날 때 `ReportAttentionEvent`, 움직이는 별은 `FeedPursuitTarget`으로 알려 준다.
+- 2026-11-05 3차(옆·아래 개선): 보정점이 13개(3×3 + 중앙 십자 안쪽 4점 (.50,.31) (.29,.50) (.71,.50) (.50,.69))로 늘었다. 0.75초 정착 후 1.2초 측정.
+- Wi-Fi UDP는 ARKit 눈모양 블렌드셰이프(`EyeLookIn/Out/Up/DownLeft·Right`)를 `LookFeature`로 함께 읽는다. 아래를 보면 눈꺼풀 때문에 눈 회전값이 작게 나오고 옆 끝에서는 포화되는데, 눈모양 값은 그때도 비례해서 움직인다. USB/API 경로는 이 값이 없어 0이다.
+- `GazeMapper`는 가로·세로를 따로 고른다. 축마다 눈/고개/눈모양/눈+고개/눈+눈모양/고개+눈모양/셋 다/2차 곡선/3차 곡선/눈+고개+3차 후보 중 (leave-one-out 오차² + 프레임 흔들림²)^½ × (1 + 0.04×(입력 수−1))이 가장 작은 것. 상태 줄에 "가로 … · 세로 …"로 표시된다.
+- 아래를 볼 때 눈꺼풀이 내려와 깜박임으로 오인되지 않도록, 깜박임 기준이 아래를 보는 정도(−LookY)에 따라 0.7에서 최대 0.9까지 올라간다.
+- 합성 테스트(아래 볼 때 눈 회전 60% 감소 + 옆 포화): 기존 9점·눈모양 없음 49px → 13점·눈모양 20px(옆 45→19, 아래 37→21). USB 경로(눈모양 없음)도 13점이면 34px. 이상적인 트래커에선 13→12px로 차이 없음.
+- 웹캠(UnitEye): 추적 모델 선택 추가 — 기본(EyeMU, 빠름) / 정밀(EyeMU+ResNet34, 눈+얼굴 방향, 기본값). PlayerPrefs `GazeTest.WebcamModel`. 모델을 바꾸면 다시 보정해야 한다. 보정은 2바퀴(`LoadCalibration(9, 20, 2)`). 초당 샘플 수와 지연을 표시하고, 정밀 모델이 초당 12회 미만이면 기본 모델을 권한다.
+- 웹캠 "화면 맞춤 (13점)"(`GameController.WebcamFit.cs`): UnitEye 보정(1번) 뒤에 같은 13점을 응시하면, UnitEye 출력 + 고개 각도(`Provider.HeadPoseEuler`) + MediaPipe eyeLook 블렌드셰이프(`IGazeRecordingSource.TryCopyEyeBlendshapes`)로 `GazeMapper`를 한 번 더 맞춘다. UnitEye 릿지 보정이 가운데로 끌어당기고 노트북 카메라가 화면 위에 있어 아래가 눌리는 문제를 편다. 합성 테스트: 가운데 쏠림+아래 눌림 185→87px(옆 259→85, 아래 227→89), 원래 정확한 경우 55→54px(손해 없음). 화면 맞춤 중에는 UnitEye `onlineDriftCorrection`을 끄고 별잡기 앵커를 `webcamMapper.AddAnchor`로 받는다. 1번 보정을 다시 하거나 모델을 바꾸면 화면 맞춤은 지워진다. 기존 "가장자리 정확도 높이기"(HomulerGazeEvaluation) 버튼은 Input System 설정이 필요하고 이 기능과 겹쳐서 뺐다.
+- 깜박임 판정: 아래를 보면 눈꺼풀이 내려와 깜박임으로 잡힌다. 웹캠·iPhone 모두 0.45초 넘게 이어지는 '감김'은 깜박임이 아니라 아래 보기로 보고 포인터·별 진행도를 멈추지 않는다(`ShortBlink`, 확실히 감은 값은 예외: iPhone EyeBlink ≥ 0.92, 웹캠 eyeBlink ≥ 0.85). UnitEye `maxBlinkHoldSeconds`도 0.45초로 줄였다. 보정 표본은 여전히 감긴 프레임을 모두 뺀다.
+- `GazeMapper` 축별 후보에 비대칭 곡선(눈+눈²+눈³)과 눈+눈모양+눈³을 추가했다. iPhone USB(눈모양 없음) 합성 34→28px.
 
 ## 이어받는 사람이 먼저 할 일
 

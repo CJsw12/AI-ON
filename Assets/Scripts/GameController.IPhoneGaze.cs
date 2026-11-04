@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -6,19 +7,21 @@ using UnityEngine;
 
 public partial class GameController
 {
-    const float IPhoneCalibrationSettleSeconds = .9f;
-    const float IPhoneCalibrationCaptureSeconds = 1.5f;
+    const float IPhoneCalibrationSettleSeconds = .75f;
+    const float IPhoneCalibrationCaptureSeconds = 1.2f;
     const float IPhoneRawPreviewScale = 450f;
-    const float IPhoneStarGameDuration = 30f;
-    const float IPhoneStarDwell = .65f;
-    const float IPhoneStarHitRadius = 165f;
+    const float IPhoneBlinkThreshold = .7f;
     const string IPhoneIpPref = "GazeTest.IPhoneIP";
     const string IPhonePortPref = "GazeTest.IPhonePort";
     const string VtsPortPref = "GazeTest.VtsApiPort";
     static readonly Vector2[] IPhoneCalibrationTargets =
     {
+        // A 3×3 grid plus four in-between points: five positions per axis let the fit tell a tracker that
+        // under-reports large eye turns (the usual cause of weak edges) from a linear one, which 3 positions can't.
         new Vector2(.08f, .12f), new Vector2(.50f, .12f), new Vector2(.92f, .12f),
-        new Vector2(.08f, .50f), new Vector2(.50f, .50f), new Vector2(.92f, .50f),
+        new Vector2(.50f, .31f),
+        new Vector2(.08f, .50f), new Vector2(.29f, .50f), new Vector2(.50f, .50f), new Vector2(.71f, .50f), new Vector2(.92f, .50f),
+        new Vector2(.50f, .69f),
         new Vector2(.08f, .88f), new Vector2(.50f, .88f), new Vector2(.92f, .88f)
     };
 
@@ -33,23 +36,27 @@ public partial class GameController
     string iphoneStatus = "VTube Studio 설정에서 3rd Party PC Clients를 켜 주세요.";
     bool iphoneFieldsLoaded;
     bool iphoneCalibrating, iphoneMeasuring;
-    int iphoneCalibrationPoint, iphoneCaptureCount, iphoneLastCaptureSequence;
+    int iphoneCalibrationPoint, iphoneLastCaptureSequence, iphoneLastLiveSequence;
     float iphoneTargetShownAt, iphoneMeasureAt;
-    double iphoneFeatureXSum, iphoneFeatureYSum;
-    readonly Vector2[] iphoneMeasuredFeatures = new Vector2[IPhoneCalibrationTargets.Length];
-    readonly Vector3[] iphoneFitX = new Vector3[2];
+    readonly List<double[]> iphoneCaptureAll = new List<double[]>(), iphoneCaptureOpen = new List<double[]>();
+    readonly double[][] iphoneMeasuredFeatures = new double[IPhoneCalibrationTargets.Length][];
+    readonly List<double[]>[] iphoneMeasuredSamples = new List<double[]>[IPhoneCalibrationTargets.Length];
+    readonly GazeMapper iphoneMapper = new GazeMapper();
+    readonly GazeSmoother iphoneSmoother = new GazeSmoother();
     Vector2 iphoneCanvasGaze;
-    bool iphoneMarkerValid, iphoneCalibrated, iphoneUncalibrated;
-    bool iphoneStarGameActive, iphoneStarGameFinished;
-    float iphoneStarGameStartedAt, iphoneStarDwellStartedAt = -1f;
-    int iphoneStarScore;
-    Vector2 iphoneStarTarget;
+    bool iphoneMarkerValid, iphoneCalibrated, iphoneUncalibrated, iphoneBlinking;
+    float iphoneBlinkSince = -1f, iphoneLastLiveAt = -100f;
 
     void UpdateIPhoneGaze()
     {
         if (!gazeTestOpen || !gazeUseIphone || iphoneSource == null) return;
         iphoneSource.Poll();
-        TickIPhoneStarGame();
+        // Looking down lowers the eyelids and raises the blink value, so the bar rises with downward gaze;
+        // otherwise every bottom-row sample would be thrown away as a blink.
+        float lookDown = Mathf.Clamp01(-iphoneSource.LookFeature.y);
+        bool lidsDown = iphoneSource.HasFreshSample && iphoneSource.Blink >= IPhoneBlinkThreshold + .2f * lookDown;
+        // Calibration drops every lids-down frame; the pointer only pauses for real (short or fully closed) blinks.
+        iphoneBlinking = ShortBlink(lidsDown, iphoneSource.Blink >= .92f, ref iphoneBlinkSince);
         bool fresh = iphoneSource.HasFreshSample;
         if (!fresh)
         {
@@ -69,8 +76,11 @@ public partial class GameController
         }
 
         if (!iphoneCalibrating)
-            iphoneStatus = iphoneCalibrated ? "iPhone 추적 중 · 9지점 보정 완료" : "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
+            iphoneStatus = iphoneCalibrated ? $"iPhone 추적 중 · 보정 완료 ({IPhoneAccuracyText()})" : "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
         Vector2 feature = iphoneSource.EyeFeature;
+        double[] features = GazeMapper.Features(feature, iphoneSource.HeadFeature, iphoneSource.LookFeature);
+        // Eye rotation jumps while the eyelids close, so blink frames are left out of calibration and don't move the pointer.
+        bool blinking = iphoneBlinking;
         if (iphoneCalibrating && !iphoneMeasuring && Time.unscaledTime >= iphoneTargetShownAt + IPhoneCalibrationSettleSeconds)
             BeginIPhoneCalibrationCapture();
 
@@ -79,13 +89,17 @@ public partial class GameController
             iphoneLastCaptureSequence = iphoneSource.Sequence;
             if (Time.unscaledTime <= iphoneMeasureAt + IPhoneCalibrationCaptureSeconds)
             {
-                iphoneFeatureXSum += feature.x;
-                iphoneFeatureYSum += feature.y;
-                iphoneCaptureCount++;
+                iphoneCaptureAll.Add(features);
+                if (!lidsDown) iphoneCaptureOpen.Add(features);
             }
         }
         if (iphoneMeasuring && Time.unscaledTime > iphoneMeasureAt + IPhoneCalibrationCaptureSeconds)
             CompleteIPhoneCalibrationPoint();
+
+        if (iphoneSource.Sequence == iphoneLastLiveSequence) return;   // no new sample this frame
+        iphoneLastLiveSequence = iphoneSource.Sequence;
+        iphoneLastLiveAt = Time.unscaledTime;
+        if (blinking && iphoneMarkerValid) return;
 
         if (!iphoneCalibrated)
         {
@@ -93,53 +107,23 @@ public partial class GameController
             Vector2 rawPoint = new Vector2(640f + feature.x * IPhoneRawPreviewScale, 450f - feature.y * IPhoneRawPreviewScale);
             rawPoint.x = Mathf.Clamp(rawPoint.x, 40f, 1240f);
             rawPoint.y = Mathf.Clamp(rawPoint.y, 40f, 860f);
-            iphoneCanvasGaze = iphoneMarkerValid ? Vector2.Lerp(iphoneCanvasGaze, rawPoint, .35f) : rawPoint;
+            if (!iphoneMarkerValid) iphoneSmoother.Reset();
+            iphoneCanvasGaze = iphoneSmoother.Filter(rawPoint, Time.unscaledTime);
             iphoneMarkerValid = true;
-            iphoneStatus = "무보정 원시 시선 미리보기 · 화면 위치는 9지점 보정이 필요해요.";
+            iphoneStatus = "무보정 원시 시선 미리보기 · 화면 위치는 화면 보정이 필요해요.";
             return;
         }
-        Vector2 projected = new Vector2(
-            Vector3.Dot(iphoneFitX[0], new Vector3(feature.x, feature.y, 1f)),
-            Vector3.Dot(iphoneFitX[1], new Vector3(feature.x, feature.y, 1f)));
-        projected.x = Mathf.Clamp01(projected.x);
-        projected.y = Mathf.Clamp01(projected.y);
-        Vector2 canvasPoint = new Vector2(projected.x * 1280f, projected.y * 900f);
-        iphoneCanvasGaze = iphoneMarkerValid ? Vector2.Lerp(iphoneCanvasGaze, canvasPoint, .35f) : canvasPoint;
+        Vector2 projected = iphoneMapper.Predict(features);
+        if (!iphoneMarkerValid) iphoneSmoother.Reset();
+        iphoneCanvasGaze = iphoneSmoother.Filter(new Vector2(projected.x * 1280f, projected.y * 900f), Time.unscaledTime);
         iphoneMarkerValid = true;
     }
 
-    void TickIPhoneStarGame()
+    string IPhoneAccuracyText()
     {
-        if (!iphoneStarGameActive) return;
-        if (Time.unscaledTime - iphoneStarGameStartedAt >= IPhoneStarGameDuration)
-        {
-            iphoneStarGameActive = false;
-            iphoneStarGameFinished = true;
-            iphoneStarDwellStartedAt = -1f;
-            iphoneStatus = $"시선 별잡기 완료 · {iphoneStarScore}개";
-            return;
-        }
-        if (!iphoneMarkerValid || (iphoneCanvasGaze - iphoneStarTarget).sqrMagnitude > IPhoneStarHitRadius * IPhoneStarHitRadius)
-        {
-            iphoneStarDwellStartedAt = -1f;
-            return;
-        }
-        if (iphoneStarDwellStartedAt < 0f) iphoneStarDwellStartedAt = Time.unscaledTime;
-        if (Time.unscaledTime - iphoneStarDwellStartedAt < IPhoneStarDwell) return;
-        iphoneStarScore++;
-        iphoneStarTarget = new Vector2(UnityEngine.Random.Range(200f, 1080f), UnityEngine.Random.Range(300f, 650f));
-        iphoneStarDwellStartedAt = -1f;
-        NovelUI.Sound?.Invoke("Game/Correct|Up");
-    }
-
-    void StartIPhoneStarGame()
-    {
-        iphoneStarGameActive = true;
-        iphoneStarGameFinished = false;
-        iphoneStarGameStartedAt = Time.unscaledTime;
-        iphoneStarDwellStartedAt = -1f;
-        iphoneStarScore = 0;
-        iphoneStarTarget = new Vector2(UnityEngine.Random.Range(200f, 1080f), UnityEngine.Random.Range(300f, 650f));
+        float error = iphoneMapper.ErrorPixels;
+        string grade = error < 90f ? "좋음" : error < 160f ? "보통" : "낮음 · 다시 보정 추천";
+        return $"{iphoneMapper.ModelName} 기준 오차 약 {Mathf.RoundToInt(error)}px · {grade}";
     }
 
     void StartIPhoneGaze()
@@ -210,11 +194,11 @@ public partial class GameController
     void StopIPhoneGaze()
     {
         iphoneMeasuring = iphoneCalibrating = false;
-        iphoneStarGameActive = iphoneStarGameFinished = false;
+        if (gazeUseIphone) StopStarGame();
         iphoneMarkerValid = false;
         if (iphoneSource != null)
         {
-            if (iphoneSource is VTubeStudioUsbApiBridge bridge && !string.IsNullOrEmpty(bridge.ApiToken)) vtsApiToken = bridge.ApiToken;
+            if (iphoneSource is VTubeStudioUsbApiBridge bridge) vtsApiToken = bridge.ApiToken;   // null after a rejection
             iphoneSource.StopReceiving();
             if (iphoneSourceBehaviour != null) Destroy(iphoneSourceBehaviour.gameObject);
             iphoneSource = null;
@@ -225,7 +209,7 @@ public partial class GameController
 
     void BeginIPhoneCalibration()
     {
-        iphoneStarGameActive = iphoneStarGameFinished = false;
+        StopStarGame();
         iphoneUncalibrated = false;
         if (iphoneSource == null || !iphoneSource.HasFreshSample || !iphoneSource.FaceFound)
         {
@@ -243,71 +227,59 @@ public partial class GameController
 
     void BeginIPhoneCalibrationCapture()
     {
-        iphoneFeatureXSum = iphoneFeatureYSum = 0;
-        iphoneCaptureCount = 0;
+        iphoneCaptureAll.Clear();
+        iphoneCaptureOpen.Clear();
         iphoneLastCaptureSequence = iphoneSource.Sequence;
         iphoneMeasureAt = Time.unscaledTime;
         iphoneMeasuring = true;
-        iphoneStatus = "시선을 고정해 주세요. 1.5초 동안 자동 측정합니다.";
+        iphoneStatus = "시선을 고정해 주세요. 1.2초 동안 자동 측정합니다.";
     }
 
     void CompleteIPhoneCalibrationPoint()
     {
         iphoneMeasuring = false;
-        if (iphoneCaptureCount < 20)
+        if (iphoneCaptureAll.Count < 20)
         {
             iphoneTargetShownAt = Time.unscaledTime;
             iphoneStatus = "표본이 부족해요. 연결을 확인하고 같은 점을 다시 응시해 주세요.";
             return;
         }
-        iphoneMeasuredFeatures[iphoneCalibrationPoint] = new Vector2(
-            (float)(iphoneFeatureXSum / iphoneCaptureCount), (float)(iphoneFeatureYSum / iphoneCaptureCount));
+        // Closed-eye frames are never used: if too few open-eye frames remain, measure this point again.
+        if (iphoneCaptureOpen.Count < 10)
+        {
+            iphoneTargetShownAt = Time.unscaledTime;
+            iphoneStatus = "눈을 감은 표본이 많았어요. 눈을 뜨고 같은 점을 다시 바라봐 주세요.";
+            return;
+        }
+        // The median ignores quick glances that a plain average would drag along.
+        var chosen = new List<double[]>(iphoneCaptureOpen);
+        iphoneMeasuredFeatures[iphoneCalibrationPoint] = GazeMapper.Median(chosen);
+        iphoneMeasuredSamples[iphoneCalibrationPoint] = chosen;
         iphoneCalibrationPoint++;
+        NovelUI.Sound?.Invoke("Select");
         if (iphoneCalibrationPoint < IPhoneCalibrationTargets.Length)
         {
             iphoneTargetShownAt = Time.unscaledTime;
-            iphoneStatus = $"다음 점을 바라봐 주세요. 자동 측정이 이어집니다. ({iphoneCalibrationPoint + 1}/9)";
+            iphoneStatus = $"다음 점을 바라봐 주세요. 자동 측정이 이어집니다. ({iphoneCalibrationPoint + 1}/{IPhoneCalibrationTargets.Length})";
             return;
         }
         if (!FitIPhoneCalibration())
         {
             iphoneCalibrationPoint = 0;
             iphoneTargetShownAt = Time.unscaledTime;
-            iphoneStatus = "눈 움직임이 충분히 달라지지 않았어요. 휴대폰을 고정하고 다시 보정해 주세요.";
+            iphoneStatus = "눈·고개 움직임이 점마다 충분히 달라지지 않았어요. 휴대폰을 고정하고 다시 보정해 주세요.";
             return;
         }
         iphoneCalibrating = false;
         iphoneCalibrated = true;
-        iphoneStatus = "9지점 보정 완료. 시선 위치를 확인해 보세요.";
+        iphoneMarkerValid = false;
+        iphoneStatus = $"화면 보정 완료 · {IPhoneAccuracyText()}";
     }
 
     void DrawIPhoneCalibrationScreen()
     {
-        GUI.matrix = Canvas;
-        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
-        NovelUI.Label(new Rect(0, 20, 1280, 48), "시선 보정", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
-        NovelUI.Label(new Rect(80, 86, 420, 34), $"보정 지점 {iphoneCalibrationPoint + 1} / {IPhoneCalibrationTargets.Length}", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
-
-        float phaseProgress = iphoneMeasuring
-            ? .35f + Mathf.Clamp01((Time.unscaledTime - iphoneMeasureAt) / IPhoneCalibrationCaptureSeconds) * .65f
-            : Mathf.Clamp01((Time.unscaledTime - iphoneTargetShownAt) / IPhoneCalibrationSettleSeconds) * .35f;
-        float progress = (iphoneCalibrationPoint + phaseProgress) / IPhoneCalibrationTargets.Length;
-        NovelUI.Fill(new Rect(80, 126, 1120, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);
-        NovelUI.Fill(new Rect(80, 126, 1120 * progress, 8), NovelUI.DeepPink, 4);
-
-        Vector2 target = IPhoneCalibrationTargets[Mathf.Min(iphoneCalibrationPoint, IPhoneCalibrationTargets.Length - 1)];
-        Vector2 point = new Vector2(target.x * 1280f, target.y * 900f);
-        NovelUI.Fill(new Rect(point.x - 31, point.y - 31, 62, 62), NovelUI.Alpha(NovelUI.DeepPink, .18f), 31);
-        NovelUI.Fill(new Rect(point.x - 22, point.y - 22, 44, 44), NovelUI.DeepPink, 22);
-        NovelUI.Fill(new Rect(point.x - 15, point.y - 15, 30, 30), NovelUI.Cream, 15);
-        NovelUI.Fill(new Rect(point.x - 5, point.y - 5, 10, 10), NovelUI.DeepPink, 5);
-
-        string instruction = iphoneMeasuring
-            ? $"시선을 점에 고정해 주세요 · 자동 측정 중 {Mathf.CeilToInt(Mathf.Max(0f, IPhoneCalibrationCaptureSeconds - (Time.unscaledTime - iphoneMeasureAt)))}초"
-            : "분홍 점을 바라봐 주세요 · 잠시 후 자동 측정합니다.";
-        NovelUI.Label(new Rect(150, 790, 980, 42), instruction, NovelUI.Soft, 20, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
-        NovelUI.Label(new Rect(150, 836, 980, 30), iphoneStatus, NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
-        if (NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18))
+        if (DrawGazeTargetScreen(IPhoneCalibrationTargets, iphoneCalibrationPoint, iphoneMeasuring, iphoneTargetShownAt, iphoneMeasureAt,
+                IPhoneCalibrationSettleSeconds, iphoneStatus, "분홍 점을 바라봐 주세요 · 평소처럼 고개를 조금 돌려도 괜찮아요."))
         {
             iphoneCalibrating = iphoneMeasuring = false;
             iphoneMarkerValid = false;
@@ -315,55 +287,38 @@ public partial class GameController
         }
     }
 
-    bool FitIPhoneCalibration()
+    // Full-screen target screen shared by the iPhone calibration and the webcam screen fit. True when cancelled.
+    bool DrawGazeTargetScreen(Vector2[] targets, int index, bool measuring, float shownAt, float measureAt, float settleSeconds, string status, string hint)
     {
-        double[,] normal = new double[3, 3];
-        double[] xRight = new double[3], yRight = new double[3];
-        for (int i = 0; i < IPhoneCalibrationTargets.Length; i++)
-        {
-            Vector2 feature = iphoneMeasuredFeatures[i];
-            double[] row = { feature.x, feature.y, 1d };
-            for (int r = 0; r < 3; r++)
-            {
-                for (int c = 0; c < 3; c++) normal[r, c] += row[r] * row[c];
-                xRight[r] += row[r] * IPhoneCalibrationTargets[i].x;
-                yRight[r] += row[r] * IPhoneCalibrationTargets[i].y;
-            }
-        }
-        if (!SolveIPhone3x3(normal, xRight, out double[] x) || !SolveIPhone3x3(normal, yRight, out double[] y)) return false;
-        iphoneFitX[0] = new Vector3((float)x[0], (float)x[1], (float)x[2]);
-        iphoneFitX[1] = new Vector3((float)y[0], (float)y[1], (float)y[2]);
-        return true;
+        GUI.matrix = Canvas;
+        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
+        NovelUI.Label(new Rect(0, 20, 1280, 48), "시선 보정", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        // Text sits in the gaps between target rows (y 108 / 279 / 450 / 621 / 792) so no target lands on it.
+        NovelUI.Label(new Rect(240, 156, 800, 34), $"보정 지점 {index + 1} / {targets.Length}", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+
+        float phaseProgress = measuring
+            ? .35f + Mathf.Clamp01((Time.unscaledTime - measureAt) / IPhoneCalibrationCaptureSeconds) * .65f
+            : Mathf.Clamp01((Time.unscaledTime - shownAt) / settleSeconds) * .35f;
+        float progress = (index + phaseProgress) / targets.Length;
+        NovelUI.Fill(new Rect(240, 196, 800, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);
+        NovelUI.Fill(new Rect(240, 196, 800 * progress, 8), NovelUI.DeepPink, 4);
+
+        Vector2 target = targets[Mathf.Min(index, targets.Length - 1)];
+        Vector2 point = new Vector2(target.x * 1280f, target.y * 900f);
+        NovelUI.Fill(new Rect(point.x - 31, point.y - 31, 62, 62), NovelUI.Alpha(NovelUI.DeepPink, .18f), 31);
+        NovelUI.Fill(new Rect(point.x - 22, point.y - 22, 44, 44), NovelUI.DeepPink, 22);
+        NovelUI.Fill(new Rect(point.x - 15, point.y - 15, 30, 30), NovelUI.Cream, 15);
+        NovelUI.Fill(new Rect(point.x - 5, point.y - 5, 10, 10), NovelUI.DeepPink, 5);
+
+        string instruction = measuring
+            ? $"시선을 점에 고정해 주세요 · 자동 측정 중 {Mathf.CeilToInt(Mathf.Max(0f, IPhoneCalibrationCaptureSeconds - (Time.unscaledTime - measureAt)))}초"
+            : hint;
+        NovelUI.Label(new Rect(150, 668, 980, 42), instruction, NovelUI.Soft, 20, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
+        NovelUI.Label(new Rect(150, 712, 980, 30), status, NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
+        return NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18);
     }
 
-    static bool SolveIPhone3x3(double[,] source, double[] sourceRight, out double[] solution)
-    {
-        double[,] matrix = new double[3, 4];
-        for (int r = 0; r < 3; r++)
-        {
-            for (int c = 0; c < 3; c++) matrix[r, c] = source[r, c];
-            matrix[r, 3] = sourceRight[r];
-        }
-        for (int column = 0; column < 3; column++)
-        {
-            int pivot = column;
-            for (int row = column + 1; row < 3; row++)
-                if (Math.Abs(matrix[row, column]) > Math.Abs(matrix[pivot, column])) pivot = row;
-            if (Math.Abs(matrix[pivot, column]) < 1e-9) { solution = null; return false; }
-            if (pivot != column)
-                for (int c = column; c < 4; c++) { double value = matrix[column, c]; matrix[column, c] = matrix[pivot, c]; matrix[pivot, c] = value; }
-            double divisor = matrix[column, column];
-            for (int c = column; c < 4; c++) matrix[column, c] /= divisor;
-            for (int row = 0; row < 3; row++)
-            {
-                if (row == column) continue;
-                double factor = matrix[row, column];
-                for (int c = column; c < 4; c++) matrix[row, c] -= factor * matrix[column, c];
-            }
-        }
-        solution = new[] { matrix[0, 3], matrix[1, 3], matrix[2, 3] };
-        return true;
-    }
+    bool FitIPhoneCalibration() => iphoneMapper.Fit(iphoneMeasuredFeatures, IPhoneCalibrationTargets, iphoneMeasuredSamples);
 
     void DrawIPhoneGazePanel()
     {
@@ -409,17 +364,11 @@ public partial class GameController
             return;
         }
 
-        if (iphoneStarGameActive || iphoneStarGameFinished)
-        {
-            DrawIPhoneStarGame();
-            return;
-        }
-
         {
             bool fresh = iphoneSource.HasFreshSample;
             bool faceFound = fresh && iphoneSource.FaceFound;
             string status = faceFound ? iphoneStatus : iphoneSource.Status ?? iphoneStatus;
-            NovelUI.Label(new Rect(120, 205, 1040, 42), status, NovelUI.Soft, 20, faceFound ? NovelUI.Mint : NovelUI.DeepPink, TextAnchor.MiddleCenter, FontStyle.Bold);
+            NovelUI.Label(new Rect(120, 226, 1040, 42), status, NovelUI.Soft, 20, faceFound ? NovelUI.Mint : NovelUI.DeepPink, TextAnchor.MiddleCenter, FontStyle.Bold);
 
             if (!iphoneCalibrated)
             {
@@ -427,18 +376,18 @@ public partial class GameController
                     DrawIPhoneGazePointer(iphoneCanvasGaze);
                 NovelUI.Label(new Rect(230, 310, 820, 72), iphoneUncalibrated
                     ? "무보정 원시 눈값을 점으로 표시합니다.\n방향 확인용이며 화면 위치 정확도는 보정이 필요해요."
-                    : "화면 점 9개를 차례로 응시해 보정합니다.\n보정 화면에서 점을 바라보면 자동으로 측정합니다.", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter);
+                    : "화면 점 13개를 차례로 응시해 보정합니다.\n눈과 고개 방향을 함께 쓰니 평소처럼 바라보면 돼요.",NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter);
                 GUI.enabled = fresh && iphoneSource.FaceFound;
                 if (!iphoneUncalibrated)
                 {
-                    if (NovelUI.Button(new Rect(440, 410, 400, 62), "9지점 보정 시작", true, 23)) BeginIPhoneCalibration();
+                    if (NovelUI.Button(new Rect(440, 410, 400, 62), "화면 보정 시작", true, 23)) BeginIPhoneCalibration();
                     if (NovelUI.Button(new Rect(440, 490, 400, 52), "무보정 원시값 보기", false, 20)) iphoneUncalibrated = true;
                 }
                 else
                 {
                     Vector2 feature = iphoneSource.EyeFeature;
-                    NovelUI.Label(new Rect(80, 742, 1120, 32), $"Raw Eye {feature.x:F2}, {feature.y:F2} · 9지점 보정 후 화면 위치를 맞출 수 있어요.", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
-                    if (NovelUI.Button(new Rect(500, 785, 280, 50), "9지점 보정 시작", true, 19)) BeginIPhoneCalibration();
+                    NovelUI.Label(new Rect(80, 742, 1120, 32), $"Raw Eye {feature.x:F2}, {feature.y:F2} · 화면 보정 후 화면 위치를 맞출 수 있어요.", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
+                    if (NovelUI.Button(new Rect(500, 785, 280, 50), "화면 보정 시작", true, 19)) BeginIPhoneCalibration();
                 }
                 GUI.enabled = true;
             }
@@ -447,44 +396,19 @@ public partial class GameController
                 if (iphoneMarkerValid) DrawIPhoneGazePointer(iphoneCanvasGaze);
                 Vector2 feature = iphoneSource.EyeFeature;
                 string transport = iphoneUseUsb ? "iPhone USB → VTube Studio API" : "iPhone Wi-Fi UDP";
-                NovelUI.Label(new Rect(80, 742, 1120, 32), $"{transport} · {iphoneSource.Sequence} samples · Eye {feature.x:F2}, {feature.y:F2}", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
-                if (NovelUI.Button(new Rect(110, 785, 280, 50), "시선 별잡기", true, 19)) StartIPhoneStarGame();
-                if (NovelUI.Button(new Rect(500, 785, 280, 50), "다시 보정", false, 19)) BeginIPhoneCalibration();
+                NovelUI.Label(new Rect(80, 694, 1120, 32), $"{transport} · {iphoneSource.Sequence} samples · Eye {feature.x:F2}, {feature.y:F2}", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
+                if (NovelUI.Button(new Rect(270, 740, 280, 54), "시선 별잡기", true, 21)) StartStarGame();
+                if (NovelUI.Button(new Rect(580, 740, 200, 54), "다시 보정", false, 19)) BeginIPhoneCalibration();
             }
 
-            if (NovelUI.Button(new Rect(890, 785, 280, 50), "연결 끊기", false, 18)) StopIPhoneGaze();
+            if (NovelUI.Button(iphoneCalibrated ? new Rect(810, 740, 200, 54) : new Rect(890, 785, 280, 50), "연결 끊기", false, 18)) StopIPhoneGaze();
         }
     }
 
-    void DrawIPhoneGazePointer(Vector2 point)
+    void DrawIPhoneGazePointer(Vector2 point, float alpha = 1f)
     {
-        NovelUI.Fill(new Rect(point.x - 28, point.y - 28, 56, 56), NovelUI.Alpha(NovelUI.DeepPink, .22f), 28);
-        NovelUI.Fill(new Rect(point.x - 17, point.y - 17, 34, 34), NovelUI.DeepPink, 17);
+        NovelUI.Fill(new Rect(point.x - 28, point.y - 28, 56, 56), NovelUI.Alpha(NovelUI.DeepPink, .22f * alpha), 28);
+        NovelUI.Fill(new Rect(point.x - 17, point.y - 17, 34, 34), NovelUI.Alpha(NovelUI.DeepPink, alpha), 17);
         NovelUI.Fill(new Rect(point.x - 6, point.y - 6, 12, 12), NovelUI.Cream, 6);
-    }
-
-    void DrawIPhoneStarGame()
-    {
-        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
-        NovelUI.Label(new Rect(0, 42, 1280, 56), "시선 별잡기", NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-        if (iphoneStarGameFinished)
-        {
-            NovelUI.Label(new Rect(260, 290, 760, 92), $"별 {iphoneStarScore}개를 잡았어요!", NovelUI.Round, 42, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
-            if (NovelUI.Button(new Rect(330, 430, 280, 62), "한 판 더", true, 23)) StartIPhoneStarGame();
-            if (NovelUI.Button(new Rect(670, 430, 280, 62), "돌아가기", false, 23)) iphoneStarGameFinished = false;
-            return;
-        }
-
-        float remaining = Mathf.Max(0f, IPhoneStarGameDuration - (Time.unscaledTime - iphoneStarGameStartedAt));
-        NovelUI.Label(new Rect(80, 115, 330, 54), $"점수  {iphoneStarScore}", NovelUI.Round, 26, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
-        NovelUI.Label(new Rect(870, 115, 330, 54), $"남은 시간  {Mathf.CeilToInt(remaining)}초", NovelUI.Round, 26, NovelUI.Plum, TextAnchor.MiddleRight, FontStyle.Bold);
-        NovelUI.Label(new Rect(180, 168, 920, 40), "별 주위에 커진 포인터를 0.65초 머물게 하면 잡아요. 넉넉하게 판정합니다!", NovelUI.Soft, 18, NovelUI.Berry, TextAnchor.MiddleCenter);
-        NovelUI.Fill(new Rect(iphoneStarTarget.x - 98, iphoneStarTarget.y - 98, 196, 196), NovelUI.Alpha(NovelUI.Lemon, .65f), 98);
-        NovelUI.Label(new Rect(iphoneStarTarget.x - 82, iphoneStarTarget.y - 94, 164, 170), "★", NovelUI.Round, 124, NovelUI.DeepPink, TextAnchor.MiddleCenter);
-        float dwell = iphoneStarDwellStartedAt < 0f ? 0f : Mathf.Clamp01((Time.unscaledTime - iphoneStarDwellStartedAt) / IPhoneStarDwell);
-        NovelUI.Fill(new Rect(iphoneStarTarget.x - 76, iphoneStarTarget.y + 108, 152, 12), NovelUI.Alpha(NovelUI.Plum, .18f), 6);
-        NovelUI.Fill(new Rect(iphoneStarTarget.x - 76, iphoneStarTarget.y + 108, 152 * dwell, 12), NovelUI.DeepPink, 6);
-        if (iphoneMarkerValid) DrawIPhoneGazePointer(iphoneCanvasGaze);
-        if (NovelUI.Button(new Rect(1030, 820, 200, 48), "게임 끝내기", false, 18)) iphoneStarGameActive = iphoneStarGameFinished = false;
     }
 }

@@ -3,7 +3,7 @@
 게임의 AI 모드는 이 서버를 거쳐 Gemini를 부릅니다. Gemini API 키는 Cloudflare 비밀 설정에만 있고, 이 폴더·레포·게임 빌드 어디에도 없습니다.
 
 - 게임 → `POST https://aion-ai-proxy.dugeun-campus.workers.dev` (`{ system, user }`, 헤더 `X-AION-Client: dugeun-campus`)
-- 서버 → Gemini `gemini-flash-lite-latest` (모델·길이 고정, IP당 분당 20회)
+- 서버 → Gemini `gemini-3.1-flash-lite` (모델·길이 고정. `-latest` 별칭은 2026-11-05에 응답이 15~40초 걸리는 모델로 바뀌어 버전을 고정, IP당 분당 20회)
 - Gemini는 일부 지역(예: 홍콩)에서 오는 호출을 "User location is not supported"로 거절합니다. 그래서 구글 호출은 미국 동부에 고정한 Durable Object(`GeminiRelay`)에서만 나갑니다.
 - 응답은 Gemini의 OpenAI 호환 JSON 그대로라 게임 코드(`AiProfessor.cs`)가 직접 호출과 똑같이 읽습니다.
 

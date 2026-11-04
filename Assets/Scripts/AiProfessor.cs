@@ -18,7 +18,7 @@ public static class AiProfessor
     const string ProxyEndpoint = "https://aion-ai-proxy.dugeun-campus.workers.dev";
     const string ProxyClient = "dugeun-campus";   // Must match CLIENT in Server/ai-proxy/worker.js.
     const string GeminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-    const string GeminiModel = "gemini-flash-lite-latest";
+    const string GeminiModel = "gemini-3.1-flash-lite";   // pinned: the "-latest" alias moved to a model that took 15-40 s per reply (2026-11-05)
     const string GatewayEndpoint = "https://factchat-cloud.mindlogic.ai/v1/gateway/chat/completions";
     const string GatewayModel = "gpt-5-nano";
     const string KeyPref = "AION.AiKey";
