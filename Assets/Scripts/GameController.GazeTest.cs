@@ -57,7 +57,7 @@ public partial class GameController
         requestingCamera = true;
         gazeStatus = "카메라 권한 확인 중...";
         yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
-        if (!gazeTestOpen) { requestingCamera = false; yield break; }
+        if (!gazeTestOpen && !photoCaptureOpen) { requestingCamera = false; yield break; }
         if (!Application.HasUserAuthorization(UserAuthorization.WebCam))
         {
             gazeStatus = "카메라 권한이 없어요. Windows 카메라 권한을 확인해 주세요.";
@@ -114,7 +114,9 @@ public partial class GameController
         webcamRate = webcamSamplesThisSecond = 0;
         webcamRateSince = Time.unscaledTime;
         yield return null;   // HomulerGaze.Start builds the provider first
-        if (gazeTracker != null && gazeTracker.GazeBackbone != WebcamModel) gazeTracker.SetBackbone(WebcamModel);
+        // Taking the player's photo needs only the face mesh, so it runs the lightest gaze model.
+        GazeBackbone backbone = gazeTestOpen ? WebcamModel : GazeBackbone.EyeMU;
+        if (gazeTracker != null && gazeTracker.GazeBackbone != backbone) gazeTracker.SetBackbone(backbone);
     }
 
     void SetWebcamModel(GazeBackbone backbone)

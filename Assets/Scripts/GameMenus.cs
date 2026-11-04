@@ -210,7 +210,7 @@ public partial class GameController
                 NovelUI.Fill(photo, NovelUI.Blush, 20);
                 string picture = Professor.Picture(Stories.All[data.Faculty].Professors[data.Professor], data.Professor);
                 Texture2D portrait = Resources.Load<Texture2D>(picture);
-                if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
+                if (portrait != null && !DrawPortraitInFrame(photo, portrait, .5f, .46f) && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
                 float tx = photo.xMax + 20;
                 tx += NovelUI.Pill(tx, face.y + 18, 36, "CHAPTER " + data.Scene, NovelUI.Pink, Color.white, 17) + 10;
                 Story story = Stories.All[data.Faculty];
@@ -420,7 +420,7 @@ public partial class GameController
         NovelUI.Fill(photo, NovelUI.Blush, 30);
         string picture = Professor.Picture(story.Professors[galleryProfessor], galleryProfessor, galleryEnding == 0 ? "Frown" : "Happy");   // The failed ending keeps its sad face.
         Texture2D portrait = Resources.Load<Texture2D>(picture);
-        if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
+        if (portrait != null && !DrawPortraitInFrame(photo, portrait, .5f, .46f) && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture, true));
         NovelUI.Label(new Rect(photo.xMax + 30, card.y + 70, card.width - 300, 64), story.EndingNames[galleryEnding], NovelUI.Round, 42, NovelUI.Berry, TextAnchor.MiddleLeft);
         NovelUI.Pill(photo.xMax + 30, card.y + 148, 40, story.Professors[galleryProfessor].Name, NovelUI.Blush, NovelUI.DeepPink, 20);
         NovelUI.Label(new Rect(card.x + 60, card.y + 250, card.width - 120, 330), story.Ending(galleryProfessor, galleryEnding), NovelUI.Soft, 22, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);

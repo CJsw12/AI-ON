@@ -54,6 +54,7 @@ public partial class GameController : MonoBehaviour
     void Update()
     {
         UpdateGazeTest();
+        UpdatePhotoCapture();
         novelAudio.SetMood(S.Mood(scene, choiceStage));
         AiImeUpdate();
         if (menu == Menu.None && (miniGame == null || !miniGame.Reviewing)) MiniGame.Tick(Time.unscaledDeltaTime);
@@ -92,39 +93,51 @@ public partial class GameController : MonoBehaviour
         // Choice results are the professor's replies, so the portrait is always shown there.
         bool showProfessor = portrait && (showResult || S.ProfessorOnStage(scene, choiceStage, dialogueIndex));
         if (NovelUI.Repaint) portraitAlpha = Mathf.MoveTowards(portraitAlpha, showProfessor ? 1 : 0, Time.unscaledDeltaTime * 4);
+        bool duo = portrait && DuoActive;
+        if (duo) UpdateDuoFocus();
+        if (portraitAlpha > 0 && duo) DrawPlayerCharacter(portraitAlpha);
+        Matrix4x4 sceneMatrix = GUI.matrix;
         if (portraitAlpha > 0)
         {
-            GUI.color = new Color(1, 1, 1, portraitAlpha);
-            string professorImage = professor >= 0 ? S.Professors[professor].Image : "";
-            bool fullFigure = professorImage.StartsWith("ProfessorJungChem") || professorImage.StartsWith("ProfessorOhChem") ||
-                professorImage.StartsWith("ProfessorGuMath") || professorImage.StartsWith("ProfessorSeolMath") ||
-                professorImage.StartsWith("ProfessorMoonBio") || professorImage.StartsWith("ProfessorLimBio") ||
-                professorImage.StartsWith("ProfessorShinDoYoon") || professorImage.StartsWith("ProfessorRyuBoRa") ||
-                professorImage.StartsWith("ProfessorNamgungHyun") || professorImage.StartsWith("ProfessorHaEunChae") ||
-                professorImage.StartsWith("ProfessorEomTaeO") || professorImage.StartsWith("ProfessorChaYuRi");
-            if (HasUpperBodyPortrait(professorImage))
+            float lit = duo ? DuoBrightness(true) : 1f;
+            Color tint = new Color(lit, lit, lit, portraitAlpha);
+            // Laid out by the face (same size for everyone); in a duo right of centre, facing the player on the left.
+            if (!DrawStageProfessor(Portrait, tint, duo))
             {
-                Texture2D professorTexture = Portrait;
-                if (professorTexture != null)
+                if (duo) GUI.matrix = DuoProfessorMatrix * sceneMatrix;
+                GUI.color = tint;
+                string professorImage = professor >= 0 ? S.Professors[professor].Image : "";
+                bool fullFigure = professorImage.StartsWith("ProfessorJungChem") || professorImage.StartsWith("ProfessorOhChem") ||
+                    professorImage.StartsWith("ProfessorGuMath") || professorImage.StartsWith("ProfessorSeolMath") ||
+                    professorImage.StartsWith("ProfessorMoonBio") || professorImage.StartsWith("ProfessorLimBio") ||
+                    professorImage.StartsWith("ProfessorShinDoYoon") || professorImage.StartsWith("ProfessorRyuBoRa") ||
+                    professorImage.StartsWith("ProfessorNamgungHyun") || professorImage.StartsWith("ProfessorHaEunChae") ||
+                    professorImage.StartsWith("ProfessorEomTaeO") || professorImage.StartsWith("ProfessorChaYuRi");
+                if (HasUpperBodyPortrait(professorImage))
                 {
-                    Rect frame = PortraitRect();
-                    Rect upperBody = new Rect(frame.x, frame.y + frame.height * .04f, frame.width, frame.height * .66f);
-                    DrawUpperBodyPortrait(upperBody, professorTexture, professorImage);
+                    Texture2D professorTexture = Portrait;
+                    if (professorTexture != null)
+                    {
+                        Rect frame = PortraitRect();
+                        Rect upperBody = new Rect(frame.x, frame.y + frame.height * .04f, frame.width, frame.height * .66f);
+                        DrawUpperBodyPortrait(upperBody, professorTexture, professorImage);
+                    }
                 }
-            }
-            else if (fullFigure)
-            {
-                Texture2D professorTexture = Portrait;
-                if (professorTexture != null)
+                else if (fullFigure)
                 {
-                    float height = Screen.height * .82f;
-                    float width = height * professorTexture.width / professorTexture.height * 1.45f;
-                    GUI.DrawTexture(new Rect((Screen.width - width) / 2, Screen.height - height, width, height), professorTexture, ScaleMode.StretchToFill, true);
+                    Texture2D professorTexture = Portrait;
+                    if (professorTexture != null)
+                    {
+                        float height = Screen.height * .82f;
+                        float width = height * professorTexture.width / professorTexture.height * 1.45f;
+                        GUI.DrawTexture(new Rect((Screen.width - width) / 2, Screen.height - height, width, height), professorTexture, ScaleMode.StretchToFill, true);
+                    }
                 }
+                else
+                    GUI.DrawTexture(PortraitRect(), Portrait, ScaleMode.ScaleAndCrop);
             }
-            else
-                GUI.DrawTexture(PortraitRect(), Portrait, ScaleMode.ScaleAndCrop);
             GUI.color = Color.white;
+            GUI.matrix = sceneMatrix;
         }
         float fade = 1f - Mathf.Clamp01((Time.unscaledTime - backgroundChangedAt) / .45f);
         if (fade > 0)
@@ -166,6 +179,7 @@ public partial class GameController : MonoBehaviour
     void DrawScreen()
     {
         if (gazeTestOpen) { DrawGazeTest(); return; }
+        if (photoCaptureOpen) { DrawPhotoCapture(); return; }
         if (memorial > 0) { Memorial(); return; }
         if (!introDone) { Intro(); return; }
         if (practice != null) { Practice(); return; }
@@ -704,7 +718,8 @@ public partial class GameController : MonoBehaviour
         NovelUI.Fill(photo, NovelUI.Blush, 22);
         string picture = Professor.Picture(info, who, hover ? "Happy" : "");
         Texture2D portrait = Resources.Load<Texture2D>(picture);
-        if (portrait != null && NovelUI.Repaint)
+        // Hovering zooms in on the face.
+        if (portrait != null && !DrawPortraitInFrame(photo, portrait, hover ? .44f : .3f, hover ? .42f : .3f) && NovelUI.Repaint)
         {
             if (hover)
             {

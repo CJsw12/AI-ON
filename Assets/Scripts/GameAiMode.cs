@@ -235,6 +235,7 @@ public partial class GameController
     void AiModeControls(Rect panel)
     {
         Rect toggle = new Rect(panel.xMax - 250, panel.yMax - 62, 220, 44);
+        PlayerPhotoToggle(new Rect(toggle.x - 210, toggle.y, 200, toggle.height));
         if (!AiProfessor.Supported)
         {
             GUI.enabled = false;
