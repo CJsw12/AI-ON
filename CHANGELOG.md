@@ -58,3 +58,10 @@ For future project work, update this file in the same change as the code, conten
 - The five-page guide covers prerequisites, Unity setup, Wi-Fi UDP, USB/API, nine-point calibration, troubleshooting, official references, and the distinction between confirmed Wi-Fi operation and USB checks still pending.
 - Rendered the PDF with Microsoft Word and visually inspected all five pages. The bundled LibreOffice renderer was unavailable in this environment; the Word export and Poppler page render were used for review.
 - Copied both deliverables to the project owner's Desktop for direct access.
+
+## 2026-11-04 — Full-screen iPhone calibration
+
+- Replaced the embedded per-point calibration controls with a dedicated full-canvas calibration view, matching the webcam flow's focus on the target.
+- Kept the 3x3 targets and affine fit, and changed capture to wait 0.9 seconds then automatically sample for 1.5 seconds per target. This avoids a mouse click at each target and gathers more samples than the previous one-second capture; real-device accuracy improvement still needs validation.
+- Updated the Markdown, Word, and PDF team setup guides with the timed flow and monitor setup guidance. Physical screen size is not an input to the fit, but small viewing angle, short target spacing, low resolution, or changing viewing position can affect practical results.
+- Unity Editor and iPhone device verification have not been run for this update.

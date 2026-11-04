@@ -6,6 +6,8 @@ using UnityEngine;
 
 public partial class GameController
 {
+    const float IPhoneCalibrationSettleSeconds = .9f;
+    const float IPhoneCalibrationCaptureSeconds = 1.5f;
     const string IPhoneIpPref = "GazeTest.IPhoneIP";
     const string IPhonePortPref = "GazeTest.IPhonePort";
     const string VtsPortPref = "GazeTest.VtsApiPort";
@@ -28,7 +30,7 @@ public partial class GameController
     bool iphoneFieldsLoaded;
     bool iphoneCalibrating, iphoneMeasuring;
     int iphoneCalibrationPoint, iphoneCaptureCount, iphoneLastCaptureSequence;
-    float iphoneMeasureAt;
+    float iphoneTargetShownAt, iphoneMeasureAt;
     double iphoneFeatureXSum, iphoneFeatureYSum;
     readonly Vector2[] iphoneMeasuredFeatures = new Vector2[IPhoneCalibrationTargets.Length];
     readonly Vector3[] iphoneFitX = new Vector3[2];
@@ -44,28 +46,36 @@ public partial class GameController
         {
             iphoneMarkerValid = false;
             iphoneStatus = iphoneSource.Status ?? "아이폰 데이터를 기다리는 중이에요. 연결 설정을 확인해 주세요.";
+            if (iphoneMeasuring && Time.unscaledTime > iphoneMeasureAt + IPhoneCalibrationCaptureSeconds)
+                CompleteIPhoneCalibrationPoint();
             return;
         }
         if (!iphoneSource.FaceFound)
         {
             iphoneMarkerValid = false;
             iphoneStatus = "아이폰에서 얼굴이 잡히지 않아요. 휴대폰을 바라봐 주세요.";
+            if (iphoneMeasuring && Time.unscaledTime > iphoneMeasureAt + IPhoneCalibrationCaptureSeconds)
+                CompleteIPhoneCalibrationPoint();
             return;
         }
 
-        iphoneStatus = iphoneCalibrated ? "iPhone 추적 중 · 9지점 보정 완료" : "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
+        if (!iphoneCalibrating)
+            iphoneStatus = iphoneCalibrated ? "iPhone 추적 중 · 9지점 보정 완료" : "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
         Vector2 feature = iphoneSource.EyeFeature;
+        if (iphoneCalibrating && !iphoneMeasuring && Time.unscaledTime >= iphoneTargetShownAt + IPhoneCalibrationSettleSeconds)
+            BeginIPhoneCalibrationCapture();
+
         if (iphoneMeasuring && iphoneSource.Sequence != iphoneLastCaptureSequence)
         {
             iphoneLastCaptureSequence = iphoneSource.Sequence;
-            if (Time.unscaledTime >= iphoneMeasureAt && Time.unscaledTime <= iphoneMeasureAt + 1f)
+            if (Time.unscaledTime <= iphoneMeasureAt + IPhoneCalibrationCaptureSeconds)
             {
                 iphoneFeatureXSum += feature.x;
                 iphoneFeatureYSum += feature.y;
                 iphoneCaptureCount++;
             }
         }
-        if (iphoneMeasuring && Time.unscaledTime > iphoneMeasureAt + 1f)
+        if (iphoneMeasuring && Time.unscaledTime > iphoneMeasureAt + IPhoneCalibrationCaptureSeconds)
             CompleteIPhoneCalibrationPoint();
 
         if (!iphoneCalibrated) { iphoneMarkerValid = false; return; }
@@ -169,7 +179,8 @@ public partial class GameController
         iphoneCalibrated = false;
         iphoneMarkerValid = false;
         iphoneCalibrationPoint = 0;
-        iphoneStatus = "화면의 분홍 점을 바라본 뒤 측정 버튼을 눌러 주세요.";
+        iphoneTargetShownAt = Time.unscaledTime;
+        iphoneStatus = "화면 점을 바라봐 주세요. 자동으로 표본을 모읍니다.";
     }
 
     void BeginIPhoneCalibrationCapture()
@@ -177,9 +188,9 @@ public partial class GameController
         iphoneFeatureXSum = iphoneFeatureYSum = 0;
         iphoneCaptureCount = 0;
         iphoneLastCaptureSequence = iphoneSource.Sequence;
-        iphoneMeasureAt = Time.unscaledTime + .5f;
+        iphoneMeasureAt = Time.unscaledTime;
         iphoneMeasuring = true;
-        iphoneStatus = "분홍 점을 바라보세요. 잠시 뒤 1초간 자동 측정합니다.";
+        iphoneStatus = "시선을 고정해 주세요. 1.5초 동안 자동 측정합니다.";
     }
 
     void CompleteIPhoneCalibrationPoint()
@@ -187,7 +198,8 @@ public partial class GameController
         iphoneMeasuring = false;
         if (iphoneCaptureCount < 20)
         {
-            iphoneStatus = "측정 표본이 부족해요. 얼굴과 Wi-Fi 연결을 확인하고 다시 측정해 주세요.";
+            iphoneTargetShownAt = Time.unscaledTime;
+            iphoneStatus = "표본이 부족해요. 연결을 확인하고 같은 점을 다시 응시해 주세요.";
             return;
         }
         iphoneMeasuredFeatures[iphoneCalibrationPoint] = new Vector2(
@@ -195,18 +207,54 @@ public partial class GameController
         iphoneCalibrationPoint++;
         if (iphoneCalibrationPoint < IPhoneCalibrationTargets.Length)
         {
-            iphoneStatus = "다음 분홍 점을 바라본 뒤 측정 버튼을 눌러 주세요.";
+            iphoneTargetShownAt = Time.unscaledTime;
+            iphoneStatus = $"다음 점을 바라봐 주세요. 자동 측정이 이어집니다. ({iphoneCalibrationPoint + 1}/9)";
             return;
         }
         if (!FitIPhoneCalibration())
         {
             iphoneCalibrationPoint = 0;
+            iphoneTargetShownAt = Time.unscaledTime;
             iphoneStatus = "눈 움직임이 충분히 달라지지 않았어요. 휴대폰을 고정하고 다시 보정해 주세요.";
             return;
         }
         iphoneCalibrating = false;
         iphoneCalibrated = true;
         iphoneStatus = "9지점 보정 완료. 시선 위치를 확인해 보세요.";
+    }
+
+    void DrawIPhoneCalibrationScreen()
+    {
+        GUI.matrix = Canvas;
+        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
+        NovelUI.Label(new Rect(0, 20, 1280, 48), "시선 보정", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(80, 86, 420, 34), $"보정 지점 {iphoneCalibrationPoint + 1} / {IPhoneCalibrationTargets.Length}", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+
+        float phaseProgress = iphoneMeasuring
+            ? .35f + Mathf.Clamp01((Time.unscaledTime - iphoneMeasureAt) / IPhoneCalibrationCaptureSeconds) * .65f
+            : Mathf.Clamp01((Time.unscaledTime - iphoneTargetShownAt) / IPhoneCalibrationSettleSeconds) * .35f;
+        float progress = (iphoneCalibrationPoint + phaseProgress) / IPhoneCalibrationTargets.Length;
+        NovelUI.Fill(new Rect(80, 126, 1120, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);
+        NovelUI.Fill(new Rect(80, 126, 1120 * progress, 8), NovelUI.DeepPink, 4);
+
+        Vector2 target = IPhoneCalibrationTargets[Mathf.Min(iphoneCalibrationPoint, IPhoneCalibrationTargets.Length - 1)];
+        Vector2 point = new Vector2(target.x * 1280f, target.y * 900f);
+        NovelUI.Fill(new Rect(point.x - 31, point.y - 31, 62, 62), NovelUI.Alpha(NovelUI.DeepPink, .18f), 31);
+        NovelUI.Fill(new Rect(point.x - 22, point.y - 22, 44, 44), NovelUI.DeepPink, 22);
+        NovelUI.Fill(new Rect(point.x - 15, point.y - 15, 30, 30), NovelUI.Cream, 15);
+        NovelUI.Fill(new Rect(point.x - 5, point.y - 5, 10, 10), NovelUI.DeepPink, 5);
+
+        string instruction = iphoneMeasuring
+            ? $"시선을 점에 고정해 주세요 · 자동 측정 중 {Mathf.CeilToInt(Mathf.Max(0f, IPhoneCalibrationCaptureSeconds - (Time.unscaledTime - iphoneMeasureAt)))}초"
+            : "분홍 점을 바라봐 주세요 · 잠시 후 자동 측정합니다.";
+        NovelUI.Label(new Rect(150, 790, 980, 42), instruction, NovelUI.Soft, 20, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
+        NovelUI.Label(new Rect(150, 836, 980, 30), iphoneStatus, NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
+        if (NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18))
+        {
+            iphoneCalibrating = iphoneMeasuring = false;
+            iphoneMarkerValid = false;
+            iphoneStatus = "보정을 취소했어요.";
+        }
     }
 
     bool FitIPhoneCalibration()
@@ -309,20 +357,9 @@ public partial class GameController
             string status = faceFound ? iphoneStatus : iphoneSource.Status ?? iphoneStatus;
             NovelUI.Label(new Rect(120, 205, 1040, 42), status, NovelUI.Soft, 20, faceFound ? NovelUI.Mint : NovelUI.DeepPink, TextAnchor.MiddleCenter, FontStyle.Bold);
 
-            if (iphoneCalibrating)
+            if (!iphoneCalibrated)
             {
-                Vector2 target = IPhoneCalibrationTargets[Mathf.Min(iphoneCalibrationPoint, IPhoneCalibrationTargets.Length - 1)];
-                Vector2 canvas = new Vector2(target.x * 1280f, target.y * 900f);
-                NovelUI.Fill(new Rect(canvas.x - 19, canvas.y - 19, 38, 38), NovelUI.DeepPink, 19);
-                NovelUI.Label(new Rect(340, 728, 600, 34), iphoneMeasuring ? "측정 중... 눈을 점에 고정해 주세요." : $"보정 지점 {iphoneCalibrationPoint + 1}/9 · 분홍 점을 바라보세요.", NovelUI.Soft, 18, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
-                GUI.enabled = fresh && !iphoneMeasuring;
-                if (NovelUI.Button(new Rect(500, 772, 280, 50), "이 지점 측정", true, 20)) BeginIPhoneCalibrationCapture();
-                GUI.enabled = true;
-                if (NovelUI.Button(new Rect(1030, 708, 200, 48), "보정 취소", false, 18)) { iphoneCalibrating = iphoneMeasuring = false; }
-            }
-            else if (!iphoneCalibrated)
-            {
-                NovelUI.Label(new Rect(230, 310, 820, 72), "화면 점 9개를 차례로 응시해 보정합니다.\n각 점에서 눈을 고정한 뒤 ‘이 지점 측정’을 눌러 주세요.", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter);
+                NovelUI.Label(new Rect(230, 310, 820, 72), "화면 점 9개를 차례로 응시해 보정합니다.\n보정 화면에서 점을 바라보면 자동으로 측정합니다.", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter);
                 GUI.enabled = fresh && iphoneSource.FaceFound;
                 if (NovelUI.Button(new Rect(440, 410, 400, 62), "9지점 보정 시작", true, 23)) BeginIPhoneCalibration();
                 GUI.enabled = true;
