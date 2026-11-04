@@ -69,7 +69,15 @@ public partial class GameController
         if (result.Error != null)
         {
             aiError = result.Error;
-            if (aiPendingHint) aiHintsUsed--;   // A failed question doesn't use up a turn.
+            if (aiPendingHint)
+            {
+                aiHintsUsed = Mathf.Max(0, aiHintsUsed - 1);   // A failed question doesn't use up a turn.
+                ShowToast("질문 전송 실패: 기회가 차감되지 않았습니다");
+            }
+            else
+            {
+                ShowToast("AI 응답 지연/오류: '선택지로 고르기'로 진행할 수 있습니다");
+            }
             novelAudio.Play("Down");
             return;
         }
@@ -162,8 +170,17 @@ public partial class GameController
         }
         GUI.enabled = true;
 
-        string note = aiError != null ? "앗, " + aiError + " · 다시 보내거나 선택지로 골라도 돼요" : "AI 교수님이 대답을 듣고 호감도를 정해요 (Enter로 보내기)";
-        NovelUI.Label(new Rect(card.x + 34, card.y + 98, card.width - 60, 30), note, NovelUI.Soft, 17, aiError != null ? NovelUI.DeepPink : NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        string note = aiError != null ? "앗, " + aiError + " · 다시 보내거나 '선택지로 전환'을 누르세요" : "AI 교수님이 대답을 듣고 호감도를 정해요 (Enter로 보내기)";
+        if (aiError != null && !AiWaiting)
+        {
+            if (NovelUI.Button(new Rect(card.xMax - 180, card.y + 94, 160, 36), "선택지로 전환", false, 16))
+            {
+                novelAudio.Play("Toggle");
+                aiShowOptions = true;
+                return true;
+            }
+        }
+        NovelUI.Label(new Rect(card.x + 34, card.y + 98, card.width - (aiError != null && !AiWaiting ? 220 : 60), 30), note, NovelUI.Soft, 17, aiError != null ? NovelUI.DeepPink : NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
         return true;
     }
 
@@ -207,12 +224,34 @@ public partial class GameController
         GUI.enabled = true;
     }
 
+    static GUIStyle s_AiFieldStyle;
+    static GUIStyle s_AiKeyFieldStyle;
+
+    static GUIStyle GetAiFieldStyle()
+    {
+        if (s_AiFieldStyle == null)
+        {
+            s_AiFieldStyle = new GUIStyle(NovelUI.Input) { fontSize = 21, font = NovelUI.Soft, border = new RectOffset() };
+            s_AiFieldStyle.normal.background = s_AiFieldStyle.focused.background = s_AiFieldStyle.hover.background = null;
+        }
+        return s_AiFieldStyle;
+    }
+
+    static GUIStyle GetAiKeyFieldStyle()
+    {
+        if (s_AiKeyFieldStyle == null)
+        {
+            s_AiKeyFieldStyle = new GUIStyle(NovelUI.Input) { fontSize = 18, padding = new RectOffset(20, 20, 0, 0), border = new RectOffset() };
+            s_AiKeyFieldStyle.normal.background = s_AiKeyFieldStyle.focused.background = s_AiKeyFieldStyle.hover.background = null;
+        }
+        return s_AiKeyFieldStyle;
+    }
+
     // A cream rounded text field with a pink focus ring; `focus` keeps the caret in it.
     string AiField(Rect rect, string name, string value, int max, string placeholder, bool focus)
     {
         NovelUI.Card(rect, NovelUI.Cream, rect.height / 2);
-        GUIStyle style = new GUIStyle(NovelUI.Input) { fontSize = 21, font = NovelUI.Soft, border = new RectOffset() };
-        style.normal.background = style.focused.background = style.hover.background = null;
+        GUIStyle style = GetAiFieldStyle();
         GUI.skin.settings.cursorColor = NovelUI.DeepPink;
         GUI.SetNextControlName(name);
         value = GUI.TextField(rect, value, max, style);
@@ -276,8 +315,7 @@ public partial class GameController
         }
         Rect field = new Rect(x, y, width - 110, 46);
         NovelUI.Card(field, Color.white, 23);
-        GUIStyle style = new GUIStyle(NovelUI.Input) { fontSize = 18, padding = new RectOffset(20, 20, 0, 0), border = new RectOffset() };
-        style.normal.background = style.focused.background = style.hover.background = null;
+        GUIStyle style = GetAiKeyFieldStyle();
         GUI.SetNextControlName("AiKey");
         aiKeyDraft = GUI.PasswordField(field, aiKeyDraft, '•', 200, style);
         NovelUI.Ring(field, GUI.GetNameOfFocusedControl() == "AiKey" ? NovelUI.DeepPink : NovelUI.Pink, 23, 3);

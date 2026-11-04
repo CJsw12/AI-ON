@@ -87,7 +87,8 @@ public static class AiProfessor
             }
             return result;
         }
-        catch (TaskCanceledException) { return new Result { Error = "응답이 너무 늦어요 (시간 초과)" }; }
+        catch (TaskCanceledException) { return new Result { Error = "응답 시간 초과 (504). 오프라인 선택지로 진행해 주세요" }; }
+        catch (System.Net.Http.HttpRequestException) { return new Result { Error = "네트워크 단절: 오프라인 선택지로 진행해 주세요" }; }
         catch (Exception e) { return new Result { Error = "연결 실패: " + e.Message }; }
     }
 
@@ -119,7 +120,10 @@ public static class AiProfessor
                     if (message.Length > 120) message = message.Substring(0, 120);
                     string hint = code == 400 && json.Contains("API_KEY_INVALID") || code == 401 ? "API 키를 확인해 주세요"
                         : code == 403 ? "이 키로는 이 모델을 쓸 수 없어요" : code == 404 ? "모델을 찾지 못했어요"
-                        : code == 429 ? "무료 사용 한도에 걸렸어요. 잠시 후 다시 해 보세요" : "요청 실패";
+                        : code == 429 ? "무료 사용 한도에 걸렸어요. 잠시 후 다시 해 보세요"
+                        : code == 504 ? "AI 서버 응답 시간 초과 (504). 오프라인 선택지로 전환 가능합니다"
+                        : code == 502 || code == 503 ? "AI 서버 일시적 장애 (" + code + "). 오프라인 선택지로 전환 가능합니다"
+                        : "요청 실패";
                     return new Result { Error = hint + " (" + code + ") " + message };
                 }
                 string content = StringAfter(json, "\"message\"", "\"content\"");
