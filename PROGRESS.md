@@ -10,7 +10,7 @@
 ---
 
 ## 1. 형상 (Baseline)
-- **워크스페이스 절대 경로**: `C:\Users\k3832\Desktop\chats\AION\AI-ON`
+- **프로젝트 루트**: `AI-ON` (Repository Root)
 - **Git 브랜치**: `main`
 - **직전 커밋 해시**: `8027b74` (feature/player-photo-avatar 병합)
 - **주요 변경 대상**: `Assets/Scripts/GameAiMode.cs`, `Assets/Scripts/AiProfessor.cs`, `PROGRESS.md`
@@ -19,18 +19,18 @@
 
 ## 2. 완료 및 검증 (Done)
 - **플레이어 사진 아바타 및 2인 대화 구도 브랜치 무충돌 병합 (`origin/feature/player-photo-avatar` -> `main`)**:
-  - 교수 102종 얼굴 정규화 표 ([`PortraitFaces.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/PortraitFaces.cs)), 자동 생성 스크립트([`generate_portrait_faces.py`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Tools/generate_portrait_faces.py)), 에디터 검증기([`PortraitFacesCheck.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Editor/PortraitFacesCheck.cs)) 통합.
-  - 플레이어 몸체 에셋([`PlayerBody.png`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Resources/PlayerBody.png)) 및 웹캠 사진 촬영·배경 제거·얼굴 합성 시스템([`GameController.PlayerPhoto.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameController.PlayerPhoto.cs)) 통합.
-  - 교수 우측/플레이어 아바타 좌측의 2인 대화 구도([`GameController.Duo.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameController.Duo.cs)) 연동 완료.
+  - 교수 102종 얼굴 정규화 표 ([`PortraitFaces.cs`](Assets/Scripts/PortraitFaces.cs)), 자동 생성 스크립트([`generate_portrait_faces.py`](Tools/generate_portrait_faces.py)), 에디터 검증기([`PortraitFacesCheck.cs`](Assets/Editor/PortraitFacesCheck.cs)) 통합.
+  - 플레이어 몸체 에셋([`PlayerBody.png`](Assets/Resources/PlayerBody.png)) 및 웹캠 사진 촬영·배경 제거·얼굴 합성 시스템([`GameController.PlayerPhoto.cs`](Assets/Scripts/GameController.PlayerPhoto.cs)) 통합.
+  - 교수 우측/플레이어 아바타 좌측의 2인 대화 구도([`GameController.Duo.cs`](Assets/Scripts/GameController.Duo.cs)) 연동 완료.
   - 신규 에셋 및 스크립트의 `.meta` 파일 누락 없음 확인.
 - **AI 모드 GC 최적화 및 오프라인 Fallback 방어 로직 강화**:
-  - [`GameAiMode.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameAiMode.cs#L227-L255): `OnGUI` 내 `AiField`와 `AiKeyRow`에서 매 프레임 발생하던 `new GUIStyle(NovelUI.Input)` 할당을 제거하고, 정적 캐시 필드(`s_AiFieldStyle`, `s_AiKeyFieldStyle`) 지연 할당 구조로 전환하여 GC 할당을 완전히 차단.
-  - [`GameAiMode.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameAiMode.cs#L72-L82): AI 자유 응답 및 힌트 요청 실패 시 사용자 토스트 알림을 보강하고, 힌트 요청 실패 시 남은 질문 기회를 안전하게 복구.
-  - [`GameAiMode.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameAiMode.cs#L173-L182): 자유 대답 응답 지연/오류 시 즉시 오프라인 기본 선택지로 전환할 수 있는 `선택지로 전환` 버튼을 카드 내에 직관적으로 배치하여 게임 진행 막힘 방지.
-  - [`AiProfessor.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/AiProfessor.cs#L89-L93): 504 타임아웃, 502/503 서버 일시 장애, `HttpRequestException` 네트워크 단절 예외 발생 시 오프라인 선택지 전환 권장 문구를 명확히 반환하도록 예외 처리 보강.
+  - [`GameAiMode.cs`](Assets/Scripts/GameAiMode.cs#L227-L255): `OnGUI` 내 `AiField`와 `AiKeyRow`에서 매 프레임 발생하던 `new GUIStyle(NovelUI.Input)` 할당을 제거하고, 정적 캐시 필드(`s_AiFieldStyle`, `s_AiKeyFieldStyle`) 지연 할당 구조로 전환하여 GC 할당을 완전히 차단.
+  - [`GameAiMode.cs`](Assets/Scripts/GameAiMode.cs#L72-L82): AI 자유 응답 및 힌트 요청 실패 시 사용자 토스트 알림을 보강하고, 힌트 요청 실패 시 남은 질문 기회를 안전하게 복구.
+  - [`GameAiMode.cs`](Assets/Scripts/GameAiMode.cs#L173-L182): 자유 대답 응답 지연/오류 시 즉시 오프라인 기본 선택지로 전환할 수 있는 `선택지로 전환` 버튼을 카드 내에 직관적으로 배치하여 게임 진행 막힘 방지.
+  - [`AiProfessor.cs`](Assets/Scripts/AiProfessor.cs#L89-L93): 504 타임아웃, 502/503 서버 일시 장애, `HttpRequestException` 네트워크 단절 예외 발생 시 오프라인 선택지 전환 권장 문구를 명확히 반환하도록 예외 처리 보강.
 - **16개 학과 19종 미니게임 및 시선 추적 별잡기 연동 점검**:
-  - 19종 미니게임 전체([`MiniGames.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/MiniGames.cs#L134-L177))의 비전공자/전공자 난이도(`MiniGame.Easy` 0.75x 감속) 및 연습 모드([`GameMenus.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameMenus.cs#L488-L516)) 난이도 분기 동작 검증.
-  - 웹캠(UnitEye) 및 iPhone UDP 듀얼 지원 시선 추적 별잡기 미니게임([`GameController.GazeStarGame.cs`](file:///C:/Users/k3832/Desktop/chats/AION/AI-ON/Assets/Scripts/GameController.GazeStarGame.cs))의 실시간 드리프트 보정 및 캔버스 좌표계 정상 바인딩 검증.
+  - 19종 미니게임 전체([`MiniGames.cs`](Assets/Scripts/MiniGames.cs#L134-L177))의 비전공자/전공자 난이도(`MiniGame.Easy` 0.75x 감속) 및 연습 모드([`GameMenus.cs`](Assets/Scripts/GameMenus.cs#L488-L516)) 난이도 분기 동작 검증.
+  - 웹캠(UnitEye) 및 iPhone UDP 듀얼 지원 시선 추적 별잡기 미니게임([`GameController.GazeStarGame.cs`](Assets/Scripts/GameController.GazeStarGame.cs))의 실시간 드리프트 보정 및 캔버스 좌표계 정상 바인딩 검증.
 - **PowerShell 단위 테스트 5종 전수 통과 (Exit 0)**:
   - `Tests/ImpactLabIntegration.Tests.ps1`: 통과 (Exit 0)
   - `Tests/PhysicsExperiencedDialogue.Tests.ps1`: 통과 (Exit 0)
