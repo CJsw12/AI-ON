@@ -1,0 +1,24 @@
+name = "aion-ai-proxy"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# Per-IP limit: 20 AI requests a minute (a player sends one every few seconds at most).
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+# The Gemini call runs inside this Durable Object, pinned to eastern North America in worker.js, because
+# Gemini refuses some regions Cloudflare may run in near Korea (e.g. Hong Kong).
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "GeminiRelay"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GeminiRelay"]
+
+# The Gemini key is a secret, set once with `npx wrangler secret put GEMINI_API_KEY`; it is never in this file.

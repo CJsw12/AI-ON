@@ -107,3 +107,12 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# AI mode API key baked into builds only (see AiProfessor.BuiltInKey). Never commit it.
+/[Aa]ssets/[Rr]esources/AiKey.txt
+/[Aa]ssets/[Rr]esources/AiKey.txt.meta
+
+# Cloudflare Worker local state (Server/ai-proxy); secrets live in Cloudflare, never here.
+/Server/**/.wrangler/
+/Server/**/.dev.vars
+/Server/**/node_modules/

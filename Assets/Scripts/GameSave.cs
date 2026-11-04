@@ -16,6 +16,7 @@ public static class GameSave
         public string ResultLine = "";
         public string ResultKey;
         public int WrongPick = -1;   // Beginner quiz option already ruled out; absent in older saves.   // Which reply resultLine is, for skip mode; absent in older saves.
+        public bool AiMode;          // Played in AI mode; absent (false) in older saves.
         public DateTime SavedAt;
     }
 
@@ -27,7 +28,7 @@ public static class GameSave
             Version, DateTime.Now.Ticks.ToString(), d.Faculty.ToString(), d.Scene.ToString(), d.Stage.ToString(), d.Line.ToString(),
             d.Professor.ToString(), d.Affection.ToString(), d.Questions.ToString(), d.Teamwork.ToString(), d.Interest.ToString(), d.Solo.ToString(),
             d.Experienced ? "1" : "0", d.ShowResult ? "1" : "0", Convert.ToBase64String(Encoding.UTF8.GetBytes(d.ResultLine ?? "")),
-            d.ResultKey ?? "", d.WrongPick.ToString()
+            d.ResultKey ?? "", d.WrongPick.ToString(), d.AiMode ? "1" : "0"
         };
         PlayerPrefs.SetString(Key(slot), string.Join("|", fields));
         PlayerPrefs.Save();
@@ -38,8 +39,8 @@ public static class GameSave
     public static Data Read(int slot)
     {
         string[] f = PlayerPrefs.GetString(Key(slot), "").Split('|');
-        // 15 or 16 fields: saves made before ResultKey / WrongPick were added; they still load.
-        if (f.Length < 15 || f.Length > 17 || f[0] != Version) return null;
+        // 15 to 17 fields: saves made before ResultKey / WrongPick / AiMode were added; they still load.
+        if (f.Length < 15 || f.Length > 18 || f[0] != Version) return null;
         try
         {
             Data d = new Data
@@ -50,7 +51,8 @@ public static class GameSave
                 Interest = int.Parse(f[10]), Solo = int.Parse(f[11]), Experienced = f[12] == "1", ShowResult = f[13] == "1",
                 ResultLine = Encoding.UTF8.GetString(Convert.FromBase64String(f[14])),
                 ResultKey = f.Length > 15 && f[15] != "" ? f[15] : null,
-                WrongPick = f.Length > 16 ? int.Parse(f[16]) : -1
+                WrongPick = f.Length > 16 ? int.Parse(f[16]) : -1,
+                AiMode = f.Length > 17 && f[17] == "1"
             };
             bool valid = d.Faculty >= 0 && d.Faculty < Stories.All.Length && d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
             return valid ? d : null;

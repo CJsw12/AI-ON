@@ -105,7 +105,7 @@ public partial class GameController
 
     void Settings()
     {
-        Rect card = new Rect(300, 80, 680, 740);
+        Rect card = new Rect(300, 40, 680, 820);
         if (!Panel(card, "IconSettings", "설정")) return;
         float x = card.x + 200, width = card.width - 248, y = card.y + 98;
         const float row = 64;
@@ -146,6 +146,9 @@ public partial class GameController
         RowLabel(card, y, "화면 모드");
         int full = Screen.fullScreen ? 1 : 0;
         if (Changed(NovelUI.Segmented(new Rect(x, y, width, 46), new[] { "창 모드", "전체 화면" }, full), full) != full) SetFullScreen(full == 0);
+        y += row;
+        RowLabel(card, y, "AI API 키");
+        AiKeyRow(x, y, width);
 
         Rect close = new Rect(card.xMax - 230, card.yMax - 82, 190, 54);
         if (InGame)
@@ -235,7 +238,7 @@ public partial class GameController
         {
             Faculty = faculty, Scene = scene, Stage = choiceStage, Line = dialogueIndex, Professor = professor, Affection = affection,
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
-            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick
+            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick, AiMode = aiMode
         });
         slots[slot] = GameSave.Read(slot);
         confirmSlot = -1;
@@ -249,7 +252,7 @@ public partial class GameController
         faculty = data.Faculty; scene = data.Scene; choiceStage = data.Stage; professor = data.Professor;
         affection = shownAffection = data.Affection;
         questions = data.Questions; teamwork = data.Teamwork; interest = data.Interest; solo = data.Solo;
-        experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey; wrongPick = data.WrongPick;
+        experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey; wrongPick = data.WrongPick; aiMode = data.AiMode && AiProfessor.Supported;
         // The story may have changed since the save was made, so keep the line inside the chapter.
         dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);
         memorial = 0; introDone = true; portraitAlpha = 0;

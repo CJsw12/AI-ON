@@ -54,6 +54,7 @@ public partial class GameController : MonoBehaviour
     void Update()
     {
         novelAudio.SetMood(S.Mood(scene, choiceStage));
+        AiImeUpdate();
         if (menu == Menu.None && (miniGame == null || !miniGame.Reviewing)) MiniGame.Tick(Time.unscaledDeltaTime);
     }
     Story S => Stories.All[faculty];   // The chosen faculty's semester.
@@ -167,6 +168,7 @@ public partial class GameController : MonoBehaviour
             if (NovelUI.IconButton(new Rect(1228, 10, 44, 44), "IconSettings", null)) OpenMenu(Menu.Settings);
             return;
         }
+        AiPoll();
         Hud();
         Dialogue();
         Particles();
@@ -190,7 +192,8 @@ public partial class GameController : MonoBehaviour
         float x = 28;
         x += NovelUI.Pill(x, 24, 42, "CHAPTER " + scene, NovelUI.Pink, Color.white, 20) + 8;
         x += NovelUI.Pill(x, 24, 42, ChapterName, NovelUI.Alpha(NovelUI.Cream, .95f), NovelUI.Berry, 20) + 8;
-        NovelUI.Pill(x, 29, 32, slot + ((scene - 1) * 2 + choiceStage + 1) + "/12", NovelUI.Alpha(NovelUI.Berry, .7f), NovelUI.Blush, 16);
+        x += NovelUI.Pill(x, 29, 32, slot + ((scene - 1) * 2 + choiceStage + 1) + "/12", NovelUI.Alpha(NovelUI.Berry, .7f), NovelUI.Blush, 16) + 8;
+        if (aiMode) NovelUI.Pill(x, 29, 32, "AI 모드", NovelUI.Mint, NovelUI.Berry, 16);
 
         float since = Time.unscaledTime - affectionChangedAt;
         float pulse = lastDelta > 0 ? 1 - Mathf.Clamp01(since / .6f) : 0;
@@ -239,6 +242,7 @@ public partial class GameController : MonoBehaviour
     {
         CurrentLine(out string speaker, out string text);
         string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
+        if (AiHintShown) { speaker = ProfessorName; text = aiHint; key += "/h" + aiHintsUsed; }
         if (key != lineKey) { lineKey = key; lineStartedAt = Time.unscaledTime; typedAt = -1; AddToBacklog(key, speaker, text); }
         string position = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString()) + (experienced ? "/E" : "");
         readKey = ReadLog.ContentKey(position, text);
@@ -254,7 +258,7 @@ public partial class GameController : MonoBehaviour
         {
             NovelUI.Pill(box.x + 34, box.y - 26, 52, speaker, SpeakerTag(speaker), SpeakerInk(speaker), 24);
         }
-        Rect textRect = new Rect(box.x + 42, box.y + 46, box.width - 100, box.height - 64);
+        Rect textRect = new Rect(box.x + 42, box.y + 46, box.width - 100, box.height - 64 - (AiBoxField ? 76 : 0));
         int size = NovelUI.Height(text, NovelUI.Soft, 26, textRect.width) > textRect.height ? 22 : 26;
         NovelUI.Label(textRect, typing ? plain.Substring(0, shown) : text, NovelUI.Soft, size, narration ? NovelUI.Plum : NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
 
@@ -267,7 +271,7 @@ public partial class GameController : MonoBehaviour
 
         // Back on the first line returns to professor select; stop here so nothing reads scene 0's slots.
         if (LineButtons(box)) return;
-        if (!typing && AtChoice) Choices();
+        if ((!typing || AiHintShown) && AtChoice) Choices();   // A hint typing out keeps the quiz on screen.
         // Click the box, or press Space/Enter, to finish the line or move on.
         bool pressed = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
         if ((GUI.Button(box, GUIContent.none, GUIStyle.none) || pressed) && (typing || canAdvance))
@@ -338,6 +342,7 @@ public partial class GameController : MonoBehaviour
             return;
         }
         Quiz quiz = slot.Quiz(experienced);
+        if (aiMode && AiChoices(slot, quiz, bottom)) return;
         if (quiz != null && quiz.ShortAnswer)
         {
             Prompt(quiz, bottom - 92);
@@ -349,7 +354,7 @@ public partial class GameController : MonoBehaviour
             GUI.skin.settings.cursorFlashSpeed = 1.2f;
             GUI.SetNextControlName("Answer");
             typed = GUI.TextField(field, typed, 40, NovelUI.Input);
-            GUI.FocusControl("Answer");
+            if (!AiBoxField) GUI.FocusControl("Answer");   // AI mode's question field takes the keys while it is open.
             bool active = GUI.GetNameOfFocusedControl() == "Answer";
             // A pulsing deep-pink ring and an "입력 중" tag show the field is taking keys.
             float pulse = .65f + .35f * Mathf.Sin(Time.unscaledTime * 4);
@@ -386,7 +391,7 @@ public partial class GameController : MonoBehaviour
         Event e = Event.current;
         int picked = e.type == EventType.KeyDown ? e.keyCode - KeyCode.Alpha1 : -1;
         if (picked < 0 || picked >= available.Length) picked = e.type == EventType.KeyDown ? e.keyCode - KeyCode.Keypad1 : -1;
-        if (picked >= 0 && picked < available.Length && !(quiz != null && picked == wrongPick)) { e.Use(); Choose(picked); }
+        if (picked >= 0 && picked < available.Length && !(quiz != null && picked == wrongPick) && !AiBoxField) { e.Use(); Choose(picked); }
     }
 
     // Draws the question card so that it ends at `bottom`; returns its top.
@@ -647,9 +652,12 @@ public partial class GameController : MonoBehaviour
         if (ProfessorCard(new Rect(panel.x + 50, panel.y + 86, 400, 380), 0, S.Professors[0])) Begin(0);
         if (ProfessorCard(new Rect(panel.xMax - 450, panel.y + 86, 400, 380), 1, S.Professors[1])) Begin(1);
         if (NovelUI.Button(new Rect(panel.x + 30, panel.yMax - 62, 110, 44), "이전", false, 19)) { novelAudio.Play("Back"); entryStep = 1; }
+        AiModeControls(panel);
     }
     void Begin(int chosen)
     {
+        if (aiMode && !AiProfessor.HasKey) { novelAudio.Play("Down"); ShowToast("AI 모드는 API 키를 먼저 저장해야 해요"); return; }
+        AiReset();
         novelAudio.Play("Bonus");
         professor = chosen; scene = 1;
         backlog.Clear();   // A different professor reuses the same line keys.
@@ -745,6 +753,7 @@ public partial class GameController : MonoBehaviour
         professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear(); wrongPick = -1;
         shownAffection = lastDelta = 0; lineKey = null; miniGame = null;
         endingRecorded = endingNew = false; chapterShown = 0; reactAt = -10; sparks.Clear();
+        AiReset();
     }
 
     void Memorial()
