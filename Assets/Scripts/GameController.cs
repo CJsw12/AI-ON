@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using UnityEngine;
 
 public partial class GameController : MonoBehaviour
@@ -159,6 +159,7 @@ public partial class GameController : MonoBehaviour
         else if ((InGame || practice != null) && Pressed(KeyCode.Escape)) OpenMenu(Menu.Settings);   // Minigames pause while it is open.
         Toast();
         NovelUI.EndFrame();
+        GUI.matrix = Matrix4x4.identity;
     }
     bool InGame => scene >= 1 && scene <= 6 && memorial <= 0 && introDone;
 

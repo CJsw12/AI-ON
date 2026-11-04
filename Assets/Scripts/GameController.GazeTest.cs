@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
 using UnitEye;
 using UnityEngine;
@@ -117,13 +117,18 @@ public partial class GameController
 
     void DrawGazeTest()
     {
-        GUI.matrix = Canvas;
-        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
+        if (GazeCalibrationActive)
+        {
+            GUI.matrix = Matrix4x4.identity;
+            return;
+        }
         if (gazeUseIphone && iphoneCalibrating)
         {
             DrawIPhoneCalibrationScreen();
             return;
         }
+        GUI.matrix = Canvas;
+        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
         NovelUI.Label(new Rect(0, 18, 1280, 55), "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
         bool chooseIphone = gazeUseIphone;
         if (NovelUI.Button(new Rect(390, 91, 230, 48), "노트북 웹캠", !gazeUseIphone, 19)) chooseIphone = false;
