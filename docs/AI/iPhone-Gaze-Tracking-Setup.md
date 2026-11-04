@@ -4,6 +4,8 @@
 대상 프로젝트: AI-ON, Unity `6000.3.23f1`
 현재 통합 방식: VTube Studio iOS 추적 데이터 → Unity 시선 테스트 화면
 
+이전 연결 장애의 캡처 결과, Windows에서 허용 규칙보다 Unity Editor의 프로필별 명시적 인바운드 차단 규칙이 우선해 패킷을 막을 수 있었습니다. 학교 PC 재현 시에는 자세한 진단 순서와 실제 사례를 [iPhone 시선 추적 연결 장애 인수인계](iPhone-Gaze-Debug-Handoff.md)에서 확인하세요.
+
 이 문서는 팀원이 새 Windows PC에서 필요한 앱을 설치하고, Wi-Fi UDP 또는 USB 경로로 iPhone 추적을 확인하는 절차입니다. Unity 게임 화면에는 VTube Studio 캐릭터를 띄우지 않습니다. USB 경로에서 VTube Studio PC 앱은 백그라운드 데이터 중계 역할을 합니다.
 
 ## 1. 필요한 것
@@ -50,7 +52,7 @@ VTube Studio 캐릭터를 사용할 필요는 없습니다. 추적값만 중계�
 ### 네트워크 조건
 
 - PC와 iPhone이 서로 통신할 수 있는 같은 로컬 네트워크에 연결돼야 합니다. 게스트 Wi-Fi, 공용 캠퍼스 Wi-Fi, 공유기의 AP/client isolation은 기기 간 통신을 막을 수 있습니다.
-- Windows 방화벽 창이 뜨면 신뢰하는 네트워크에서 Unity Editor의 **개인 네트워크** 통신을 허용하세요. 방화벽 전체를 끄지 마세요.
+- Windows 방화벽 창이 뜨면 현재 네트워크 프로필에서 Unity Editor 통신을 허용하세요. 명시적 Block 규칙이 있으면 Allow보다 우선할 수 있으니 위 인수인계 문서의 확인 절차를 따르세요. 방화벽 전체를 끄지 마세요.
 - Unity 수신기는 PC의 UDP `11125` 포트를 사용합니다. VTube Studio 앱의 포트(기본 `21412`)와 혼동하지 마세요.
 - VPN은 끄고 테스트하세요.
 
