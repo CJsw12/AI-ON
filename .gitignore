@@ -120,3 +120,5 @@ InitTestScene*.unity*
 /Server/**/.wrangler/
 /Server/**/.dev.vars
 /Server/**/node_modules/
+# Serena MCP agent project data
+.serena/
