@@ -217,8 +217,8 @@ public static class MusicStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "신도윤 교수", Description = "까칠한 완벽주의 프로듀서 · 예민한 귀, 인정은 짧게", TagA = "#다시", TagB = "#반박도정확히", Image = "" },
-            new Professor { Name = "류보라 교수", Description = "자유로운 즉흥파 · 느낌과 바이브, 틀려도 그게 재즈", TagA = "#바이브", TagB = "#틀려도재즈", Image = "" }
+            new Professor { Name = "신도윤 교수", Description = "까칠한 완벽주의 프로듀서 · 예민한 귀, 인정은 짧게", TagA = "#다시", TagB = "#반박도정확히", Image = "ProfessorShinDoYoon" },
+            new Professor { Name = "류보라 교수", Description = "자유로운 즉흥파 · 느낌과 바이브, 틀려도 그게 재즈", TagA = "#바이브", TagB = "#틀려도재즈", Image = "ProfessorRyuBoRa" }
         },
         Chapters = new[] { "", "원, 투, 쓰리, 포", "믹싱 콘솔", "느리게, 아니 빠르게", "빠진 카포 표시", "누구의 후렴", "거리의 버스킹" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
@@ -245,6 +245,6 @@ public static class MusicStory
             chapter == 1 ? "Auditorium" :
             chapter == 3 ? "DeptLounge" :
             chapter == 5 ? (stage == 0 && line < 5 ? "ArtsStage" : "ArtsGreenRoom") :
-            chapter == 6 || chapter == 7 ? "FestivalStreet" : "ArtsStudio"
+            chapter == 6 || chapter == 7 ? "FestivalStreet" : "MusicRehearsalStudio"
     };
 }

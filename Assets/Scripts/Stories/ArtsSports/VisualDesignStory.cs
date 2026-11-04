@@ -227,8 +227,8 @@ public static class VisualDesignStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "남궁현 교수", Description = "고상한 귀족풍 미학자 · 우아한 격식과 미술사의 안목", TagA = "#하시지요", TagB = "#미술사", Image = "" },
-            new Professor { Name = "하은채 교수", Description = "트렌디 MZ 디자이너 · 솔직하고 빠른 피드백", TagA = "#갓벽", TagB = "#팩폭크리틱", Image = "" }
+            new Professor { Name = "남궁현 교수", Description = "고상한 귀족풍 미학자 · 우아한 격식과 미술사의 안목", TagA = "#하시지요", TagB = "#미술사", Image = "ProfessorNamgungHyun" },
+            new Professor { Name = "하은채 교수", Description = "트렌디 MZ 디자이너 · 솔직하고 빠른 피드백", TagA = "#갓벽", TagB = "#팩폭크리틱", Image = "ProfessorHaEunChae" }
         },
         Chapters = new[] { "", "그림 없는 포스터", "두 가지 색의 봄", "보이지 않는 뼈대", "붙어 버린 글자", "크리틱 데이", "공모전 벽 앞에서" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
@@ -255,8 +255,8 @@ public static class VisualDesignStory
             chapter == 1 ? "CampusHallway" :
             chapter == 3 ? "ComputerLab" :
             chapter == 4 ? "Library" :
-            chapter == 5 ? (stage == 1 && line >= 2 ? "CampusCafe" : "ArtsStudio") :
+            chapter == 5 ? (stage == 1 && line >= 2 ? "CampusCafe" : "VisualDesignStudio") :
             chapter == 6 ? "Auditorium" :
-            chapter == 7 ? "DeptLounge" : "ArtsStudio"
+            chapter == 7 ? "DeptLounge" : "VisualDesignStudio"
     };
 }

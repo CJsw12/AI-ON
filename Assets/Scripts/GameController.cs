@@ -96,7 +96,10 @@ public partial class GameController : MonoBehaviour
             string professorImage = professor >= 0 ? S.Professors[professor].Image : "";
             bool fullFigure = professorImage.StartsWith("ProfessorJungChem") || professorImage.StartsWith("ProfessorOhChem") ||
                 professorImage.StartsWith("ProfessorGuMath") || professorImage.StartsWith("ProfessorSeolMath") ||
-                professorImage.StartsWith("ProfessorMoonBio") || professorImage.StartsWith("ProfessorLimBio");
+                professorImage.StartsWith("ProfessorMoonBio") || professorImage.StartsWith("ProfessorLimBio") ||
+                professorImage.StartsWith("ProfessorShinDoYoon") || professorImage.StartsWith("ProfessorRyuBoRa") ||
+                professorImage.StartsWith("ProfessorNamgungHyun") || professorImage.StartsWith("ProfessorHaEunChae") ||
+                professorImage.StartsWith("ProfessorEomTaeO") || professorImage.StartsWith("ProfessorChaYuRi");
             if (fullFigure)
             {
                 Texture2D professorTexture = Portrait;

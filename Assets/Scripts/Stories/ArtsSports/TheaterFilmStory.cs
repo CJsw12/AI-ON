@@ -228,8 +228,8 @@ public static class TheaterFilmStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "용어와 숫자를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "엄태오 교수", Description = "과장된 연극톤 · 모든 순간이 드라마인 낭만파", TagA = "#오오이얼마나", TagB = "#인생은무대", Image = "" },
-            new Professor { Name = "차유리 교수", Description = "쿨한 무심 감독 · 짧지만 정확한 한마디", TagA = "#컷다시", TagB = "#오케이", Image = "" }
+            new Professor { Name = "엄태오 교수", Description = "과장된 연극톤 · 모든 순간이 드라마인 낭만파", TagA = "#오오이얼마나", TagB = "#인생은무대", Image = "ProfessorEomTaeO" },
+            new Professor { Name = "차유리 교수", Description = "쿨한 무심 감독 · 짧지만 정확한 한마디", TagA = "#컷다시", TagB = "#오케이", Image = "ProfessorChaYuRi" }
         },
         Chapters = new[] { "", "딱, 슬레이트", "괄호 속 문장", "콘티 여섯 장", "비 오는 테이크", "어둠 속의 독백", "막이 오르면" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
@@ -253,11 +253,11 @@ public static class TheaterFilmStory
         },
         Mood = (chapter, stage) => chapter == 5 || chapter == 4 && stage == 0 ? "Crisis" : chapter <= 1 || chapter >= 6 ? "Campus" : "Study",
         Background = (chapter, stage, line) =>
-            chapter == 1 ? "Auditorium" :
-            chapter == 2 ? "MeetingRoom" :
+            chapter == 1 ? "TheaterBlackBox" :
+            chapter == 2 ? "TheaterBlackBox" :
             chapter == 3 ? "CampusExterior" :
             chapter == 4 ? (stage == 0 ? "RainyRamp" : "ComputerLab") :
             chapter == 5 ? (stage == 0 && line < 5 ? "ArtsStage" : "ArtsGreenRoom") :
-            "ArtsStage"
+            "TheaterBlackBox"
     };
 }
