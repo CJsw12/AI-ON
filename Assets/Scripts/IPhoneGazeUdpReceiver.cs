@@ -38,12 +38,21 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
     volatile bool stopping;
     public TrackingData Latest { get; private set; }
     public int Sequence { get; private set; }
+    public int ReceivedPackets { get; private set; }
+    public int RejectedPackets { get; private set; }
     public float LastPacketAt { get; private set; } = -100f;
+    float startedAt;
     public string Error { get; private set; }
     public Vector2 EyeFeature => Latest == null ? Vector2.zero : new Vector2((Latest.EyeLeft.y + Latest.EyeRight.y) * .5f, (Latest.EyeLeft.x + Latest.EyeRight.x) * .5f);
     public bool FaceFound => Latest != null && Latest.FaceFound;
     public bool HasFreshSample => HasFreshPacket;
-    public string Status => Error;
+    public string Status => Error ?? (Latest != null
+        ? null
+        : Time.unscaledTime - startedAt < 5f
+            ? "아이폰 추적 데이터를 기다리는 중이에요."
+            : ReceivedPackets == 0
+                ? "요청은 보냈지만 UDP 데이터가 한 건도 안 왔어요. PC 네트워크 경로/방화벽을 확인해 주세요."
+                : $"UDP 패킷 {ReceivedPackets}건을 받았지만 유효한 추적 데이터가 없어요. 거부 {RejectedPackets}건.");
 
     public bool StartReceiving(IPAddress phoneAddress, int phonePort)
     {
@@ -62,6 +71,7 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
             byte[] request = Encoding.UTF8.GetBytes(JsonUtility.ToJson(new TrackingRequest()));
             IPEndPoint destination = new IPEndPoint(phoneAddress, phonePort);
             stopping = false;
+            startedAt = Time.unscaledTime;
             receiveThread = new Thread(() => ReceiveLoop(activeSocket, destination, request))
             {
                 IsBackground = true,
@@ -96,11 +106,13 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
 
                 IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
                 byte[] bytes = activeSocket.Receive(ref sender);
+                Interlocked.Increment(ref _receivedPackets);
                 if (bytes.Length > 0 && sender.Address.Equals(destination.Address))
                 {
                     while (packets.Count >= 120 && packets.TryDequeue(out _)) { }
                     packets.Enqueue(Encoding.UTF8.GetString(bytes));
                 }
+                else Interlocked.Increment(ref _rejectedPackets);
             }
             catch (SocketException e) when (e.SocketErrorCode == SocketError.TimedOut || e.SocketErrorCode == SocketError.WouldBlock)
             {
@@ -115,9 +127,13 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
         }
     }
 
+    int _receivedPackets, _rejectedPackets;
+
     /// <summary>Drain and deserialize packets on the Unity main thread.</summary>
     public void Poll()
     {
+        ReceivedPackets = Volatile.Read(ref _receivedPackets);
+        RejectedPackets = Volatile.Read(ref _rejectedPackets);
         string latestJson = null;
         while (packets.TryDequeue(out string packet)) latestJson = packet;
         while (errors.TryDequeue(out string error)) Error = "UDP 수신 오류: " + error;
@@ -126,10 +142,15 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
         try
         {
             TrackingData data = JsonUtility.FromJson<TrackingData>(latestJson);
-            if (data == null || data.Timestamp <= 0) return;
+            if (data == null || data.Timestamp <= 0)
+            {
+                Error = "UDP 패킷은 도착했지만 추적 JSON의 Timestamp를 읽지 못했어요.";
+                return;
+            }
             Latest = data;
             LastPacketAt = Time.unscaledTime;
             Sequence++;
+            Error = null;
         }
         catch (Exception e)
         {
@@ -157,6 +178,11 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
         Latest = null;
         LastPacketAt = -100f;
         Sequence = 0;
+        Interlocked.Exchange(ref _receivedPackets, 0);
+        Interlocked.Exchange(ref _rejectedPackets, 0);
+        ReceivedPackets = RejectedPackets = 0;
+        startedAt = Time.unscaledTime;
+        Error = null;
     }
 
     void OnDestroy() => StopReceiving();
