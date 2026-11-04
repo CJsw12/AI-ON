@@ -262,11 +262,61 @@ public partial class GameController
         ShowToast("불러왔어요");
     }
 
-    // Head-and-shoulders crop of a portrait (texture coordinates, from the bottom). Kim and Lee are
-    // full-figure pictures, Kim standing smaller; the per-faculty pictures are centred busts with the
-    // head top 60px down and the body fading out under the dialogue box.
+    static bool HasUpperBodyPortrait(string image)
+    {
+        if (HasFullBodySource(image)) return true;
+        switch (image)
+        {
+            case "ProfessorTakGiHun":
+            case "ProfessorHaEunByeol":
+            case "ProfessorJinSeoHan":
+            case "ProfessorNaYunSeul":
+            case "ProfessorOhSeRin":
+            case "ProfessorBaeJunWoo":
+            case "ProfessorKwonDoKyung":
+            case "ProfessorBaekSoDam":
+            case "ProfessorJoMinHyuk":
+            case "ProfessorSongDaOn":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool HasFullBodySource(string image)
+    {
+        return image == "ProfessorPark" || image == "ProfessorChoi" ||
+            image == "ProfessorHan" || image == "ProfessorYoon" ||
+            image == "ProfessorSeo" || image == "ProfessorKang";
+    }
+
+    static void DrawUpperBodyPortrait(Rect frame, Texture2D texture, string image)
+    {
+        Rect crop = new Rect(0, 0, 1, 1);
+        if (image == "ProfessorBaekSoDam" || image == "ProfessorKim")
+            crop = new Rect(.34f, .50f, .32f, .50f);
+        else if (HasFullBodySource(image))
+            crop = new Rect(.34f, .46f, .32f, .54f);
+        else if (texture.height > texture.width)
+            crop = new Rect(0, .24f, 1, .76f);
+        DrawFittedPortrait(frame, texture, crop);
+    }
+
+    static void DrawFittedPortrait(Rect frame, Texture2D texture, Rect crop)
+    {
+        float aspect = (float)texture.width / texture.height * crop.width / crop.height;
+        float height = Mathf.Min(frame.height, frame.width / aspect);
+        float width = height * aspect;
+        Rect fitted = new Rect(frame.center.x - width / 2, frame.yMax - height, width, height);
+        GUI.DrawTextureWithTexCoords(fitted, texture, crop);
+    }
+
+    // Crop for the compact portrait thumbnails in menus.
     static Rect FaceCrop(string picture, bool square = false)
     {
+        string image = picture.Replace("HappyTransparent", "").Replace("FrownTransparent", "").Replace("Transparent", "");
+        if (HasFullBodySource(image)) return square ? new Rect(.428f, .735f, .144f, .265f) : new Rect(.37f, .73f, .26f, .27f);
+        if (picture.StartsWith("ProfessorBaekSoDam")) return square ? new Rect(.35f, .45f, .30f, .55f) : new Rect(.22f, .45f, .56f, .55f);
         if (picture.StartsWith("ProfessorKim")) return square ? new Rect(.418f, .66f, .164f, .3f) : new Rect(.31f, .6f, .38f, .4f);
         if (picture.StartsWith("ProfessorLee")) return square ? new Rect(.385f, .55f, .229f, .42f) : new Rect(.22f, .4f, .56f, .6f);
         if (picture.StartsWith("ProfessorJungChem") || picture.StartsWith("ProfessorOhChem") ||

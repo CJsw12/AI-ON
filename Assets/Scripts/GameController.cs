@@ -102,7 +102,17 @@ public partial class GameController : MonoBehaviour
                 professorImage.StartsWith("ProfessorShinDoYoon") || professorImage.StartsWith("ProfessorRyuBoRa") ||
                 professorImage.StartsWith("ProfessorNamgungHyun") || professorImage.StartsWith("ProfessorHaEunChae") ||
                 professorImage.StartsWith("ProfessorEomTaeO") || professorImage.StartsWith("ProfessorChaYuRi");
-            if (fullFigure)
+            if (HasUpperBodyPortrait(professorImage))
+            {
+                Texture2D professorTexture = Portrait;
+                if (professorTexture != null)
+                {
+                    Rect frame = PortraitRect();
+                    Rect upperBody = new Rect(frame.x, frame.y + frame.height * .04f, frame.width, frame.height * .66f);
+                    DrawUpperBodyPortrait(upperBody, professorTexture, professorImage);
+                }
+            }
+            else if (fullFigure)
             {
                 Texture2D professorTexture = Portrait;
                 if (professorTexture != null)
@@ -692,7 +702,20 @@ public partial class GameController : MonoBehaviour
         NovelUI.Fill(photo, NovelUI.Blush, 22);
         string picture = Professor.Picture(info, who, hover ? "Happy" : "");
         Texture2D portrait = Resources.Load<Texture2D>(picture);
-        if (portrait != null && NovelUI.Repaint) GUI.DrawTextureWithTexCoords(photo, portrait, FaceCrop(picture));
+        if (portrait != null && NovelUI.Repaint)
+        {
+            if (hover)
+            {
+                Rect closeUp = info.Image == "ProfessorBaekSoDam" ? new Rect(.37f, .70f, .26f, .30f)
+                    : HasUpperBodyPortrait(info.Image) && !HasFullBodySource(info.Image) ? new Rect(.24f, .48f, .52f, .52f)
+                    : FaceCrop(picture);
+                DrawFittedPortrait(photo, portrait, closeUp);
+            }
+            else
+            {
+                DrawUpperBodyPortrait(photo, portrait, info.Image);
+            }
+        }
         NovelUI.Label(new Rect(face.x, photo.yMax + 14, face.width, 40), info.Name, NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
         NovelUI.Label(new Rect(face.x + 20, photo.yMax + 56, face.width - 40, 30), info.Description, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
         float a = NovelUI.Width(info.TagA, NovelUI.Round, 17) + 30, b = NovelUI.Width(info.TagB, NovelUI.Round, 17) + 30;
