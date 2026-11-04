@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 // Pop-up menus drawn over the game: settings, the five save slots, the ending book, the backlog and minigame practice.
@@ -483,8 +483,11 @@ public partial class GameController
         NovelUI.Label(new Rect(card.x, card.y + 84, card.width, 30), "연습 결과는 호감도와 엔딩에 반영되지 않아요", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
         if (!FacultyTabs(new Rect(card.x + 30, card.y + 124, card.width - 60, 0), ref practiceCollege, ref practiceFaculty, true)) return;
         Story story = Stories.All[practiceFaculty];
-        bool hasImpactLab = false;
-        foreach (Slot slot in story.Slots) if (slot.Game != null && slot.Game.Kind == MiniGameKind.ImpactLab) hasImpactLab = true;
+        bool hasDifficulty = false;
+        foreach (Slot slot in story.Slots)
+            if (slot.Game != null && (slot.Game.Kind == MiniGameKind.ImpactLab || slot.Game.Kind == MiniGameKind.BugHunt || slot.Game.Kind == MiniGameKind.CircuitProbe))
+                hasDifficulty = true;
+        bool hasImpactLab = hasDifficulty;
         float y = card.y + 240;
         foreach (Slot slot in story.Slots)
         {
@@ -508,7 +511,7 @@ public partial class GameController
     {
         novelAudio.Play("Select");
         practice = theme;
-        MiniGame.Easy = false;
+        MiniGame.Easy = !practiceExperienced;
         miniGame = MiniGames.Create(theme, practiceProfessor, true, practiceExperienced);
         menu = Menu.None;
     }

@@ -10,6 +10,9 @@
 ---
 
 ## 1. 완료된 작업 (Done)
+- **미니게임 연습 모드(`GameMenus.cs`) 난이도 지원 확장**:
+  - 전공/비전공 분기를 지원하는 컴퓨터공학과(`BugHunt`) 및 스마트시스템공학과(`CircuitProbe`) 연습 시에도 난이도 선택 UI가 정상 노출되도록 확장.
+  - 연습 모드에서 비전공자 선택 시 `MiniGame.Easy` 타이머(0.75x 여유)가 올바르게 연동되도록 개선.
 - **원격 최신 작업 동기화 (`021d25c`)**:
   - AI 프록시 모델 고정(`gemini-3.1-flash-lite`): `-latest` 별칭 이동으로 인한 응답 지연(15~40초) 및 504 타임아웃 해결 반영.
   - 웹캠 및 iPhone 측면/하단 시선 매핑 정밀도 개선 (`GazeMapper.cs`, `GameController.GazeStarGame.cs`, `GameController.WebcamFit.cs`) 반영.
