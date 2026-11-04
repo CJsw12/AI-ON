@@ -26,6 +26,10 @@
 # Recordings can get excessive in size
 /[Rr]ecordings/
 
+# UnitEye stores personal calibration models here at runtime.
+/Assets/StreamingAssets/Calibration Files/
+/Assets/StreamingAssets/Calibration Files.meta
+
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
 

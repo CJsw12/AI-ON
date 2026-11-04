@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "de.uniulm.uniteye": "file:de.uniulm.uniteye",
+    "com.github.homuler.mediapipe": "file:com.github.homuler.mediapipe",
+    "com.unity.ai.inference": "2.6.1",
+    "com.unity.inputsystem": "1.19.0",
+    "com.unity.nuget.newtonsoft-json": "3.2.1",
+    "com.unity.modules.assetbundle": "1.0.0",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.modules.audio": "1.0.0"
   }
