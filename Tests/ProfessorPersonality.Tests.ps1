@@ -18,7 +18,17 @@ $managed = [Security.SecurityElement]::Escape((Join-Path $UnityManagedPath '*.dl
 @"
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>$target</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><EnableNETAnalyzers>false</EnableNETAnalyzers></PropertyGroup>
-  <ItemGroup><Compile Include="Program.cs"/><Compile Include="$source"/><Reference Include="$managed"/></ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs"/>
+    <Compile Include="$source"/>
+    <Compile Remove="$repo\Assets\Scripts\GameController*.cs"/>
+    <Compile Remove="$repo\Assets\Scripts\GameMenus.cs"/>
+    <Compile Remove="$repo\Assets\Scripts\GameEffects.cs"/>
+    <Compile Remove="$repo\Assets\Scripts\GameAiMode.cs"/>
+    <Compile Remove="$repo\Assets\Scripts\VTubeStudioUsbApiBridge.cs"/>
+    <Compile Remove="$repo\Assets\Scripts\IPhoneGazeUdpReceiver.cs"/>
+    <Reference Include="$managed"/>
+  </ItemGroup>
 </Project>
 "@ | Set-Content (Join-Path $work 'Check.csproj') -Encoding UTF8
 # No packages or network sources: compile only against the installed SDK and Editor.
