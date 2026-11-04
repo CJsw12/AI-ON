@@ -65,7 +65,7 @@ public partial class GameController
         if (aiPending == null || !aiPending.IsCompleted) return;
         AiProfessor.Result result = aiPending.IsFaulted || aiPending.IsCanceled ? new AiProfessor.Result { Error = "연결 실패" } : aiPending.Result;
         aiPending = null;
-        if (aiPendingSlot != AiSlotKey || showResult || miniGame != null) return;
+        if (aiPendingSlot != AiSlotKey || showResult || miniGame != null || !AtChoice) return;
         if (result.Error != null)
         {
             aiError = result.Error;
@@ -81,6 +81,14 @@ public partial class GameController
         }
         Slot slot = S.Slot(scene, choiceStage);
         AiProfessor.Grade grade = AiProfessor.GradeAnswer(result.Text, aiAnswer, slot.Scores[professor], slot.Stats, aiMin, aiMax);
+        if (!grade.Valid)
+        {
+            // The answer stays in the field so the player can send it again or pick an option.
+            Debug.LogWarning("[AI 채점] 형식 오류 응답\n" + result.Text);
+            aiError = "교수님 대답을 제대로 받지 못했어요";
+            novelAudio.Play("Down");
+            return;
+        }
         // The labels and the rule that set the score, for tuning (Console only).
         Debug.Log("[AI 채점] " + ProfessorName + " · \"" + aiAnswer + "\" → " + grade.Delta + " (" + grade.Why + ")\n" + result.Text);
         int delta = grade.Delta;
@@ -97,6 +105,14 @@ public partial class GameController
     {
         int count = Mathf.Min(8, backlog.Count);
         return backlog.GetRange(backlog.Count - count, count);
+    }
+
+    // "이전" during a request: the reply would otherwise replace the line being re-read. Drop it and refund a hint.
+    void AiCancelPending()
+    {
+        if (aiPending == null) return;
+        aiPending = null;
+        if (aiPendingHint) aiHintsUsed = Mathf.Max(0, aiHintsUsed - 1);
     }
 
     void AiSend(string system, string user, bool hint)

@@ -336,6 +336,7 @@ public partial class GameController : MonoBehaviour
         bool canGoBack = !showResult && (dialogueIndex > 0 || (scene == 1 && choiceStage == 0));
         if (!canGoBack || !NovelUI.Button(button, "이전", false, 19)) return false;
         novelAudio.Play("Back");
+        AiCancelPending();
         if (dialogueIndex > 0) { dialogueIndex--; return false; }
         scene = 0; professor = -1;
         return true;
@@ -756,7 +757,7 @@ public partial class GameController : MonoBehaviour
         NovelUI.Label(new Rect(card.x, card.y + 86, card.width, 64), S.EndingNames[ending], NovelUI.Round, 48, NovelUI.Berry, TextAnchor.MiddleCenter);
         NovelUI.Label(new Rect(card.x + 70, card.y + 176, card.width - 140, 250), S.Ending(professor, ending), NovelUI.Soft, 23, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
 
-        string[] stats = { "♥ 호감도 " + affection, "질문 " + questions, "협업 " + teamwork, "관심 " + interest };
+        string[] stats = { "♥ 호감도 " + affection, "질문 " + questions, "협업 " + teamwork, "관심 " + interest, "혼자 해결 " + solo };   // all four decide the ending
         float total = -14;
         foreach (string s in stats) total += NovelUI.Width(s, NovelUI.Round, 20) + 40 + 14;
         float x = 640 - total / 2;

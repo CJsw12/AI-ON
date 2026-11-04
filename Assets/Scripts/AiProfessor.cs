@@ -205,6 +205,7 @@ public static class AiProfessor
     public class Grade
     {
         public int Delta;
+        public bool Valid;           // False when the reply lacks the label lines; the caller must not apply it.
         public char Stat = '-';
         public string Reply = "", Why = "";
     }
@@ -220,6 +221,10 @@ public static class AiProfessor
         var g = new Grade();
         Match line = ReplyLine.Match(text);
         g.Reply = Clean(line.Success ? line.Groups[1].Value : Regex.Replace(text, @"(?m)^\W*(태도|응답|기본|성의|선택지|성향)\s*[:：].*(\r?\n)?", ""));
+        // Every label the score depends on, plus a reply to show; otherwise a garbled reply would silently grade as 0.
+        g.Valid = g.Reply != "" && Label(text, "태도") != "" && Label(text, "응답") != "" && Label(text, "기본") != ""
+            && Label(text, "성의") != "" && Regex.IsMatch(Label(text, "선택지"), @"\d");
+        if (!g.Valid) { g.Why = "형식 오류"; return g; }
         bool rude = Label(text, "태도").Contains("무례");
         bool offTopic = Label(text, "응답").StartsWith("아니");
         bool unprepared = Label(text, "기본").Contains("모름");

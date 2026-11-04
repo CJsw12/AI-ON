@@ -238,7 +238,8 @@ public partial class GameController
         {
             Faculty = faculty, Scene = scene, Stage = choiceStage, Line = dialogueIndex, Professor = professor, Affection = affection,
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
-            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick, AiMode = aiMode
+            ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick, AiMode = aiMode,
+            HintsUsed = aiSlot == AiSlotKey ? aiHintsUsed : 0
         });
         slots[slot] = GameSave.Read(slot);
         confirmSlot = -1;
@@ -255,6 +256,9 @@ public partial class GameController
         experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey; wrongPick = data.WrongPick; aiMode = data.AiMode && AiProfessor.Supported;
         // The story may have changed since the save was made, so keep the line inside the chapter.
         dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);
+        // Claim this slot now so AiSync keeps the saved count instead of resetting it to 0.
+        aiSlot = AiSlotKey;
+        aiHintsUsed = Mathf.Min(data.HintsUsed, HintLimit);
         memorial = 0; introDone = true; portraitAlpha = 0;
         chapterShown = -1;   // Replays the chapter card as a reminder of where the player is.
         menu = Menu.None;
