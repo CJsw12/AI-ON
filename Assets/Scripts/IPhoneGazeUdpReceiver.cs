@@ -1,0 +1,164 @@
+using System;
+using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using UnityEngine;
+
+/// <summary>Receives VTube Studio iOS tracking packets without blocking Unity's main thread.</summary>
+public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
+{
+    const int LocalPort = 11125;
+    const float RequestDurationSeconds = 2.5f;
+    const int ReceivePollMilliseconds = 100;
+
+    [Serializable]
+    sealed class TrackingRequest
+    {
+        public string messageType = "iOSTrackingDataRequest";
+        public float time = RequestDurationSeconds;
+        public string sentBy = "AI-ON";
+        public int[] ports = { LocalPort };
+    }
+
+    [Serializable]
+    public sealed class TrackingData
+    {
+        public long Timestamp;
+        public bool FaceFound;
+        public Vector3 EyeLeft;
+        public Vector3 EyeRight;
+    }
+
+    readonly ConcurrentQueue<string> packets = new ConcurrentQueue<string>();
+    readonly ConcurrentQueue<string> errors = new ConcurrentQueue<string>();
+    UdpClient socket;
+    Thread receiveThread;
+    volatile bool stopping;
+    public TrackingData Latest { get; private set; }
+    public int Sequence { get; private set; }
+    public float LastPacketAt { get; private set; } = -100f;
+    public string Error { get; private set; }
+    public Vector2 EyeFeature => Latest == null ? Vector2.zero : new Vector2((Latest.EyeLeft.y + Latest.EyeRight.y) * .5f, (Latest.EyeLeft.x + Latest.EyeRight.x) * .5f);
+    public bool FaceFound => Latest != null && Latest.FaceFound;
+    public bool HasFreshSample => HasFreshPacket;
+    public string Status => Error;
+
+    public bool StartReceiving(IPAddress phoneAddress, int phonePort)
+    {
+        StopReceiving();
+        if (phoneAddress == null || phonePort < 1 || phonePort > 65535)
+        {
+            Error = "아이폰 IP 또는 포트가 올바르지 않아요.";
+            return false;
+        }
+
+        try
+        {
+            UdpClient activeSocket = new UdpClient(new IPEndPoint(IPAddress.Any, LocalPort));
+            activeSocket.Client.ReceiveTimeout = ReceivePollMilliseconds;
+            socket = activeSocket;
+            byte[] request = Encoding.UTF8.GetBytes(JsonUtility.ToJson(new TrackingRequest()));
+            IPEndPoint destination = new IPEndPoint(phoneAddress, phonePort);
+            stopping = false;
+            receiveThread = new Thread(() => ReceiveLoop(activeSocket, destination, request))
+            {
+                IsBackground = true,
+                Name = "AI-ON iPhone gaze UDP"
+            };
+            receiveThread.Start();
+            Error = null;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Error = e is SocketException
+                ? "UDP 포트 11125를 열 수 없어요. 다른 프로그램이 사용 중인지 확인해 주세요."
+                : "아이폰 추적 연결을 시작하지 못했어요.";
+            StopReceiving();
+            return false;
+        }
+    }
+
+    void ReceiveLoop(UdpClient activeSocket, IPEndPoint destination, byte[] request)
+    {
+        DateTime nextRequest = DateTime.MinValue;
+        while (!stopping)
+        {
+            try
+            {
+                if (DateTime.UtcNow >= nextRequest)
+                {
+                    activeSocket.Send(request, request.Length, destination);
+                    nextRequest = DateTime.UtcNow.AddSeconds(1);
+                }
+
+                IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
+                byte[] bytes = activeSocket.Receive(ref sender);
+                if (bytes.Length > 0 && sender.Address.Equals(destination.Address))
+                {
+                    while (packets.Count >= 120 && packets.TryDequeue(out _)) { }
+                    packets.Enqueue(Encoding.UTF8.GetString(bytes));
+                }
+            }
+            catch (SocketException e) when (e.SocketErrorCode == SocketError.TimedOut || e.SocketErrorCode == SocketError.WouldBlock)
+            {
+                // The timeout lets the loop send keepalive requests and notice shutdown.
+            }
+            catch (ObjectDisposedException) { break; }
+            catch (Exception e)
+            {
+                if (!stopping) errors.Enqueue(e.Message);
+                break;
+            }
+        }
+    }
+
+    /// <summary>Drain and deserialize packets on the Unity main thread.</summary>
+    public void Poll()
+    {
+        string latestJson = null;
+        while (packets.TryDequeue(out string packet)) latestJson = packet;
+        while (errors.TryDequeue(out string error)) Error = "UDP 수신 오류: " + error;
+        if (latestJson == null) return;
+
+        try
+        {
+            TrackingData data = JsonUtility.FromJson<TrackingData>(latestJson);
+            if (data == null || data.Timestamp <= 0) return;
+            Latest = data;
+            LastPacketAt = Time.unscaledTime;
+            Sequence++;
+        }
+        catch (Exception e)
+        {
+            Error = "아이폰 추적 데이터 형식을 읽지 못했어요: " + e.Message;
+        }
+    }
+
+    public bool HasFreshPacket => Latest != null && Time.unscaledTime - LastPacketAt <= 1f;
+
+    public void StopReceiving()
+    {
+        stopping = true;
+        if (socket != null)
+        {
+            socket.Close();
+            socket = null;
+        }
+        if (receiveThread != null)
+        {
+            if (receiveThread.IsAlive && Thread.CurrentThread != receiveThread) receiveThread.Join(250);
+            receiveThread = null;
+        }
+        while (packets.TryDequeue(out _)) { }
+        while (errors.TryDequeue(out _)) { }
+        Latest = null;
+        LastPacketAt = -100f;
+        Sequence = 0;
+    }
+
+    void OnDestroy() => StopReceiving();
+    void OnApplicationQuit() => StopReceiving();
+}

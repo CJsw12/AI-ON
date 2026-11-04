@@ -6,6 +6,7 @@ using UnityEngine;
 public partial class GameController
 {
     bool gazeTestOpen;
+    bool gazeUseIphone;
     GameObject gazeObject;
     HomulerGaze gazeTracker;
     HomulerGazeCalibration gazeCalibration;
@@ -20,12 +21,19 @@ public partial class GameController
     void OpenGazeTest()
     {
         gazeTestOpen = true;
+        gazeUseIphone = false;
         gazeStatus = "웹캠 시작을 눌러 주세요.";
     }
 
     void CloseGazeTest()
     {
         gazeTestOpen = false;
+        StopWebcamTracking();
+        StopIPhoneGaze();
+    }
+
+    void StopWebcamTracking()
+    {
         if (gazeCameraRequest != null) StopCoroutine(gazeCameraRequest);
         gazeCameraRequest = null;
         requestingCamera = false;
@@ -93,6 +101,8 @@ public partial class GameController
 
     void UpdateGazeTest()
     {
+        UpdateIPhoneGaze();
+        if (gazeUseIphone) return;
         if (!gazeTestOpen || gazeTracker == null) return;
         if (!gazeTracker.enabled) { gazeStatus = "추적 시작에 실패했어요. Unity Console을 확인해 주세요."; return; }
         if (!GazeCalibrationActive && gazeTracker.Provider != null) gazeTracker.Provider.SetRendering(false);
@@ -109,25 +119,41 @@ public partial class GameController
     {
         GUI.matrix = Canvas;
         NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
-        NovelUI.Label(new Rect(0, 18, 1280, 55), "웹캠 시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
-        NovelUI.Label(new Rect(50, 76, 1180, 45), gazeStatus, NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-        NovelUI.Label(new Rect(50, 120, 1180, 48), "보정 화면을 클릭해 시작하고 움직이는 점을 바라봐 주세요. 오른쪽 클릭으로 취소할 수 있어요.", NovelUI.Soft, 18, NovelUI.Berry, TextAnchor.MiddleCenter);
-        if (gazeTracker == null)
+        NovelUI.Label(new Rect(0, 18, 1280, 55), "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
+        bool chooseIphone = gazeUseIphone;
+        if (NovelUI.Button(new Rect(390, 91, 230, 48), "노트북 웹캠", !gazeUseIphone, 19)) chooseIphone = false;
+        if (NovelUI.Button(new Rect(660, 91, 230, 48), "iPhone 추적", gazeUseIphone, 19)) chooseIphone = true;
+        if (chooseIphone != gazeUseIphone)
         {
-            GUI.enabled = !requestingCamera;
-            if (NovelUI.Button(new Rect(440, 195, 400, 62), "웹캠 시작", true, 24)) gazeCameraRequest = StartCoroutine(StartGazeCamera());
-            GUI.enabled = true;
+            if (chooseIphone) StopWebcamTracking();
+            else StopIPhoneGaze();
+            gazeUseIphone = chooseIphone;
+        }
+        if (gazeUseIphone)
+        {
+            DrawIPhoneGazePanel();
         }
         else
         {
-            GUI.enabled = gazeTracker.IsUserPresent && Time.unscaledTime - lastGazeAt < 2f;
-            if (NovelUI.Button(new Rect(440, 195, 400, 62), "시선 보정 시작", true, 24)) gazeTracker.LoadCalibration(9f, 20f, 1);
-            GUI.enabled = true;
-            if (gazeTracker.IsUserPresent && lastGazeSequence > 0 && Time.unscaledTime - lastGazeAt < 2f)
+            NovelUI.Label(new Rect(50, 146, 1180, 38), gazeStatus, NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+            NovelUI.Label(new Rect(50, 184, 1180, 42), "보정 화면을 클릭해 시작하고 움직이는 점을 바라봐 주세요. 오른쪽 클릭으로 취소할 수 있어요.", NovelUI.Soft, 18, NovelUI.Berry, TextAnchor.MiddleCenter);
+            if (gazeTracker == null)
             {
-                Vector2 point = Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
-                if (point.x >= 0 && point.x <= 1280 && point.y >= 0 && point.y <= 900)
-                    NovelUI.Fill(new Rect(point.x - 14, point.y - 14, 28, 28), NovelUI.DeepPink, 14);
+                GUI.enabled = !requestingCamera;
+                if (NovelUI.Button(new Rect(440, 245, 400, 62), "웹캠 시작", true, 24)) gazeCameraRequest = StartCoroutine(StartGazeCamera());
+                GUI.enabled = true;
+            }
+            else
+            {
+                GUI.enabled = gazeTracker.IsUserPresent && Time.unscaledTime - lastGazeAt < 2f;
+                if (NovelUI.Button(new Rect(440, 245, 400, 62), "시선 보정 시작", true, 24)) gazeTracker.LoadCalibration(9f, 20f, 1);
+                GUI.enabled = true;
+                if (gazeTracker.IsUserPresent && lastGazeSequence > 0 && Time.unscaledTime - lastGazeAt < 2f)
+                {
+                    Vector2 point = Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
+                    if (point.x >= 0 && point.x <= 1280 && point.y >= 0 && point.y <= 900)
+                        NovelUI.Fill(new Rect(point.x - 14, point.y - 14, 28, 28), NovelUI.DeepPink, 14);
+                }
             }
         }
         if (NovelUI.Button(new Rect(40, 820, 180, 52), "돌아가기", false, 21)) CloseGazeTest();

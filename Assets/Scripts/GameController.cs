@@ -82,7 +82,7 @@ public partial class GameController : MonoBehaviour
     }
 
     void OnApplicationPause(bool paused) { if (paused) { ReadLog.Flush(); GameSettings.Save(); } }
-    void OnApplicationQuit() { ReadLog.Flush(); GameSettings.Save(); }
+    void OnApplicationQuit() { CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
 
     void DrawScene(bool portrait = true)
     {
