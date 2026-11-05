@@ -43,13 +43,15 @@ public partial class GameController
     void OpenGazeTest()
     {
         gazeTestOpen = true;
-        gazeUseIphone = false;
+        eyeContactPreparationMode = false;
+        gazeUseIphone = PlayerPrefs.GetInt(EyeContactDevicePref, 0) == 1;
         gazeStatus = "웹캠 시작을 눌러 주세요.";
     }
 
     void CloseGazeTest()
     {
         gazeTestOpen = false;
+        eyeContactSessionActive = false;
         StopWebcamTracking();
         StopIPhoneGaze();
     }
@@ -144,12 +146,13 @@ public partial class GameController
         UpdateWebcamGaze();
         TickStarGame();
         TraceIPhoneGaze();
+        UpdateEyeContactTracking();
     }
 
     void UpdateWebcamGaze()
     {
         if (gazeUseIphone) return;
-        if (!gazeTestOpen || gazeTracker == null) return;
+        if ((!gazeTestOpen && !eyeContactSessionActive) || gazeTracker == null) return;
         if (!gazeTracker.enabled) { gazeStatus = "추적 시작에 실패했어요. Unity Console을 확인해 주세요."; return; }
         if (!GazeCalibrationActive && gazeTracker.Provider != null) gazeTracker.Provider.SetRendering(false);
         if (gazeTracker.GazeSampleSequence != lastGazeSequence)
@@ -201,7 +204,7 @@ public partial class GameController
             DrawStarGame();   // has its own buttons
             return;
         }
-        NovelUI.Label(new Rect(0, 18, 1280, 55), "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(0, 18, 1280, 55), eyeContactPreparationMode ? "시선 추적 준비" : "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
         bool chooseIphone = gazeUseIphone;
         if (NovelUI.Button(new Rect(390, 91, 230, 48), "노트북 웹캠", !gazeUseIphone, 19)) chooseIphone = false;
         if (NovelUI.Button(new Rect(660, 91, 230, 48), "iPhone 추적", gazeUseIphone, 19)) chooseIphone = true;
@@ -210,6 +213,8 @@ public partial class GameController
             if (chooseIphone) StopWebcamTracking();
             else StopIPhoneGaze();
             gazeUseIphone = chooseIphone;
+            PlayerPrefs.SetInt(EyeContactDevicePref, gazeUseIphone ? 1 : 0);
+            PlayerPrefs.Save();
         }
         if (gazeUseIphone)
         {
@@ -260,6 +265,10 @@ public partial class GameController
                 }
             }
         }
-        if (NovelUI.Button(new Rect(40, 820, 180, 52), "돌아가기", false, 21)) CloseGazeTest();
+        if (NovelUI.Button(new Rect(40, 820, 180, 52), eyeContactPreparationMode ? "준비 취소" : "돌아가기", false, 21))
+        {
+            if (eyeContactPreparationMode) CancelEyeContactPreparation();
+            else CloseGazeTest();
+        }
     }
 }

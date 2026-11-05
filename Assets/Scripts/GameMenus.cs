@@ -239,6 +239,7 @@ public partial class GameController
             Faculty = faculty, Scene = scene, Stage = choiceStage, Line = dialogueIndex, Professor = professor, Affection = affection,
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
             ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick, AiMode = aiMode,
+            EyeContactCount = eyeContactCount, EyeContactSeconds = eyeContactTotalSeconds, EyeContactTrackingEnabled = eyeContactTrackingEnabled,
             // A question still waiting for its reply is not counted: the reply is lost with the save.
             HintsUsed = aiSlot == AiSlotKey ? Mathf.Max(0, aiHintsUsed - (AiWaiting && aiPendingHint ? 1 : 0)) : 0,
             Hint = aiSlot == AiSlotKey ? aiHint : null
@@ -255,6 +256,9 @@ public partial class GameController
         faculty = data.Faculty; scene = data.Scene; choiceStage = data.Stage; professor = data.Professor;
         affection = shownAffection = data.Affection;
         questions = data.Questions; teamwork = data.Teamwork; interest = data.Interest; solo = data.Solo;
+        eyeContactCount = Mathf.Max(0, data.EyeContactCount);
+        eyeContactTotalSeconds = Mathf.Max(0f, data.EyeContactSeconds);
+        eyeContactTrackingEnabled = data.EyeContactTrackingEnabled;
         experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey; wrongPick = data.WrongPick; aiMode = data.AiMode && AiProfessor.Supported;
         // The story may have changed since the save was made, so keep the line inside the chapter.
         dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);
@@ -265,6 +269,7 @@ public partial class GameController
         memorial = 0; introDone = true; portraitAlpha = 0;
         chapterShown = -1;   // Replays the chapter card as a reminder of where the player is.
         menu = Menu.None;
+        BeginEyeContactPreparation(true);
         novelAudio.Play("Load");
         ShowToast("불러왔어요");
     }
@@ -297,7 +302,7 @@ public partial class GameController
             image == "ProfessorSeo" || image == "ProfessorKang";
     }
 
-    static void DrawUpperBodyPortrait(Rect frame, Texture2D texture, string image)
+    static Rect DrawUpperBodyPortrait(Rect frame, Texture2D texture, string image)
     {
         Rect crop = new Rect(0, 0, 1, 1);
         if (image == "ProfessorBaekSoDam" || image == "ProfessorKim")
@@ -306,16 +311,18 @@ public partial class GameController
             crop = new Rect(.34f, .46f, .32f, .54f);
         else if (texture.height > texture.width)
             crop = new Rect(0, .24f, 1, .76f);
-        DrawFittedPortrait(frame, texture, crop);
+        return DrawFittedPortrait(frame, texture, crop);
     }
 
-    static void DrawFittedPortrait(Rect frame, Texture2D texture, Rect crop)
+    static Rect DrawFittedPortrait(Rect frame, Texture2D texture, Rect crop)
     {
+        if (texture == null || crop.width <= 0f || crop.height <= 0f) return default;
         float aspect = (float)texture.width / texture.height * crop.width / crop.height;
         float height = Mathf.Min(frame.height, frame.width / aspect);
         float width = height * aspect;
         Rect fitted = new Rect(frame.center.x - width / 2, frame.yMax - height, width, height);
         GUI.DrawTextureWithTexCoords(fitted, texture, crop);
+        return fitted;
     }
 
     // Crop for the compact portrait thumbnails in menus.

@@ -89,7 +89,7 @@ public partial class GameController
 
     void UpdateIPhoneGaze()
     {
-        if (!gazeTestOpen || !gazeUseIphone || iphoneSource == null) return;
+        if ((!gazeTestOpen && !eyeContactSessionActive) || !gazeUseIphone || iphoneSource == null) return;
         iphoneSource.Poll();
         if (iphoneVerticalDiagnostic) TickIPhoneVerticalDiagnostic();
         // Looking down lowers the eyelids and raises the blink value, so the bar rises with downward gaze;
@@ -197,7 +197,7 @@ public partial class GameController
         iphoneCalibrationPoint = 0;
         iphoneMarkerValid = false;
         iphoneStatus = "연결 요청을 보냈어요. 얼굴 데이터를 기다리는 중이에요.";
-        TryLoadIPhoneCalibration();
+        if (!eyeContactPreparationMode) TryLoadIPhoneCalibration();
     }
 
     void StartIPhoneUsbGaze()
@@ -226,7 +226,7 @@ public partial class GameController
         iphoneCalibrationPoint = 0;
         iphoneMarkerValid = false;
         iphoneStatus = "VTube Studio PC API에 연결 중이에요.";
-        TryLoadIPhoneCalibration();
+        if (!eyeContactPreparationMode) TryLoadIPhoneCalibration();
     }
 
     void StopIPhoneGaze()
@@ -317,6 +317,7 @@ public partial class GameController
         PlayerPrefs.SetString(IPhoneMapperPref, iphoneMapper.Save());
         PlayerPrefs.Save();
         BeginIPhoneTrace();
+        TryCompleteEyeContactPreparation();
     }
 
     void DrawIPhoneCalibrationScreen()
@@ -327,6 +328,7 @@ public partial class GameController
             iphoneCalibrating = iphoneMeasuring = false;
             iphoneMarkerValid = false;
             iphoneStatus = "보정을 취소했어요.";
+            if (eyeContactPreparationMode) CancelEyeContactPreparation();
         }
     }
 
