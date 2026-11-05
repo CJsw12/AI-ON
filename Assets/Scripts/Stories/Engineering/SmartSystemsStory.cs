@@ -228,8 +228,8 @@ public static class SmartSystemsStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값을 직접 계산해서 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "박태준 교수", Description = "현장 출신 장인 · 이론보다 손으로 익히기", TagA = "#현장출신", TagB = "#일단해봐", Image = "ProfessorPark" },
-            new Professor { Name = "최유나 교수", Description = "차분한 소크라테스형 · 답 대신 질문으로", TagA = "#왜그럴까요", TagB = "#질문으로답", Image = "ProfessorChoi" }
+            new Professor { Name = "박태준 교수", Description = "현장 출신 장인 · 이론보다 손으로 익히기", TagA = "#현장출신", TagB = "#일단해봐", Image = "ProfessorPark", LookAwayLine = "일단 여기 봐. 손으로 익히기 전에 설명부터." },
+            new Professor { Name = "최유나 교수", Description = "차분한 소크라테스형 · 답 대신 질문으로", TagA = "#왜그럴까요", TagB = "#질문으로답", Image = "ProfessorChoi", LookAwayLine = "시선은 지금 어디에 있나요? 여기서 답을 찾아볼까요?" }
         },
         Fond = new[] { "손이 제법 됐다. 다음엔 네가 가르쳐 봐.", "요즘 학생 질문이 저를 더 생각하게 만들어요." },
         Wary = new[] { "말 말고 손으로 보여 줘.", "잠깐, 왜 그렇게 생각했는지부터 들어 볼게요." },

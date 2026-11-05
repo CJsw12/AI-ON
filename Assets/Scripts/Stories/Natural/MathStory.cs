@@ -233,8 +233,8 @@ public static class MathStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값과 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "구민석 교수", Description = "다정한 말장난꾼 · 수학 아재개그와 함께 천천히 가르침", TagA = "#허허", TagB = "#수학아재개그", Image = "ProfessorGuMath" },
-            new Professor { Name = "설아라 교수", Description = "차가운 완벽주의 천재 · 짧고 직설, 인정은 드물지만 확실", TagA = "#틀렸다", TagB = "#빈틈제로", Image = "ProfessorSeolMath" }
+            new Professor { Name = "구민석 교수", Description = "다정한 말장난꾼 · 수학 아재개그와 함께 천천히 가르침", TagA = "#허허", TagB = "#수학아재개그", Image = "ProfessorGuMath", LookAwayLine = "시선도 이쪽으로 모아야 수학이 풀려요. 허허." },
+            new Professor { Name = "설아라 교수", Description = "차가운 완벽주의 천재 · 짧고 직설, 인정은 드물지만 확실", TagA = "#틀렸다", TagB = "#빈틈제로", Image = "ProfessorSeolMath", LookAwayLine = "시선은 여기. 설명을 끝까지 들어." }
         },
         Fond = new[] { "학생이랑 있으면 개그도 잘 풀려요. 증명처럼요. 허허.", "…인정한다. 너는 꽤 정확하다." },
         Wary = new[] { "음, 오늘은 제 개그도 안 통할 것 같네요.", "실망이다." },

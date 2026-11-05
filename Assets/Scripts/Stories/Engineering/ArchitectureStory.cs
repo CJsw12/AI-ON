@@ -226,8 +226,8 @@ public static class ArchitectureStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값과 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "진서한 교수", Description = "시니컬한 독설가 · 비꼬지만 진짜 좋은 건 인정", TagA = "#독설주의", TagB = "#인정은확실", Image = "ProfessorJinSeoHan" },
-            new Professor { Name = "나윤슬 교수", Description = "다정한 걱정쟁이 · 밥과 잠과 건강부터 챙김", TagA = "#밥은먹었어요", TagB = "#일찍자요", Image = "ProfessorNaYunSeul" }
+            new Professor { Name = "진서한 교수", Description = "시니컬한 독설가 · 비꼬지만 진짜 좋은 건 인정", TagA = "#독설주의", TagB = "#인정은확실", Image = "ProfessorJinSeoHan", LookAwayLine = "딴 곳을 보시는군요. 설명은 이쪽에 있습니다." },
+            new Professor { Name = "나윤슬 교수", Description = "다정한 걱정쟁이 · 밥과 잠과 건강부터 챙김", TagA = "#밥은먹었어요", TagB = "#일찍자요", Image = "ProfessorNaYunSeul", LookAwayLine = "학생, 시선 괜찮아요? 제 설명도 봐 주세요." }
         },
         Fond = new[] { "…칭찬이 아니라 사실을 말하는 겁니다.", "요즘 얼굴이 좋아 보여서 저도 마음이 놓여요." },
         Wary = new[] { "흥미롭군요. 나쁜 의미로요.", "어머, 괜찮아요? 조금 걱정되네요." },

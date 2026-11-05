@@ -224,8 +224,8 @@ public static class LifeScienceStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "문혜원 교수", Description = "느긋한 자연주의자 · 천천히 오래 바라보는 관찰을 중시", TagA = "#서두를것없어요", TagB = "#연못산책", Image = "ProfessorMoonBio" },
-            new Professor { Name = "임초롱 교수", Description = "승부욕 강한 경쟁파 · 기록과 도전, 1등을 사랑함", TagA = "#신기록도전", TagB = "#오늘도1등", Image = "ProfessorLimBio" }
+            new Professor { Name = "문혜원 교수", Description = "느긋한 자연주의자 · 천천히 오래 바라보는 관찰을 중시", TagA = "#서두를것없어요", TagB = "#연못산책", Image = "ProfessorMoonBio", LookAwayLine = "천천히 제 쪽을 봐도 괜찮아요. 설명 이어갈게요." },
+            new Professor { Name = "임초롱 교수", Description = "승부욕 강한 경쟁파 · 기록과 도전, 1등을 사랑함", TagA = "#신기록도전", TagB = "#오늘도1등", Image = "ProfessorLimBio", LookAwayLine = "학생, 시선도 1등 해야지. 여기 봐!" }
         },
         Fond = new[] { "학생이랑 있으면 시간이 천천히 흐르는 것 같아요~", "역시 내 라이벌감이야. 다음 판도 붙자!" },
         Wary = new[] { "음… 오늘은 바람이 좀 차네요.", "이대로면 꼴찌야. 정신 차려!" },

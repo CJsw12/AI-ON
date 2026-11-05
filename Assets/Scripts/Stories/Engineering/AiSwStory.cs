@@ -259,8 +259,8 @@ public static class AiSwStory
         Levels = new[] { "전공자", "비전공자" },
         LevelNotes = new[] { "코드를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "심한뫼 교수", Description = "과묵한 츤데레 · 말은 짧아도 속으로 챙김", TagA = "#츤데레", TagB = "#나쁘지않네요", Image = "ProfessorKim" },
-            new Professor { Name = "이명희 교수", Description = "수다스러운 개발 덕후 · 게임과 밈으로 설명", TagA = "#개발덕후", TagB = "#TMI장인", Image = "ProfessorLee" }
+            new Professor { Name = "심한뫼 교수", Description = "과묵한 츤데레 · 말은 짧아도 속으로 챙김", TagA = "#츤데레", TagB = "#나쁘지않네요", Image = "ProfessorKim", LookAwayLine = "…어디 봐요. 제 말 듣고 있죠?" },
+            new Professor { Name = "이명희 교수", Description = "수다스러운 개발 덕후 · 게임과 밈으로 설명", TagA = "#개발덕후", TagB = "#TMI장인", Image = "ProfessorLee", LookAwayLine = "앗, 시선 이탈 감지! 여기 보스 몹 쳐다봐야죠!" }
         },
         Fond = new[] { "…요즘은 좀 믿고 맡겨요.", "아 진짜, 학생이랑 얘기하면 시간 순삭이에요!" },
         Wary = new[] { "…솔직히 좀 실망이에요.", "어, 잠깐 일시정지하고 짚고 갈게요." },

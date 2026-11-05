@@ -11,18 +11,25 @@ public partial class GameController
     const float EyeContactFallbackFaceSize = .2f;
     const float EyeContactPortraitAlphaThreshold = .5f;
     const float EyeContactMaxFrameSeconds = .1f;
+    const float EyeContactLookAwayDwellSeconds = 7f;
+    const float EyeContactLookAwayChance = .25f;
+    const float EyeContactLookAwayCooldownSeconds = 60f;
+    const float EyeContactLookAwayMinimumPlaySeconds = 90f;
     const string EyeContactDevicePref = "GazeTest.EyeContactDevice";
 
     bool eyeContactPreparationMode, eyeContactPreparationFromLoad, eyeContactSessionActive;
     bool eyeContactTrackingEnabled, eyeContactFaceDrawn, eyeContactAwaitExit, eyeContactGazeValid;
+    bool lookAwayTriggered, lookAwayInterruptActive;
     int eyeContactCount, eyeContactFaceFrame = -1;
     float eyeContactTotalSeconds, eyeContactDwell, eyeContactExitSeconds, eyeContactFaceAlpha;
+    float eyeContactLookAwayDwell, eyeContactLookAwayCooldown, eyeContactLookAwayPlaySeconds, lookAwayInterruptStartedAt;
     Vector2 eyeContactFaceCenter, eyeContactGaze;
     float eyeContactFaceRadiusX, eyeContactFaceRadiusY;
 
     public int EyeContactCount => eyeContactCount;
     public float EyeContactTotalSeconds => eyeContactTotalSeconds;
     public bool EyeContactTrackingEnabled => eyeContactTrackingEnabled;
+    public bool LookAwayTriggered => lookAwayTriggered;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     bool eyeContactDebugVisible;
@@ -101,6 +108,8 @@ public partial class GameController
         eyeContactGazeValid = false;
         eyeContactFaceDrawn = false;
         eyeContactFaceFrame = -1;
+        eyeContactLookAwayDwell = 0f;
+        eyeContactLookAwayCooldown = 0f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         eyeContactDebugState = "대기";
         eyeContactCountedAt = -1f;
@@ -115,6 +124,9 @@ public partial class GameController
         eyeContactCount = 0;
         eyeContactTotalSeconds = 0f;
         eyeContactTrackingEnabled = false;
+        lookAwayTriggered = false;
+        lookAwayInterruptActive = false;
+        eyeContactLookAwayPlaySeconds = 0f;
         ResetEyeContactProgress();
     }
 
@@ -150,6 +162,23 @@ public partial class GameController
     {
         if (!eyeContactSessionActive) return;
 
+        float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0f, EyeContactMaxFrameSeconds);
+        bool storyPlayTime = scene >= 1 && scene <= 6 && memorial <= 0f && introDone && practice == null && menu == Menu.None;
+        if (storyPlayTime)
+        {
+            eyeContactLookAwayPlaySeconds += dt;
+            eyeContactLookAwayCooldown = Mathf.Max(0f, eyeContactLookAwayCooldown - dt);
+        }
+
+        if (lookAwayInterruptActive)
+        {
+            eyeContactLookAwayDwell = 0f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            eyeContactDebugState = "시선 이탈 끼어들기";
+#endif
+            return;
+        }
+
         bool fresh, faceFound, gazeValid, blinking;
         if (gazeUseIphone)
         {
@@ -171,6 +200,7 @@ public partial class GameController
 
         if (blinking)
         {
+            eyeContactLookAwayDwell = 0f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             eyeContactDebugState = "깜빡임 · 진행 정지";
 #endif
@@ -180,24 +210,44 @@ public partial class GameController
         bool portraitVisible = scene >= 1 && scene <= 6 && portraitAlpha >= EyeContactPortraitAlphaThreshold &&
             eyeContactFaceDrawn && Time.frameCount - eyeContactFaceFrame <= 1 && eyeContactFaceAlpha >= EyeContactPortraitAlphaThreshold;
         bool heldSkip = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-        bool blocked = menu != Menu.None || miniGame != null || practice != null || skip || heldSkip || eyeContactPreparationMode;
+        bool chapterCardVisible = scene >= 1 && scene <= 6 && (chapterShown != scene || Time.unscaledTime - chapterAt <= 2.6f);
+        bool dialogueBlocked = scene < 1 || scene > 6 || showResult || ChoiceUiVisible || AiBoxField || AiWaiting || AiHintShown || chapterCardVisible;
+        bool blocked = menu != Menu.None || miniGame != null || practice != null || skip || heldSkip || eyeContactPreparationMode || dialogueBlocked;
         if (blocked || !portraitVisible || !gazeValid)
         {
             eyeContactDwell = 0f;
             eyeContactExitSeconds = 0f;
+            eyeContactLookAwayDwell = 0f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             eyeContactDebugState = blocked ? "기록 제외 상태" : !portraitVisible ? "교수 얼굴 미표시" : "유효 시선 없음";
 #endif
             return;
         }
 
-        float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0f, EyeContactMaxFrameSeconds);
         float nx = (eyeContactGaze.x - eyeContactFaceCenter.x) / eyeContactFaceRadiusX;
         float ny = (eyeContactGaze.y - eyeContactFaceCenter.y) / eyeContactFaceRadiusY;
         bool inside = nx * nx + ny * ny <= 1f;
         float leaveX = nx / EyeContactLeaveRadiusFactor;
         float leaveY = ny / EyeContactLeaveRadiusFactor;
         bool outsideLeave = leaveX * leaveX + leaveY * leaveY > 1f;
+
+        if (!lookAwayTriggered && eyeContactLookAwayPlaySeconds >= EyeContactLookAwayMinimumPlaySeconds && eyeContactLookAwayCooldown <= 0f)
+        {
+            if (outsideLeave) eyeContactLookAwayDwell += dt;
+            else eyeContactLookAwayDwell = 0f;
+
+            if (eyeContactLookAwayDwell >= EyeContactLookAwayDwellSeconds)
+            {
+                eyeContactLookAwayDwell = 0f;
+                if (Random.value < EyeContactLookAwayChance)
+                {
+                    TriggerLookAwayInterruption();
+                    return;
+                }
+                eyeContactLookAwayCooldown = EyeContactLookAwayCooldownSeconds;
+            }
+        }
+        else eyeContactLookAwayDwell = 0f;
 
         if (inside) eyeContactTotalSeconds += dt;
         if (eyeContactAwaitExit)
@@ -249,11 +299,57 @@ public partial class GameController
     void HandleEyeContactDebugKey()
     {
         Event e = Event.current;
-        if (e.type != EventType.KeyDown || e.keyCode != KeyCode.F8) return;
+        if (e.type != EventType.KeyDown) return;
+        if (e.keyCode == KeyCode.F9)
+        {
+            e.Use();
+            if (!lookAwayTriggered && InGame && menu == Menu.None && miniGame == null && practice == null)
+                TriggerLookAwayInterruption();
+            return;
+        }
+        if (e.keyCode != KeyCode.F8) return;
         eyeContactDebugVisible = !eyeContactDebugVisible;
         e.Use();
     }
+#endif
 
+    void TriggerLookAwayInterruption()
+    {
+        if (lookAwayTriggered || scene < 1 || scene > 6) return;
+        lookAwayTriggered = true;
+        lookAwayInterruptActive = true;
+        lookAwayInterruptStartedAt = Time.unscaledTime;
+        eyeContactLookAwayDwell = 0f;
+        affection--;
+        React(-1, false);
+        Debug.Log($"[look away] scene={scene} line={dialogueIndex} affection={affection}");
+    }
+
+    void DrawLookAwayInterruption()
+    {
+        string line = S.Professors[professor].LookAwayLine;
+        if (string.IsNullOrWhiteSpace(line)) line = "똑바로 봐!";
+        Rect box = new Rect(70, 628, 1140, 244);
+        NovelUI.Card(box, NovelUI.Alpha(NovelUI.Cream, .96f), 30, NovelUI.Pink);
+        NovelUI.Pill(box.x + 34, box.y - 26, 52, ProfessorName, NovelUI.DeepPink, Color.white, 24);
+        Rect textRect = new Rect(box.x + 42, box.y + 46, box.width - 100, box.height - 64);
+        int size = NovelUI.Height(line, NovelUI.Soft, 26, textRect.width) > textRect.height ? 22 : 26;
+        NovelUI.Label(textRect, line, NovelUI.Soft, size, NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
+
+        bool pressed = Event.current.type == EventType.KeyDown &&
+            (Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
+        if (GUI.Button(box, GUIContent.none, GUIStyle.none) || pressed)
+        {
+            if (pressed) Event.current.Use();
+            float paused = Mathf.Max(0f, Time.unscaledTime - lookAwayInterruptStartedAt);
+            lineStartedAt += paused;
+            if (typedAt >= 0f) typedAt += paused;
+            lookAwayInterruptActive = false;
+            novelAudio.Play("Advance");
+        }
+    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     void DrawEyeContactDebugOverlay()
     {
         if (!eyeContactDebugVisible || !eyeContactSessionActive) return;
@@ -297,10 +393,11 @@ public partial class GameController
         }
         if (eyeContactGazeValid)
             NovelUI.Fill(new Rect(eyeContactGaze.x - 7, eyeContactGaze.y - 7, 14, 14), NovelUI.DeepPink, 7);
-        NovelUI.Card(new Rect(14, 18, 390, 104), NovelUI.Alpha(Color.white, .94f), 12, NovelUI.Pink, 2);
+        NovelUI.Card(new Rect(14, 18, 390, 128), NovelUI.Alpha(Color.white, .94f), 12, NovelUI.Pink, 2);
         NovelUI.Label(new Rect(28, 24, 360, 28), $"눈맞춤 {eyeContactCount}회 · 응시 {eyeContactTotalSeconds:F1}초", NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleLeft, FontStyle.Bold);
         NovelUI.Label(new Rect(28, 56, 360, 30), eyeContactDebugState, NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleLeft);
         NovelUI.Label(new Rect(28, 84, 360, 24), eyeContactFaceDrawn ? "영역: 분홍 진입 · 보라 이탈" : "영역 대기 중", NovelUI.Soft, 13, NovelUI.Plum, TextAnchor.MiddleLeft);
+        NovelUI.Label(new Rect(28, 106, 360, 24), $"이탈 {eyeContactLookAwayDwell:F1}/{EyeContactLookAwayDwellSeconds:F0}초 · 쿨다운 {eyeContactLookAwayCooldown:F0}초 · 발동 {(lookAwayTriggered ? "완료" : "대기")}", NovelUI.Soft, 13, NovelUI.Plum, TextAnchor.MiddleLeft);
         GUI.matrix = saved;
     }
 

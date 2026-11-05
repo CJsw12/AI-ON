@@ -218,8 +218,8 @@ public static class ChemistryStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값과 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "정도윤 교수", Description = "걱정 많은 안전 지킴이 · 보안경 확인은 세 번, 학생은 끝까지 믿어 줌", TagA = "#보안경썼죠", TagB = "#환기확인", Image = "ProfessorJungChem" },
-            new Professor { Name = "오하람 교수", Description = "쇼맨십 넘치는 실험 마술사 · 반응도 관객 반응도 즐김", TagA = "#자보세요", TagB = "#색변신쇼", Image = "ProfessorOhChem" }
+            new Professor { Name = "정도윤 교수", Description = "걱정 많은 안전 지킴이 · 보안경 확인은 세 번, 학생은 끝까지 믿어 줌", TagA = "#보안경썼죠", TagB = "#환기확인", Image = "ProfessorJungChem", LookAwayLine = "학생, 시선은 이쪽이에요. 설명부터 확인해요." },
+            new Professor { Name = "오하람 교수", Description = "쇼맨십 넘치는 실험 마술사 · 반응도 관객 반응도 즐김", TagA = "#자보세요", TagB = "#색변신쇼", Image = "ProfessorOhChem", LookAwayLine = "자, 학생! 이쪽도 볼 만한 실험이에요!" }
         },
         Fond = new[] { "…이제 학생은 제가 걱정 안 해도 되겠어요. 그래도 보안경은 써요.", "오늘의 주인공은 학생이에요. 박수!" },
         Wary = new[] { "음… 솔직히 좀 걱정돼요.", "어라, 이 장면은 박수가 안 나오네요." },

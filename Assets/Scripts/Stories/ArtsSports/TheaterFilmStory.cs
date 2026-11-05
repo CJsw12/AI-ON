@@ -228,8 +228,8 @@ public static class TheaterFilmStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "용어와 숫자를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "엄태오 교수", Description = "과장된 연극톤 · 모든 순간이 드라마인 낭만파", TagA = "#오오이얼마나", TagB = "#인생은무대", Image = "ProfessorEomTaeO" },
-            new Professor { Name = "차유리 교수", Description = "쿨한 무심 감독 · 짧지만 정확한 한마디", TagA = "#컷다시", TagB = "#오케이", Image = "ProfessorChaYuRi" }
+            new Professor { Name = "엄태오 교수", Description = "과장된 연극톤 · 모든 순간이 드라마인 낭만파", TagA = "#오오이얼마나", TagB = "#인생은무대", Image = "ProfessorEomTaeO", LookAwayLine = "오오, 시선을 이 무대로 돌려 주시게!" },
+            new Professor { Name = "차유리 교수", Description = "쿨한 무심 감독 · 짧지만 정확한 한마디", TagA = "#컷다시", TagB = "#오케이", Image = "ProfessorChaYuRi", LookAwayLine = "시선은 여기. 아직 촬영 중이야, 계속 봐." }
         },
         Chapters = new[] { "", "딱, 슬레이트", "괄호 속 문장", "콘티 여섯 장", "비 오는 테이크", "어둠 속의 독백", "막이 오르면" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

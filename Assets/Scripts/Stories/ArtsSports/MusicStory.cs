@@ -217,8 +217,8 @@ public static class MusicStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "신도윤 교수", Description = "까칠한 완벽주의 프로듀서 · 예민한 귀, 인정은 짧게", TagA = "#다시", TagB = "#반박도정확히", Image = "ProfessorShinDoYoon" },
-            new Professor { Name = "류보라 교수", Description = "자유로운 즉흥파 · 느낌과 바이브, 틀려도 그게 재즈", TagA = "#바이브", TagB = "#틀려도재즈", Image = "ProfessorRyuBoRa" }
+            new Professor { Name = "신도윤 교수", Description = "까칠한 완벽주의 프로듀서 · 예민한 귀, 인정은 짧게", TagA = "#다시", TagB = "#반박도정확히", Image = "ProfessorShinDoYoon", LookAwayLine = "…시선은 여기 두세요. 연주처럼 집중해서요." },
+            new Professor { Name = "류보라 교수", Description = "자유로운 즉흥파 · 느낌과 바이브, 틀려도 그게 재즈", TagA = "#바이브", TagB = "#틀려도재즈", Image = "ProfessorRyuBoRa", LookAwayLine = "어머, 시선도 즉흥 연주 중이야? 여기 봐~" }
         },
         Chapters = new[] { "", "원, 투, 쓰리, 포", "믹싱 콘솔", "느리게, 아니 빠르게", "빠진 카포 표시", "누구의 후렴", "거리의 버스킹" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

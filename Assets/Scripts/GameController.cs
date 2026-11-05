@@ -230,11 +230,12 @@ public partial class GameController : MonoBehaviour
             if (NovelUI.IconButton(new Rect(1228, 10, 44, 44), "IconSettings", null)) OpenMenu(Menu.Settings);
             return;
         }
-        AiPoll();
+        if (!lookAwayInterruptActive) AiPoll();
         Hud();
         Dialogue();
         Particles();
         ChapterCard();
+        if (lookAwayInterruptActive) DrawLookAwayInterruption();
     }
 
     // ---- In-game screen -----------------------------------------------------------------------
@@ -299,9 +300,20 @@ public partial class GameController : MonoBehaviour
         if (speaker == "교수") speaker = ProfessorName;
     }
     bool AtChoice => !showResult && dialogueIndex >= S.Lines(scene, choiceStage) - 1;
+    bool ChoiceUiVisible
+    {
+        get
+        {
+            if (scene < 1 || scene > 6 || !AtChoice) return false;
+            if (AiHintShown) return true;
+            string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
+            return key == lineKey && typedAt >= 0f;
+        }
+    }
 
     void Dialogue()
     {
+        if (lookAwayInterruptActive) return;
         CurrentLine(out string speaker, out string text);
         string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
         if (AiHintShown) { speaker = ProfessorName; text = aiHint; key += "/h" + aiHintsUsed; }

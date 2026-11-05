@@ -22,6 +22,7 @@ public partial class GameController
     {
         get
         {
+            if (lookAwayInterruptActive) return "Frown";
             if (SinceReaction > 2.5f) return null;
             return reactDelta > 0 ? "Happy" : reactDelta < 0 ? "Frown" : null;
         }

@@ -229,8 +229,8 @@ public static class MechanicalStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "값과 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "탁기훈 교수", Description = "허당 열혈파 · 큰 목소리와 실수담, 웃음으로 가르침", TagA = "#열정과다", TagB = "#하하괜찮아요", Image = "ProfessorTakGiHun" },
-            new Professor { Name = "하은별 교수", Description = "냉철한 효율주의자 · 숫자와 마감, 근거만 말함", TagA = "#근거제시", TagB = "#마감엄수", Image = "ProfessorHaEunByeol" }
+            new Professor { Name = "탁기훈 교수", Description = "허당 열혈파 · 큰 목소리와 실수담, 웃음으로 가르침", TagA = "#열정과다", TagB = "#하하괜찮아요", Image = "ProfessorTakGiHun", LookAwayLine = "어어, 학생! 시선도 같이 훈련해 봐요!" },
+            new Professor { Name = "하은별 교수", Description = "냉철한 효율주의자 · 숫자와 마감, 근거만 말함", TagA = "#근거제시", TagB = "#마감엄수", Image = "ProfessorHaEunByeol", LookAwayLine = "시선 이탈입니다. 핵심 설명을 확인하세요." }
         },
         Fond = new[] { "우와, 요즘 학생 보면 저까지 신나요!", "최근 판단의 정확도가 높습니다. 기대치를 올리겠습니다." },
         Wary = new[] { "어어, 잠깐만요! 이건 저도 좀 걱정돼요!", "근거가 부족합니다." },

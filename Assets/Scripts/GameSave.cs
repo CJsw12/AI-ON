@@ -23,6 +23,7 @@ public static class GameSave
         public int EyeContactCount;
         public float EyeContactSeconds;
         public bool EyeContactTrackingEnabled;
+        public bool LookAwayTriggered;
         public DateTime SavedAt;
     }
 
@@ -35,7 +36,8 @@ public static class GameSave
             d.Professor.ToString(), d.Affection.ToString(), d.Questions.ToString(), d.Teamwork.ToString(), d.Interest.ToString(), d.Solo.ToString(),
             d.Experienced ? "1" : "0", d.ShowResult ? "1" : "0", Convert.ToBase64String(Encoding.UTF8.GetBytes(d.ResultLine ?? "")),
             d.ResultKey ?? "", d.WrongPick.ToString(), d.AiMode ? "1" : "0", d.HintsUsed.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(d.Hint ?? "")),
-            Math.Max(0, d.EyeContactCount).ToString(), Mathf.Max(0f, d.EyeContactSeconds).ToString("R", CultureInfo.InvariantCulture), d.EyeContactTrackingEnabled ? "1" : "0"
+            Math.Max(0, d.EyeContactCount).ToString(), Mathf.Max(0f, d.EyeContactSeconds).ToString("R", CultureInfo.InvariantCulture), d.EyeContactTrackingEnabled ? "1" : "0",
+            d.LookAwayTriggered ? "1" : "0"
         };
         PlayerPrefs.SetString(Key(slot), string.Join("|", fields));
         PlayerPrefs.Save();
@@ -47,7 +49,7 @@ public static class GameSave
     {
         string[] f = PlayerPrefs.GetString(Key(slot), "").Split('|');
         // Optional fields added over time keep older saves loadable.
-        if (f.Length < 15 || f.Length > 23 || f[0] != Version) return null;
+        if (f.Length < 15 || f.Length > 24 || f[0] != Version) return null;
         try
         {
             int eyeContactCount = f.Length > 20 ? Math.Max(0, int.Parse(f[20])) : 0;
@@ -68,7 +70,8 @@ public static class GameSave
                 HintsUsed = f.Length > 18 ? Math.Max(0, int.Parse(f[18])) : 0,
                 Hint = f.Length > 19 && f[19] != "" ? Encoding.UTF8.GetString(Convert.FromBase64String(f[19])) : null,
                 EyeContactCount = eyeContactCount, EyeContactSeconds = eyeContactSeconds,
-                EyeContactTrackingEnabled = f.Length > 22 && f[22] == "1"
+                EyeContactTrackingEnabled = f.Length > 22 && f[22] == "1",
+                LookAwayTriggered = f.Length > 23 && f[23] == "1"
             };
             bool valid = d.Faculty >= 0 && d.Faculty < Stories.All.Length && d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
             return valid ? d : null;

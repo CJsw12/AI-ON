@@ -240,6 +240,7 @@ public partial class GameController
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
             ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick, AiMode = aiMode,
             EyeContactCount = eyeContactCount, EyeContactSeconds = eyeContactTotalSeconds, EyeContactTrackingEnabled = eyeContactTrackingEnabled,
+            LookAwayTriggered = lookAwayTriggered,
             // A question still waiting for its reply is not counted: the reply is lost with the save.
             HintsUsed = aiSlot == AiSlotKey ? Mathf.Max(0, aiHintsUsed - (AiWaiting && aiPendingHint ? 1 : 0)) : 0,
             Hint = aiSlot == AiSlotKey ? aiHint : null
@@ -259,6 +260,7 @@ public partial class GameController
         eyeContactCount = Mathf.Max(0, data.EyeContactCount);
         eyeContactTotalSeconds = Mathf.Max(0f, data.EyeContactSeconds);
         eyeContactTrackingEnabled = data.EyeContactTrackingEnabled;
+        lookAwayTriggered = data.LookAwayTriggered;
         experienced = data.Experienced; showResult = data.ShowResult; resultLine = data.ResultLine; resultKey = data.ResultKey; wrongPick = data.WrongPick; aiMode = data.AiMode && AiProfessor.Supported;
         // The story may have changed since the save was made, so keep the line inside the chapter.
         dialogueIndex = Mathf.Clamp(data.Line, 0, S.Lines(scene, choiceStage) - 1);

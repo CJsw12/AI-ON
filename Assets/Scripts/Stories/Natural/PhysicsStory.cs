@@ -259,8 +259,8 @@ public static class PhysicsStory
         Levels = new[] { "전공자", "비전공자" },
         LevelNotes = new[] { "일반물리학 I · 역학 계산과 조별 데이터 분석", "물리Ⅰ 역학 객관식 · 시각 힌트 포함" },
         Professors = new[] {
-            new Professor { Name = "오명환 교수", Description = "사색하는 철학자 · 결과보다 그 의미를 천천히 묻는 사람", TagA = "#우주적으로보면", TagB = "#왜일까요", Image = "ProfessorOh" },
-            new Professor { Name = "임재하 교수", Description = "장난꾸러기 실험광 · 일단 해 보자, 사고칠 뻔한 일화 부자", TagA = "#일단굴려", TagB = "#사고뭉치", Image = "ProfessorIm" }
+            new Professor { Name = "오명환 교수", Description = "사색하는 철학자 · 결과보다 그 의미를 천천히 묻는 사람", TagA = "#우주적으로보면", TagB = "#왜일까요", Image = "ProfessorOh", LookAwayLine = "시선이 멀리 갔나요? 질문은 지금 여기 있어요." },
+            new Professor { Name = "임재하 교수", Description = "장난꾸러기 실험광 · 일단 해 보자, 사고칠 뻔한 일화 부자", TagA = "#일단굴려", TagB = "#사고뭉치", Image = "ProfessorIm", LookAwayLine = "어이, 실험 중엔 이쪽도 봐야지!" }
         },
         Fond = new[] { "학생과 나누는 질문은, 우주적으로 보아도 귀한 순간입니다.", "너랑 실험하면 사고도 안 나고 재밌어. 최고의 조합이야!" },
         Wary = new[] { "…우리는 지금 무엇을 놓치고 있는 걸까요.", "어이, 이건 장난으로 넘길 일이 아니야." },

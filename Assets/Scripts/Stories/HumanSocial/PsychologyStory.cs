@@ -218,8 +218,8 @@ public static class PsychologyStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "개념과 숫자를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "오세린 교수", Description = "속을 꿰뚫는 미스터리형 · 조용히 관찰하고 마음을 짚어 내는 말", TagA = "#다보여요", TagB = "#여운", Image = "ProfessorOhSeRin" },
-            new Professor { Name = "배준우 교수", Description = "수줍은 소심형 · 말끝을 흐리지만 연구 얘기엔 눈이 반짝", TagA = "#미안해요", TagB = "#연구덕후", Image = "ProfessorBaeJunWoo" }
+            new Professor { Name = "오세린 교수", Description = "속을 꿰뚫는 미스터리형 · 조용히 관찰하고 마음을 짚어 내는 말", TagA = "#다보여요", TagB = "#여운", Image = "ProfessorOhSeRin", LookAwayLine = "시선이 머문 곳은 거기군요. 제 쪽을 봐요." },
+            new Professor { Name = "배준우 교수", Description = "수줍은 소심형 · 말끝을 흐리지만 연구 얘기엔 눈이 반짝", TagA = "#미안해요", TagB = "#연구덕후", Image = "ProfessorBaeJunWoo", LookAwayLine = "저, 학생… 괜찮으시면 여기 봐 주실래요?" }
         },
         Chapters = new[] { "", "두 장의 쪽지", "색깔 글자 실험", "정해진 답", "뒤집힌 점수", "꼬리표", "마음을 읽나요?" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

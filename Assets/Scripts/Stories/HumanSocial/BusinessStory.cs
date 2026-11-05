@@ -219,8 +219,8 @@ public static class BusinessStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력하기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "한석진 교수", Description = "냉정한 협상가 · 손익과 조건을 따지는 계산적인 말투", TagA = "#손익계산", TagB = "#조건부터", Image = "ProfessorHan" },
-            new Professor { Name = "윤소희 교수", Description = "열정 넘치는 스타트업 대표형 · 임팩트와 꿈을 외치는 에너지", TagA = "#임팩트", TagB = "#피봇", Image = "ProfessorYoon" }
+            new Professor { Name = "한석진 교수", Description = "냉정한 협상가 · 손익과 조건을 따지는 계산적인 말투", TagA = "#손익계산", TagB = "#조건부터", Image = "ProfessorHan", LookAwayLine = "시선이 다른 곳에 있군요. 조건에 집중하시죠." },
+            new Professor { Name = "윤소희 교수", Description = "열정 넘치는 스타트업 대표형 · 임팩트와 꿈을 외치는 에너지", TagA = "#임팩트", TagB = "#피봇", Image = "ProfessorYoon", LookAwayLine = "학생! 시선도 중요한 지표예요. 여기 집중해요!" }
         },
         Chapters = new[] { "", "지각생의 OT", "행운문구", "영수증 속 숫자", "엇갈린 기획", "반쯤 내린 셔터", "신학기 꾸러미" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

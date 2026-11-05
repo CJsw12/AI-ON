@@ -215,8 +215,8 @@ public static class ArtsHealthStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "서진호 교수", Description = "군대식 열혈 코치 · 구령과 근성, 한 세트 더", TagA = "#한세트더", TagB = "#근성", Image = "ProfessorSeo" },
-            new Professor { Name = "강하늘 교수", Description = "느긋한 힐링 요가형 · 호흡과 쉼, 몸의 소리", TagA = "#천천히", TagB = "#몸의소리", Image = "ProfessorKang" }
+            new Professor { Name = "서진호 교수", Description = "군대식 열혈 코치 · 구령과 근성, 한 세트 더", TagA = "#한세트더", TagB = "#근성", Image = "ProfessorSeo", LookAwayLine = "학생! 시선도 훈련이다. 이쪽을 봐라!" },
+            new Professor { Name = "강하늘 교수", Description = "느긋한 힐링 요가형 · 호흡과 쉼, 몸의 소리", TagA = "#천천히", TagB = "#몸의소리", Image = "ProfessorKang", LookAwayLine = "천천히 이쪽을 봐 주세요. 호흡은 편하게요." }
         },
         Chapters = new[] { "", "아침 7시 운동장", "30초 크로키", "몸이 보내는 신호", "삐끗한 발목", "의자 위의 안무", "막이 오르면" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,

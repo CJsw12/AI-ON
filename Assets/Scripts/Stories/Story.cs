@@ -86,6 +86,7 @@ public class Professor
     // Resources picture name: the game loads Image + "" / "Happy" / "Frown" + "Transparent".
     // Left empty, professor 0 uses ProfessorKim and professor 1 ProfessorLee.
     public string Image;
+    public string LookAwayLine;
 
     public static string Picture(Professor info, int who, string mood = "") =>
         (string.IsNullOrEmpty(info.Image) ? (who == 0 ? "ProfessorKim" : "ProfessorLee") : info.Image) + mood + "Transparent";
