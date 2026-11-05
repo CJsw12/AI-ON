@@ -8,6 +8,8 @@ using UnityEngine;
 // fixations at those edges, with head pose and MediaPipe's eye-look blendshapes as extra inputs, stretches them back.
 public partial class GameController
 {
+    // 16 points × (.6 + .9) s ≈ 24 s, so the screen fit stays near 30 s even with a retry or two.
+    const float WebcamSettleSeconds = .6f, WebcamCaptureSeconds = .9f;
     const float BlinkMaxSeconds = .45f;     // longer "closed" readings are lids lowered for a downward glance
     const float WebcamBlinkClosed = .85f;   // eyeBlink blendshape this high is a real closure however long it lasts
 
@@ -76,7 +78,7 @@ public partial class GameController
         // Only accept it when blendshapes confirm a downward look and the eye is not strongly closed.
         bool usableDownwardLook = hasShapes && shapeLookY < -.1f && lids < WebcamBlinkClosed && !webcamBlinking;
         bool usableForFit = !webcamLidsDown || usableDownwardLook;
-        if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + IPhoneCalibrationCaptureSeconds)
+        if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + WebcamCaptureSeconds)
             webcamCapture.Add(features);
 
         if (!webcamFitted) return;
@@ -106,14 +108,14 @@ public partial class GameController
     void TickWebcamFit()
     {
         if (!webcamFitting) return;
-        if (!webcamFitMeasuring && Time.unscaledTime >= webcamTargetShownAt + IPhoneCalibrationSettleSeconds)
+        if (!webcamFitMeasuring && Time.unscaledTime >= webcamTargetShownAt + WebcamSettleSeconds)
         {
             webcamCapture.Clear();
             webcamMeasureAt = Time.unscaledTime;
             webcamFitMeasuring = true;
-            webcamFitStatus = "시선을 고정해 주세요. 1.2초 동안 자동 측정합니다.";
+            webcamFitStatus = "시선을 고정해 주세요. 잠깐 자동 측정합니다.";
         }
-        if (webcamFitMeasuring && Time.unscaledTime > webcamMeasureAt + IPhoneCalibrationCaptureSeconds)
+        if (webcamFitMeasuring && Time.unscaledTime > webcamMeasureAt + WebcamCaptureSeconds)
             CompleteWebcamFitPoint();
     }
 
@@ -132,8 +134,8 @@ public partial class GameController
     void CompleteWebcamFitPoint()
     {
         webcamFitMeasuring = false;
-        // A webcam gives 10–30 samples a second, so 1.2 s holds far fewer than the iPhone's 60.
-        if (webcamCapture.Count < 6)
+        // A webcam gives 10–30 samples a second, so .9 s holds far fewer than the iPhone's 60.
+        if (webcamCapture.Count < 5)
         {
             webcamTargetShownAt = Time.unscaledTime;
             webcamFitStatus = !gazeTracker.IsUserPresent ? "얼굴이 잡히지 않았어요. 웹캠을 바라보고 같은 점을 다시 응시해 주세요."
@@ -174,7 +176,7 @@ public partial class GameController
     void DrawWebcamFitScreen()
     {
         if (DrawGazeTargetScreen(IPhoneCalibrationTargets, webcamFitPoint, webcamFitMeasuring, webcamTargetShownAt, webcamMeasureAt,
-                IPhoneCalibrationSettleSeconds, webcamFitStatus, "분홍 점을 바라봐 주세요 · 노트북 화면 아래쪽 점도 눈으로 끝까지 봐 주세요."))
+                WebcamSettleSeconds, webcamFitStatus, "분홍 점을 바라봐 주세요 · 노트북 화면 아래쪽 점도 눈으로 끝까지 봐 주세요."))
         {
             CancelWebcamFit();
             webcamFitStatus = "화면 맞춤을 취소했어요.";

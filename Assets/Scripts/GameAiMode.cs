@@ -256,7 +256,7 @@ public partial class GameController
         GUI.skin.settings.cursorColor = NovelUI.DeepPink;
         GUI.SetNextControlName(name);
         value = GUI.TextField(rect, value, max, style);
-        if (focus) GUI.FocusControl(name);
+        if (focus && menu == Menu.None) GUI.FocusControl(name);   // an open menu (API key field) keeps its focus
         bool active = GUI.GetNameOfFocusedControl() == name;
         if (active)
         {

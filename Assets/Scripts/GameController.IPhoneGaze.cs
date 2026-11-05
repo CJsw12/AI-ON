@@ -340,7 +340,7 @@ public partial class GameController
         NovelUI.Label(new Rect(240, 156, 800, 34), $"보정 지점 {index + 1} / {targets.Length}", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
 
         float phaseProgress = measuring
-            ? .35f + Mathf.Clamp01((Time.unscaledTime - measureAt) / IPhoneCalibrationCaptureSeconds) * .65f
+            ? .35f + Mathf.Clamp01((Time.unscaledTime - measureAt) / (settleSeconds == WebcamSettleSeconds ? WebcamCaptureSeconds : IPhoneCalibrationCaptureSeconds)) * .65f
             : Mathf.Clamp01((Time.unscaledTime - shownAt) / settleSeconds) * .35f;
         float progress = (index + phaseProgress) / targets.Length;
         NovelUI.Fill(new Rect(240, 196, 800, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);

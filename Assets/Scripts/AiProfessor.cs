@@ -216,7 +216,9 @@ public static class AiProfessor
 
     static string Label(string text, string name)
     {
-        Match m = Regex.Match(text, @"(?m)^\W*" + name + @"\s*[:：]\s*(.+?)\s*$");
+        // [ 	] instead of \s: an empty label must stay empty, not borrow the next line as its value.
+        Match m = Regex.Match(text, @"(?m)^\W*" + name + @"[ 	]*[:：][ 	]*([^
+]*?)[ 	]*?$");
         return m.Success ? m.Groups[1].Value : "";
     }
 
@@ -234,8 +236,9 @@ public static class AiProfessor
         bool unprepared = Label(text, "기본").Contains("모름");
         string effort = Label(text, "성의");
         bool lowEffort = effort.Contains("낮") || Regex.Replace(answer ?? "", @"\s", "").Length < 4;
-        int.TryParse(Regex.Match(Label(text, "선택지"), @"\d+").Value, out int option);
-        if (option < 0 || option > scores.Length) option = 0;
+        // An option number outside the slot means the model did not follow the format; don't score it.
+        if (!int.TryParse(Regex.Match(Label(text, "선택지"), @"\d+").Value, out int option) || option < 0 || option > scores.Length)
+        { g.Valid = false; g.Why = "형식 오류"; return g; }
 
         if (rude) { g.Delta = min; g.Why = "무례 → 최저점"; return g; }
         if (offTopic || unprepared || lowEffort)

@@ -390,7 +390,7 @@ public partial class GameController : MonoBehaviour
             GUI.skin.settings.cursorFlashSpeed = 1.2f;
             GUI.SetNextControlName("Answer");
             typed = GUI.TextField(field, typed, 40, NovelUI.Input);
-            if (!AiBoxField) GUI.FocusControl("Answer");   // AI mode's question field takes the keys while it is open.
+            if (!AiBoxField && menu == Menu.None) GUI.FocusControl("Answer");   // AI mode's question field takes the keys while it is open.
             bool active = GUI.GetNameOfFocusedControl() == "Answer";
             // A pulsing deep-pink ring and an "입력 중" tag show the field is taking keys.
             float pulse = .65f + .35f * Mathf.Sin(Time.unscaledTime * 4);
