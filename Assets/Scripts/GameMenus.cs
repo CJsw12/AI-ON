@@ -490,25 +490,18 @@ public partial class GameController
         NovelUI.Label(new Rect(card.x, card.y + 84, card.width, 30), "연습 결과는 호감도와 엔딩에 반영되지 않아요", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
         if (!FacultyTabs(new Rect(card.x + 30, card.y + 124, card.width - 60, 0), ref practiceCollege, ref practiceFaculty, true)) return;
         Story story = Stories.All[practiceFaculty];
-        bool hasDifficulty = false;
-        foreach (Slot slot in story.Slots)
-            if (slot.Game != null && (slot.Game.Kind == MiniGameKind.ImpactLab || slot.Game.Kind == MiniGameKind.BugHunt || slot.Game.Kind == MiniGameKind.CircuitProbe))
-                hasDifficulty = true;
-        bool hasImpactLab = hasDifficulty;
+        // Same layout for every faculty. The difficulty applies to every minigame (non-majors run on a 0.75x clock,
+        // and some games also change their content), so it is always shown.
         float y = card.y + 240;
         foreach (Slot slot in story.Slots)
         {
             if (slot.Game == null) continue;
-            float tileHeight = hasImpactLab ? 90 : 110;
-            if (Tile(new Rect(card.x + 50, y, card.width - 100, tileHeight), slot.Game.Title, slot.Game.Note, false)) StartPractice(slot.Game);
-            y += hasImpactLab ? 98 : 128;
+            if (Tile(new Rect(card.x + 50, y, card.width - 100, 90), slot.Game.Title, slot.Game.Note, false)) StartPractice(slot.Game);
+            y += 98;
         }
-        if (hasImpactLab)
-        {
-            NovelUI.Label(new Rect(card.x, card.y + 548, card.width, 30), "연습 난이도", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
-            int mode = NovelUI.Segmented(new Rect(card.center.x - 190, card.y + 580, 380, 44), new[] { "비전공자", "전공자" }, practiceExperienced ? 1 : 0, 19);
-            if ((mode == 1) != practiceExperienced) { novelAudio.Play("Toggle"); practiceExperienced = mode == 1; }
-        }
+        NovelUI.Label(new Rect(card.x, card.y + 548, card.width, 30), "연습 난이도", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
+        int mode = NovelUI.Segmented(new Rect(card.center.x - 190, card.y + 580, 380, 44), new[] { "비전공자", "전공자" }, practiceExperienced ? 1 : 0, 19);
+        if ((mode == 1) != practiceExperienced) { novelAudio.Play("Toggle"); practiceExperienced = mode == 1; }
         NovelUI.Label(new Rect(card.x, card.y + 640, card.width, 30), "함께할 교수님", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
         int who = NovelUI.Segmented(new Rect(card.center.x - 220, card.y + 676, 440, 48), new[] { story.Professors[0].Name, story.Professors[1].Name }, practiceProfessor, 19);
         if (who != practiceProfessor) { novelAudio.Play("Toggle"); practiceProfessor = who; }

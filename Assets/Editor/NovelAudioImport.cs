@@ -8,7 +8,8 @@ public class NovelAudioImport : AssetPostprocessor
     {
         if (!assetPath.StartsWith("Assets/Resources/Audio/")) return;
         AudioImporter importer = (AudioImporter)assetImporter;
-        bool music = assetPath.EndsWith("Campus.wav") || assetPath.EndsWith("Study.wav") || assetPath.EndsWith("Crisis.wav");
+        bool music = assetPath.EndsWith("Campus.wav") || assetPath.EndsWith("Study.wav") || assetPath.EndsWith("Crisis.wav")
+            || assetPath.EndsWith("Darkness.wav");
         AudioImporterSampleSettings settings = importer.defaultSampleSettings;
         settings.loadType = music ? UnityEngine.AudioClipLoadType.Streaming : UnityEngine.AudioClipLoadType.DecompressOnLoad;
         settings.compressionFormat = music ? AudioCompressionFormat.Vorbis : AudioCompressionFormat.PCM;

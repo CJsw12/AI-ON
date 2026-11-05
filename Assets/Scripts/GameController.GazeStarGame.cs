@@ -50,6 +50,7 @@ public partial class GameController
 
     void StartStarGame()
     {
+        dodgeAfterCalibration = false;   // the player chose the star game instead of the title's 눈빛 피하기
         if (starBest < 0) starBest = PlayerPrefs.GetInt(StarBestPref, 0);
         starGameActive = true;
         starGameFinished = starInside = starNewBest = false;
@@ -66,6 +67,7 @@ public partial class GameController
     {
         if (gazeTracker != null) gazeTracker.RemovePursuitTarget("star");
         starGameActive = starGameFinished = false;
+        StopDodgeGame();   // every place that stops the gaze games (tracker stop, recalibration) also ends 눈빛 피하기
     }
 
     void SpawnStar(Vector2 from)

@@ -55,7 +55,7 @@ public partial class GameController : MonoBehaviour
     {
         UpdateGazeTest();
         UpdatePhotoCapture();
-        novelAudio.SetMood(S.Mood(scene, choiceStage));
+        novelAudio.SetMood(DodgeScreenOpen ? "Darkness" : S.Mood(scene, choiceStage));   // tense music for the gaze-dodge game
         AiImeUpdate();
         if (menu == Menu.None && (miniGame == null || !miniGame.Reviewing)) MiniGame.Tick(Time.unscaledDeltaTime);
     }
@@ -657,6 +657,7 @@ public partial class GameController : MonoBehaviour
             if (NovelUI.Button(new Rect(card.x + 258, card.yMax - 66, 112, 46), "미니게임", false, 19)) OpenMenu(Menu.Practice);
             if (NovelUI.Button(new Rect(card.x + 380, card.yMax - 66, 124, 46), "엔딩 도감", false, 19)) OpenMenu(Menu.Gallery);
             if (NovelUI.Button(new Rect(card.x + 514, card.yMax - 66, 116, 46), "설정", false, 19)) OpenMenu(Menu.Settings);
+            if (NovelUI.Button(new Rect(990, 744, 250, 54), "눈빛 피하기", true, 20)) StartDodgeFromTitle();
             if (NovelUI.Button(new Rect(990, 810, 250, 54), "시선 추적 테스트", false, 20)) OpenGazeTest();
             int college = NovelUI.Segmented(new Rect(card.x + 40, card.y + 80, card.width - 80, 48), Stories.Colleges, titleCollege, 18);
             if (college != titleCollege) { novelAudio.Play("Toggle"); titleCollege = college; }
