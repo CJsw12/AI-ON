@@ -217,28 +217,34 @@ public static class AiProfessor
     static string Label(string text, string name)
     {
         // [ 	] instead of \s: an empty label must stay empty, not borrow the next line as its value.
-        Match m = Regex.Match(text, @"(?m)^\W*" + name + @"[ 	]*[:：][ 	]*([^
+        Match m = Regex.Match(text, @"(?m)^\W*" + name + @"[ 	]*[:：][ 	]*([^
 ]*?)[ 	]*?$");
         return m.Success ? m.Groups[1].Value : "";
     }
+
+    // A label's value without markdown or punctuation around it ("**예의**", "보통."); the word itself is kept as is.
+    static string Value(string text, string name) => Label(text, name).Trim(' ', '\t', '*', '_', '`', '"', '\'', '.', ',', '。', '(', ')', '[', ']', '“', '”');
 
     public static Grade GradeAnswer(string text, string answer, int[] scores, string stats, int min, int max)
     {
         var g = new Grade();
         Match line = ReplyLine.Match(text);
         g.Reply = Clean(line.Success ? line.Groups[1].Value : Regex.Replace(text, @"(?m)^\W*(태도|응답|기본|성의|선택지|성향)\s*[:：].*(\r?\n)?", ""));
-        // Every label the score depends on, plus a reply to show; otherwise a garbled reply would silently grade as 0.
-        g.Valid = g.Reply != "" && Label(text, "태도") != "" && Label(text, "응답") != "" && Label(text, "기본") != ""
-            && Label(text, "성의") != "" && Regex.IsMatch(Label(text, "선택지"), @"\d");
-        if (!g.Valid) { g.Why = "형식 오류"; return g; }
-        bool rude = Label(text, "태도").Contains("무례");
-        bool offTopic = Label(text, "응답").StartsWith("아니");
-        bool unprepared = Label(text, "기본").Contains("모름");
-        string effort = Label(text, "성의");
-        bool lowEffort = effort.Contains("낮") || Regex.Replace(answer ?? "", @"\s", "").Length < 4;
-        // An option number outside the slot means the model did not follow the format; don't score it.
-        if (!int.TryParse(Regex.Match(Label(text, "선택지"), @"\d+").Value, out int option) || option < 0 || option > scores.Length)
-        { g.Valid = false; g.Why = "형식 오류"; return g; }
+        // Every label the score depends on must be exactly one of its allowed values, the option a whole number
+        // within the slot, and there must be a reply to show; otherwise a garbled reply would silently be scored.
+        string manner = Value(text, "태도"), answered = Value(text, "응답"), basics = Value(text, "기본"), effort = Value(text, "성의");
+        if (answered == "아니요") answered = "아니오";   // Same word, the other common spelling.
+        string optionText = Value(text, "선택지");
+        if (optionText.EndsWith("번")) optionText = optionText.Substring(0, optionText.Length - 1);   // "2번" means 2.
+        g.Valid = g.Reply != "" && (manner == "예의" || manner == "무례") && (answered == "예" || answered == "아니오")
+            && (basics == "앎" || basics == "모름") && (effort == "높음" || effort == "보통" || effort == "낮음")
+            && Regex.IsMatch(optionText, @"^[0-9]{1,2}$");
+        int option = g.Valid ? int.Parse(optionText) : -1;
+        if (option < 0 || option > scores.Length) { g.Valid = false; g.Why = "형식 오류"; return g; }
+        bool rude = manner == "무례";
+        bool offTopic = answered == "아니오";
+        bool unprepared = basics == "모름";
+        bool lowEffort = effort == "낮음" || Regex.Replace(answer ?? "", @"\s", "").Length < 4;
 
         if (rude) { g.Delta = min; g.Why = "무례 → 최저점"; return g; }
         if (offTopic || unprepared || lowEffort)
@@ -249,7 +255,7 @@ public static class AiProfessor
         }
         int score = option > 0 ? scores[option - 1] : 0;
         g.Why = option > 0 ? option + "번 선택지 " + score + "점" : "비슷한 선택지 없음 0점";
-        if (effort.Contains("높") && score >= 0 && score < max) { score++; g.Why += " + 성의 높음 1점"; }
+        if (effort == "높음" && score >= 0 && score < max) { score++; g.Why += " + 성의 높음 1점"; }
         g.Delta = Mathf.Clamp(score, min, max);
         string kind = Label(text, "성향").ToLowerInvariant();
         g.Stat = option > 0 && option - 1 < stats.Length ? stats[option - 1] : kind.Length > 0 && "qtis".IndexOf(kind[0]) >= 0 ? kind[0] : '-';

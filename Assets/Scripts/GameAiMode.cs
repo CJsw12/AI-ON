@@ -165,7 +165,7 @@ public partial class GameController
             if (enter) Event.current.Use();
             novelAudio.Play("Select");
             string answer = aiAnswer = WithComposition(aiTyped);
-            AddToBacklog("ai/" + AiSlotKey + "/answer", "나", answer);
+            AddToBacklog("ai/" + AiSlotKey + "/answer", "나", answer, true);
             string system = AiProfessor.AnswerPrompt(S, professor, affection, slot, Recent(), out aiMin, out aiMax);
             AiSend(system, "학생의 대답: " + answer, false);
         }
@@ -218,7 +218,7 @@ public partial class GameController
             novelAudio.Play("Select");
             string question = WithComposition(aiQuestion);
             aiHintsUsed++;
-            AddToBacklog("ai/" + AiSlotKey + "/q" + aiHintsUsed, "나", question);
+            AddToBacklog("ai/" + AiSlotKey + "/q" + aiHintsUsed, "나", question, true);
             AiSend(AiProfessor.HintPrompt(S, professor, affection, quiz, Recent()), "학생의 질문: " + question, true);
             aiQuestion = "";
         }

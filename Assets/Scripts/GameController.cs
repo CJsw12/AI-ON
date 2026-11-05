@@ -398,7 +398,9 @@ public partial class GameController : MonoBehaviour
             if (active) NovelUI.Pill(field.x + 24, field.y - 16, 32, "입력 중 · 바로 타자를 치세요", NovelUI.DeepPink, Color.white, 15);
             if (typed == "") NovelUI.Label(new Rect(field.x + 40, field.y, 400, field.height), "정답을 입력하세요", NovelUI.Soft, 20, NovelUI.Alpha(NovelUI.Plum, .6f), TextAnchor.MiddleLeft);
             GUI.enabled = typed.Trim() != "";
-            if (NovelUI.Button(new Rect(850, bottom - 66, 180, 62), "제출", true, 24) || (enter && GUI.enabled))
+            // Enter submits only from the answer field: while AI mode's question box is open (typing a question or
+            // waiting for the hint) Enter belongs to that box, and the click on 제출 stays a deliberate choice.
+            if (NovelUI.Button(new Rect(850, bottom - 66, 180, 62), "제출", true, 24) || (enter && GUI.enabled && active && !AiBoxField))
             {
                 if (enter) Event.current.Use();
                 Answer(quiz, quiz.IsCorrect(typed) ? 1 : 0, quiz.IsCorrect(typed));

@@ -432,10 +432,14 @@ public partial class GameController
 
     // ---- Backlog ------------------------------------------------------------------------------
 
-    void AddToBacklog(string key, string speaker, string text)
+    // `replace`: a line sent again under the same key (an AI answer or question re-sent after a failure, or answered
+    // anew after stepping back) supersedes the old one and moves to the end, so the next AI request sees what the
+    // player actually said last.
+    void AddToBacklog(string key, string speaker, string text, bool replace = false)
     {
+        if (replace) backlog.RemoveAll(entry => entry[0] == key);
         // Stepping back and forward again revisits lines that are already listed.
-        foreach (string[] entry in backlog) if (entry[0] == key) return;
+        else foreach (string[] entry in backlog) if (entry[0] == key) return;
         backlog.Add(new[] { key, speaker, text });
         if (backlog.Count > 300) backlog.RemoveAt(0);
     }

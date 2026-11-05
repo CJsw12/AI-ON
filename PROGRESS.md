@@ -18,6 +18,12 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-05 AI 서버 GPT-6.1 Terra 전환 + 채점·입력 버그 수정**:
+  - [`worker.js`](Server/ai-proxy/worker.js): `gpt-6.1-terra`(12초) 우선, 실패·시간 초과·빈 응답·일일 한도(하루 500회, `TERRA_DAILY_LIMIT`) 초과 시 Gemini(22초)로 자동 전환. OpenAI 401/403/429면 10분간 Terra 건너뜀. 응답 헤더 `X-AION-Model`. 배포 완료(버전 2a9046dd, 시크릿 `OPENAI_API_KEY`). 빌린 OpenAI 계정이라 계정 쪽 한도를 못 걸어 일일 횟수가 비용 상한.
+  - [`AiProfessor.cs`](Assets/Scripts/AiProfessor.cs) `GradeAnswer`: 판정 값은 허용 단어와 정확히 일치, 선택지는 0~N 정수만 인정(나머지는 형식 오류).
+  - [`GameController.cs`](Assets/Scripts/GameController.cs): 단답형 퀴즈에서 AI 질문 칸이 열려 있거나 힌트 대기 중이면 Enter로 정답이 제출되지 않음.
+  - [`GameMenus.cs`](Assets/Scripts/GameMenus.cs)/[`GameAiMode.cs`](Assets/Scripts/GameAiMode.cs): 다시 보낸 AI 대답·질문이 대화 기록의 예전 줄을 대체(다음 AI 요청 맥락 오류 수정).
+  - 검증: 실제 게임 프롬프트 4장면×9답안 채점 실험 Terra 107/108 정답(중간값 2.7초), 형식 오류 0, Gemini 전환 0. 채점 검사 오프라인 19/19, 대화 기록 반사 테스트 4/4, 전체 스크립트 컴파일 오류 0, 테스트 5종 exit 0, 에디터 실제 채점 2건 확인. 미검증: Play 모드 Enter 동작, Gemini 동일 조건 비교.
 - **[Codex] 2026-11-05 브랜치 통합 및 iPhone 진단 인수인계**: 원격 모든 브랜치 및 로컬 카드게임 브랜치의 main 미반영 커밋을 확인해 통합. PROGRESS 충돌은 main의 최신 5개 섹션 구조에 시선 진단 기록을 합치는 방식으로 해결. 상하 자동 진단 UI·요약 로그, 입력→포인터 연속 기록, iPhone 세로 모델의 눈 신호 포함 조건 추가. 상세 실측값과 재현 순서는 [상하 추적 인수인계](docs/AI/iPhone-Gaze-Debug-Handoff.md) 최신 절 참고. stash는 미커밋 보관본이므로 자동 적용하지 않음.
   - 로컬 카드게임 `a5b3a49`의 충돌은 main의 최신 시간 표시(`Real`), 교수 주문 랜덤화/실패 해설을 보존해 해결. Unity Cloud 설정 유지. 통합 후 모든 로컬/원격 브랜치의 main 미반영 커밋 0개 확인. 기존 테스트 5종 모두 exit 0, `git diff --check` 통과. 기존 AiProfessor/CoffeeRecipeSO 경고 있음. Unity 전체 빌드 및 하드웨어 동작은 이번 병합에서 별도 검증하지 않음.
 - **플레이어 사진 아바타 및 2인 대화 구도 브랜치 무충돌 병합 (`origin/feature/player-photo-avatar` -> `main`)**:
@@ -63,6 +69,7 @@
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
+- AI 모드: 에디터에서 단답형 퀴즈 힌트 대기 중 Enter 동작 확인. 설정에 내 Gemini 키가 있으면 서버(Terra)를 거치지 않으므로 Terra 확인 시 키를 지울 것.
 - iPhone에서 같은 중앙 목표를 보며 고개 회전/평행이동/거리 변화를 분리 측정. `[iPhone gaze trace]`로 원시 예측·포인터·blink·fresh를 비교하고 현 인터페이스에 없는 머리 위치/거리 정보 도입 여부 판단.
 - Unity Editor 상에서 플레이어 웹캠 아바타 촬영 기능 및 2인 구도 실기 점검.
 - 팀원 취침 복귀 후 변경 사항(아바타 브랜치 머지, AI GC 최적화, Fallback 강화) 공유.
