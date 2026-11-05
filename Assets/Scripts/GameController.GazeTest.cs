@@ -53,6 +53,7 @@ public partial class GameController
     {
         gazeTestOpen = false;
         eyeContactSessionActive = false;
+        dodgeAfterCalibration = false;
         StopWebcamTracking();
         StopIPhoneGaze();
     }
@@ -146,6 +147,7 @@ public partial class GameController
         UpdateIPhoneGaze();
         UpdateWebcamGaze();
         TickStarGame();
+        TickDodgeGame();
         TraceIPhoneGaze();
         UpdateEyeContactTracking();
     }
@@ -207,6 +209,11 @@ public partial class GameController
         if (StarScreenOpen)
         {
             DrawStarGame();   // has its own buttons
+            return;
+        }
+        if (DodgeScreenOpen)
+        {
+            DrawDodgeGame();   // has its own buttons
             return;
         }
         NovelUI.Label(new Rect(0, 18, 1280, 55), eyeContactPreparationMode ? "시선 추적 준비" : "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
@@ -271,7 +278,8 @@ public partial class GameController
                     : fitPrompt, NovelUI.Soft, 16,
                     webcamFitted ? NovelUI.Mint : NovelUI.Plum, TextAnchor.MiddleCenter, webcamFitted ? FontStyle.Bold : FontStyle.Normal);
                 GUI.enabled = tracking && webcamFitted;
-                if (NovelUI.Button(new Rect(440, 380, 400, 58), "시선 별잡기", webcamFitted, 23)) StartStarGame();
+                if (NovelUI.Button(new Rect(230, 380, 400, 58), "시선 별잡기", webcamFitted, 23)) StartStarGame();
+                if (NovelUI.Button(new Rect(650, 380, 400, 58), "눈빛 피하기", webcamFitted, 23)) StartGazeDodge();
                 GUI.enabled = true;
 
                 string speed = webcamRate > 0 ? $"정밀 모델 · 초당 {webcamRate}번 측정 · 지연 {Mathf.RoundToInt(gazeTracker.MeasuredLatencySeconds * 1000f)}ms" : "측정 속도 확인 중";
@@ -286,6 +294,11 @@ public partial class GameController
                         NovelUI.Fill(new Rect(point.x - 14, point.y - 14, 28, 28), NovelUI.DeepPink, 14);
                 }
             }
+        }
+        if (dodgeAfterCalibration)
+        {
+            NovelUI.Card(new Rect(250, 836, 590, 44), NovelUI.Alpha(Color.white, .92f), 22, NovelUI.Alpha(NovelUI.DeepPink, .4f));
+            NovelUI.Label(new Rect(250, 836, 590, 44), gazeUseIphone ? "화면 보정이 끝나면 눈빛 피하기가 바로 시작돼요" : "1·2번 보정이 끝나면 눈빛 피하기가 바로 시작돼요", NovelUI.Round, 19, NovelUI.DeepPink, TextAnchor.MiddleCenter);
         }
         if (NovelUI.Button(new Rect(40, 820, 180, 52), eyeContactPreparationMode ? "준비 취소" : "돌아가기", false, 21))
         {

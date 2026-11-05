@@ -18,6 +18,12 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-05 눈빛 피하기 시선 게임 + 연습 난이도 통일**:
+  - [`GameController.GazeEyeDodge.cs`](Assets/Scripts/GameController.GazeEyeDodge.cs)/[`GazeEyeDodgeFx.cs`](Assets/Scripts/GameController.GazeEyeDodgeFx.cs): 심한뫼 교수 두 눈의 빨간 레이저가 시선(파란 점, 기존 `StarGaze` 웹캠/iPhone)을 쫓음. 3번 잡히면 끝, 0.1초당 10점, 점점 빨라짐. 기본/찡그림/기쁨 사진 전환과 대사, 스프라이트 효과·효과음(`Resources/EyeDodge`, `Resources/Audio/EyeDodge`), 게임 중 `Darkness` 음악. `화면 효과 끔` 적용, 실제 시간 기준 점수(1/60초 분할 계산), 시선을 놓치면 플레이·무적 시간·말풍선 함께 멈춤.
+  - 타이틀 `눈빛 피하기` 버튼: 시선 추적 테스트를 열고 웹캠을 켠 뒤 보정이 끝나면 자동 시작. 웹캠/iPhone 패널에도 시작 버튼.
+  - 회전은 캔버스 좌표 행렬 사용(`RotateAroundPivot`은 창이 1280×900이 아니면 위치가 어긋남).
+  - [`GameMenus.cs`](Assets/Scripts/GameMenus.cs) 연습 메뉴: 모든 학과에서 `연습 난이도` 표시(MiniGame.Easy가 모든 미니게임에 적용되므로). `Assets/_Recovery` 삭제 및 `.gitignore` 추가.
+  - 검증: 전체 스크립트 컴파일 오류 0, 테스트 5종 exit 0, 스크래치 빌드 캡처(1600×900 레이저 위치, 타이틀→보정→자동 시작, 5FPS 10초→생존 10.00초, 시선 끊김 3초 동안 무적·말풍선 유지, 효과 끔 시 흔들림 0), 16개 학과 연습 메뉴 캡처. 미검증: 실제 웹캠/iPhone 플레이 감각, 소리 균형.
 - **[Codex] 2026-11-05 심한뫼 교수 사진 교체**: IMG_6931 기본, IMG_6939 기쁨, IMG_6950 화남 사진을 배경 제거 PNG로 교체하고, IMG_6937 근접 사진을 교수 선택 카드 마우스 오버 전용 `ProfessorKimHoverTransparent`로 연결. 얼굴 위치 표는 심한뫼 4장만 재생성하고 기존 에셋 GUID와 다른 교수 데이터를 보존. Unity 6000.3.23f1 배치 가져오기·스크립트 컴파일 완료(로그 return code 0), 회귀 테스트 5종 및 `git diff --check` 통과. 기존 AiProfessor 경고와 다른 교수 로컬 초상 9장의 얼굴 위치 표 미등록 경고는 남아 있음. 선택 화면 실제 마우스 오버 및 플레이 화면 시각 검증은 미검증.
 - **[Claude] 2026-11-05 AI 서버 GPT-6.1 Terra 전환 + 채점·입력 버그 수정**:
   - [`worker.js`](Server/ai-proxy/worker.js): `gpt-6.1-terra`(12초) 우선, 실패·시간 초과·빈 응답·일일 한도(하루 500회, `TERRA_DAILY_LIMIT`) 초과 시 Gemini(22초)로 자동 전환. OpenAI 401/403/429면 10분간 Terra 건너뜀. 응답 헤더 `X-AION-Model`. 배포 완료(버전 2a9046dd, 시크릿 `OPENAI_API_KEY`). 빌린 OpenAI 계정이라 계정 쪽 한도를 못 걸어 일일 횟수가 비용 상한.
@@ -67,6 +73,7 @@
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
+- 눈빛 피하기: 실제 웹캠/iPhone으로 난이도(속도·판정 반경)와 소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`도 같은 `RotateAroundPivot` 문제 여부 확인.
 - AI 모드: 에디터에서 단답형 퀴즈 힌트 대기 중 Enter 동작 확인. 설정에 내 Gemini 키가 있으면 서버(Terra)를 거치지 않으므로 Terra 확인 시 키를 지울 것.
 - iPhone에서 같은 중앙 목표를 보며 고개 회전/평행이동/거리 변화를 분리 측정. `[iPhone gaze trace]`로 원시 예측·포인터·blink·fresh를 비교하고 현 인터페이스에 없는 머리 위치/거리 정보 도입 여부 판단.
 - Unity Editor 상에서 플레이어 웹캠 아바타 촬영 기능 및 2인 구도 실기 점검.
