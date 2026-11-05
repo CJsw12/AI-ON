@@ -780,12 +780,12 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 0
   windowsGamepadBackendHint: 0
-  cloudProjectId: 7b49d618-d9bd-40f2-a09a-b74b4234dbfa
+  cloudProjectId: 
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: AION
-  organizationId: survivinggameteam
-  cloudEnabled: 1
+  projectName: 
+  organizationId: 
+  cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
   platformRequiresReadableAssets: 0

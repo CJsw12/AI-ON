@@ -40,9 +40,6 @@
 - **16개 학과 19종 미니게임 및 시선 추적 별잡기 연동 점검**:
   - 19종 미니게임 전체([`MiniGames.cs`](Assets/Scripts/MiniGames.cs#L134-L177))의 비전공자/전공자 난이도(`MiniGame.Easy` 0.75x 감속) 및 연습 모드([`GameMenus.cs`](Assets/Scripts/GameMenus.cs#L488-L516)) 난이도 분기 동작 검증.
   - 웹캠(UnitEye) 및 iPhone UDP 듀얼 지원 시선 추적 별잡기 미니게임([`GameController.GazeStarGame.cs`](Assets/Scripts/GameController.GazeStarGame.cs))의 실시간 드리프트 보정 및 캔버스 좌표계 정상 바인딩 검증.
-- **Unity Cloud 및 UGS 프로젝트 연동 (ProjectSettings.asset)**:
-  - 조직(survivinggameteam) 및 신규 클라우드 프로젝트(AION, Project ID: 7b49d618-d9bd-40f2-a09a-b74b4234dbfa)를 프로젝트 설정에 공식 바인딩.
-  - 팀원들이 git pull 시 추가 에디터 설정 없이 즉시 동일한 UGS 환경 및 Vivox 보이스챗 연동 작업이 가능하도록 구성.
 - **PowerShell 단위 테스트 5종 전수 통과 (Exit 0)**:
   - `Tests/ImpactLabIntegration.Tests.ps1`: 통과 (Exit 0)
   - `Tests/PhysicsExperiencedDialogue.Tests.ps1`: 통과 (Exit 0)
