@@ -87,6 +87,11 @@ public partial class GameController : MonoBehaviour
 
     void DrawScene(bool portrait = true)
     {
+        if (NovelUI.Repaint)
+        {
+            eyeContactFaceDrawn = false;
+            eyeContactFaceFrame = -1;
+        }
         Texture2D background = Background;
         if (previousBackground != background) { previousBackground = background; backgroundChangedAt = Time.unscaledTime; }
         GUI.DrawTexture(Drift(new Rect(0, 0, Screen.width, Screen.height)), background, ScaleMode.ScaleAndCrop);
@@ -120,7 +125,8 @@ public partial class GameController : MonoBehaviour
                     {
                         Rect frame = PortraitRect();
                         Rect upperBody = new Rect(frame.x, frame.y + frame.height * .04f, frame.width, frame.height * .66f);
-                        DrawUpperBodyPortrait(upperBody, professorTexture, professorImage);
+                        Rect drawn = DrawUpperBodyPortrait(upperBody, professorTexture, professorImage);
+                        CaptureEyeContactFallback(drawn);
                     }
                 }
                 else if (fullFigure)
@@ -130,11 +136,21 @@ public partial class GameController : MonoBehaviour
                     {
                         float height = Screen.height * .82f;
                         float width = height * professorTexture.width / professorTexture.height * 1.45f;
-                        GUI.DrawTexture(new Rect((Screen.width - width) / 2, Screen.height - height, width, height), professorTexture, ScaleMode.StretchToFill, true);
+                        Rect drawn = new Rect((Screen.width - width) / 2, Screen.height - height, width, height);
+                        GUI.DrawTexture(drawn, professorTexture, ScaleMode.StretchToFill, true);
+                        CaptureEyeContactFallback(drawn);
                     }
                 }
                 else
-                    GUI.DrawTexture(PortraitRect(), Portrait, ScaleMode.ScaleAndCrop);
+                {
+                    Texture2D professorTexture = Portrait;
+                    if (professorTexture != null)
+                    {
+                        Rect drawn = PortraitRect();
+                        GUI.DrawTexture(drawn, professorTexture, ScaleMode.ScaleAndCrop);
+                        CaptureEyeContactFallback(drawn);
+                    }
+                }
             }
             GUI.color = Color.white;
             GUI.matrix = sceneMatrix;
@@ -150,10 +166,18 @@ public partial class GameController : MonoBehaviour
 
     void OnGUI()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        HandleEyeContactDebugKey();
+#endif
         if (GazeCalibrationActive)
         {
             GUI.matrix = Matrix4x4.identity;
             // Skip the rest of step 1: train on the samples collected so far.
+            if (eyeContactPreparationMode && GUI.Button(new Rect(20, Screen.height - 80, 200, 50), "준비 취소"))
+            {
+                CancelEyeContactPreparation();
+                return;
+            }
             if (gazeCalibration.Running && GUI.Button(new Rect(Screen.width - 230, Screen.height - 80, 200, 50), "여기까지 하고 넘어가기"))
                 gazeCalibration.FinishEarly();
             return;
@@ -178,10 +202,13 @@ public partial class GameController : MonoBehaviour
         if (menu != Menu.None) DrawMenu();
         else if ((InGame || practice != null) && Pressed(KeyCode.Escape)) OpenMenu(Menu.Settings);   // Minigames pause while it is open.
         Toast();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DrawEyeContactDebugOverlay();
+#endif
         NovelUI.EndFrame();
         GUI.matrix = Matrix4x4.identity;
     }
-    bool InGame => scene >= 1 && scene <= 6 && memorial <= 0 && introDone;
+    bool InGame => !eyeContactPreparationMode && scene >= 1 && scene <= 6 && memorial <= 0 && introDone;
 
     void DrawScreen()
     {
@@ -359,6 +386,7 @@ public partial class GameController : MonoBehaviour
         novelAudio.Play("Back");
         AiCancelPending();
         if (dialogueIndex > 0) { dialogueIndex--; return false; }
+        EndEyeContactSession();
         scene = 0; professor = -1;
         return true;
     }
@@ -701,6 +729,8 @@ public partial class GameController : MonoBehaviour
         professor = chosen; scene = 1;
         backlog.Clear();   // A different professor reuses the same line keys.
         portraitAlpha = 0; lineKey = null; chapterShown = 0;
+        ResetEyeContactRun();
+        BeginEyeContactPreparation(false);
     }
 
     // A two-line option tile (title + description) used on the title screen.
@@ -753,6 +783,7 @@ public partial class GameController : MonoBehaviour
 
     void Ending()
     {
+        if (eyeContactSessionActive) EndEyeContactSession();
         // The ending card covers the middle of the screen, so the portrait would only peek out at the sides.
         DrawScene(false);
         GUI.matrix = Canvas;
@@ -787,6 +818,12 @@ public partial class GameController : MonoBehaviour
         float x = 640 - total / 2;
         for (int i = 0; i < stats.Length; i++)
             x += NovelUI.Pill(x, card.y + 440, 40, stats[i], i == 0 ? NovelUI.DeepPink : NovelUI.Blush, i == 0 ? Color.white : NovelUI.Berry, 20) + 14;
+        if (eyeContactTrackingEnabled)
+        {
+            string eyeContactStat = "눈 마주침 " + eyeContactCount + "회";
+            float eyeContactWidth = NovelUI.Width(eyeContactStat, NovelUI.Round, 18) + 36;
+            NovelUI.Pill(640 - eyeContactWidth / 2, card.y + 482, 34, eyeContactStat, NovelUI.Blush, NovelUI.Berry, 18);
+        }
 
         // The memorial (Memorial()) is not finished yet, so its button stays greyed out as 준비 중.
         if (trueEnd)
@@ -802,6 +839,8 @@ public partial class GameController : MonoBehaviour
     // Back to the title screen with a fresh first semester.
     void ResetRun()
     {
+        EndEyeContactSession();
+        ResetEyeContactRun();
         scene = affection = entryStep = dialogueIndex = choiceStage = questions = teamwork = interest = solo = 0;
         professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear(); wrongPick = -1;
         shownAffection = lastDelta = 0; lineKey = null; miniGame = null;

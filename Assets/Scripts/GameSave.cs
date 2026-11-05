@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 
@@ -19,6 +20,9 @@ public static class GameSave
         public bool AiMode;          // Played in AI mode; absent (false) in older saves.
         public string Hint;          // The AI hint on screen; absent in older saves.
         public int HintsUsed;        // AI questions already asked at this quiz; absent (0) in older saves.
+        public int EyeContactCount;
+        public float EyeContactSeconds;
+        public bool EyeContactTrackingEnabled;
         public DateTime SavedAt;
     }
 
@@ -30,7 +34,8 @@ public static class GameSave
             Version, DateTime.Now.Ticks.ToString(), d.Faculty.ToString(), d.Scene.ToString(), d.Stage.ToString(), d.Line.ToString(),
             d.Professor.ToString(), d.Affection.ToString(), d.Questions.ToString(), d.Teamwork.ToString(), d.Interest.ToString(), d.Solo.ToString(),
             d.Experienced ? "1" : "0", d.ShowResult ? "1" : "0", Convert.ToBase64String(Encoding.UTF8.GetBytes(d.ResultLine ?? "")),
-            d.ResultKey ?? "", d.WrongPick.ToString(), d.AiMode ? "1" : "0", d.HintsUsed.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(d.Hint ?? ""))
+            d.ResultKey ?? "", d.WrongPick.ToString(), d.AiMode ? "1" : "0", d.HintsUsed.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(d.Hint ?? "")),
+            Math.Max(0, d.EyeContactCount).ToString(), Mathf.Max(0f, d.EyeContactSeconds).ToString("R", CultureInfo.InvariantCulture), d.EyeContactTrackingEnabled ? "1" : "0"
         };
         PlayerPrefs.SetString(Key(slot), string.Join("|", fields));
         PlayerPrefs.Save();
@@ -41,10 +46,15 @@ public static class GameSave
     public static Data Read(int slot)
     {
         string[] f = PlayerPrefs.GetString(Key(slot), "").Split('|');
-        // 15 to 18 fields: saves made before ResultKey / WrongPick / AiMode / HintsUsed were added; they still load.
-        if (f.Length < 15 || f.Length > 20 || f[0] != Version) return null;
+        // Optional fields added over time keep older saves loadable.
+        if (f.Length < 15 || f.Length > 23 || f[0] != Version) return null;
         try
         {
+            int eyeContactCount = f.Length > 20 ? Math.Max(0, int.Parse(f[20])) : 0;
+            float eyeContactSeconds = 0f;
+            if (f.Length > 21 && float.TryParse(f[21], NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedSeconds) &&
+                !float.IsNaN(parsedSeconds) && !float.IsInfinity(parsedSeconds))
+                eyeContactSeconds = Math.Max(0f, parsedSeconds);
             Data d = new Data
             {
                 SavedAt = new DateTime(long.Parse(f[1])),
@@ -56,7 +66,9 @@ public static class GameSave
                 WrongPick = f.Length > 16 ? int.Parse(f[16]) : -1,
                 AiMode = f.Length > 17 && f[17] == "1",
                 HintsUsed = f.Length > 18 ? Math.Max(0, int.Parse(f[18])) : 0,
-                Hint = f.Length > 19 && f[19] != "" ? Encoding.UTF8.GetString(Convert.FromBase64String(f[19])) : null
+                Hint = f.Length > 19 && f[19] != "" ? Encoding.UTF8.GetString(Convert.FromBase64String(f[19])) : null,
+                EyeContactCount = eyeContactCount, EyeContactSeconds = eyeContactSeconds,
+                EyeContactTrackingEnabled = f.Length > 22 && f[22] == "1"
             };
             bool valid = d.Faculty >= 0 && d.Faculty < Stories.All.Length && d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
             return valid ? d : null;

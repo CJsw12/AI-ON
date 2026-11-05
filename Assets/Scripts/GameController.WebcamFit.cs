@@ -163,6 +163,7 @@ public partial class GameController
         webcamFitted = true;
         webcamMarkerValid = false;
         webcamFitStatus = $"화면 맞춤 완료 · {WebcamFitAccuracyText()}";
+        TryCompleteEyeContactPreparation();
     }
 
     void CancelWebcamFit()
@@ -180,6 +181,7 @@ public partial class GameController
         {
             CancelWebcamFit();
             webcamFitStatus = "화면 맞춤을 취소했어요.";
+            if (eyeContactPreparationMode) CancelEyeContactPreparation();
         }
     }
 }

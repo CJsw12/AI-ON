@@ -68,6 +68,7 @@ public partial class GameController
         float centreX = duo ? 1280f - DuoPlayerX : 640f;
         Rect rect = FaceLayout(face, StageFaceHeight, new Vector2(centreX, StageFaceY));
         DrawFigure(texture, face, rect, NovelUI.Window.yMax, StageFadeHeight, tint);
+        CaptureEyeContactFace(new Vector2(centreX, StageFaceY), StageFaceHeight);
         GUI.matrix = saved;
         return true;
     }
