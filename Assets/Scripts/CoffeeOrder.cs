@@ -150,7 +150,7 @@ public class CoffeeOrder : MiniGame
         Done = true; Delta = Mathf.Min(correct, 2); Summary = "3잔 중 " + correct + "잔 주문대로";
         int unfinished = showingResult ? round + 1 : round;
         if (unfinished < recipes.Length && Now >= endsAt)
-            ExplainFailure("전체 제한 시간 60초가 끝나 " + (unfinished + 1) + "번째 주문부터 제출을 마치지 못했어요.\n제출해서 맞힌 잔은 " + correct + "잔이에요.",
+            ExplainFailure("전체 제한 시간 " + Mathf.CeilToInt(Real(Duration)) + "초가 끝나 " + (unfinished + 1) + "번째 주문부터 제출을 마치지 못했어요.\n제출해서 맞힌 잔은 " + correct + "잔이에요.",
                 "다음에 만들 차례였던 주문:\n" + Describe(recipes[unfinished], unfinished > 0) + "\n주문을 먼저 확인하고 필요한 만큼만 담아 제출해요. 컵만 채우고 제출하지 않으면 완료되지 않아요.");
     }
 }

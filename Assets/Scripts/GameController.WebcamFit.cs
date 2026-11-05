@@ -32,7 +32,8 @@ public partial class GameController
         return certainlyClosed || Time.unscaledTime - since < BlinkMaxSeconds;
     }
 
-    Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
+    // UnitEye reports screen pixels with y up (its own GazeGame flips with Screen.height - y); IMGUI is y down.
+    Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(new Vector2(gazeTracker.gazeLocation.x, Screen.height - gazeTracker.gazeLocation.y));
 
     /// <summary>The pointer the game uses: the screen-fitted point when available, UnitEye's otherwise.</summary>
     // Before the screen fit, the UnitEye point gets only the fixation hold (UnitEye already smooths it).
@@ -57,13 +58,23 @@ public partial class GameController
                 (webcamShapes[2] + webcamShapes[6] - webcamShapes[3] - webcamShapes[7]) * .5f);
             lids = Mathf.Max(webcamShapes[8], webcamShapes[9]);
         }
+        float shapeLookY = look.y;   // blendshape up/down, kept for the eyelid check below
+        // In the "정밀" model the ResNet34 face-gaze network reports gaze yaw/pitch, which already accounts for
+        // head turn. It is a far steadier signal than webcam eyeLook blendshapes, so it takes the look slot.
+        if (gazeTracker.GazeBackbone == UnitEye.GazeBackbone.EyeMUPlusResNet34)
+        {
+            float[] all = gazeTracker.Provider.GetFeatures();
+            int at = UnitEye.HomulerEyeMURunner.FeatureCount;
+            if (all != null && all.Length >= at + 2 && !float.IsNaN(all[at]) && !float.IsNaN(all[at + 1]))
+                look = GazeOnScreenPlane(all[at], all[at + 1], all, HomulerEyeMURunner.ContextFeatureStart);
+        }
         webcamLidsDown = gazeTracker.Blinking;
         webcamBlinking = ShortBlink(webcamLidsDown, hasShapes && lids >= WebcamBlinkClosed, ref webcamBlinkSince);
 
         double[] features = GazeMapper.Features(new Vector2(raw.x / 1280f, raw.y / 900f), new Vector2(pose.y, pose.x), look);
         // A sustained partial closure while looking down can be eyelid occlusion rather than a blink.
         // Only accept it when blendshapes confirm a downward look and the eye is not strongly closed.
-        bool usableDownwardLook = hasShapes && look.y < -.1f && lids < WebcamBlinkClosed && !webcamBlinking;
+        bool usableDownwardLook = hasShapes && shapeLookY < -.1f && lids < WebcamBlinkClosed && !webcamBlinking;
         bool usableForFit = !webcamLidsDown || usableDownwardLook;
         if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + IPhoneCalibrationCaptureSeconds)
             webcamCapture.Add(features);
@@ -74,6 +85,22 @@ public partial class GameController
         if (!webcamMarkerValid) webcamSmoother.Reset();
         webcamCanvasGaze = webcamSmoother.Filter(new Vector2(p.x * 1280f, p.y * 900f), Time.unscaledTime);
         webcamMarkerValid = true;
+    }
+
+    /// <summary>
+    /// Where the gaze ray meets the screen plane, in metres relative to the camera (Falch & Lohan 2024;
+    /// WebEyeTrack 2025): head position + distance · tan(gaze angle). The angles alone change when the head
+    /// slides sideways or leans in while the eyes stay on the same spot; this point does not, so the fit
+    /// only has to learn a near-linear camera-to-screen map. Falls back to the raw angles without depth.
+    /// </summary>
+    static Vector2 GazeOnScreenPlane(float yaw, float pitch, float[] features, int context)
+    {
+        if (features.Length < context + 3) return new Vector2(yaw, pitch);
+        float tx = features[context], ty = features[context + 1], distance = features[context + 2];
+        if (!(distance > .15f && distance < 2f)) return new Vector2(yaw, pitch);   // no metric head pose this frame
+        const float MaxAngle = 1.2f;   // ~70°, keeps tan finite on a bad frame
+        return new Vector2(tx + distance * Mathf.Tan(Mathf.Clamp(yaw, -MaxAngle, MaxAngle)),
+            ty + distance * Mathf.Tan(Mathf.Clamp(pitch, -MaxAngle, MaxAngle)));
     }
 
     void TickWebcamFit()

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // 원자 조립: 목표 분자식에 맞게 H·C·N·O 원자 수를 맞춰 제출한다.
-// 다섯 분자, 전체 제한 시간 75초. 맞힌 분자 수로 판정.
+// 다섯 분자, 전체 제한 시간 75초(비전공 100초). 맞힌 분자 수로 판정.
 public class MoleculeBuilder : MiniGame
 {
     class Target { public string Name, Formula; public int[] Count; }   // H, C, N, O
@@ -57,7 +57,7 @@ public class MoleculeBuilder : MiniGame
         {
             ExplainFailure(
                 "조립에 성공한 분자가 " + correct + "/" + Rounds + "개로 기준(3개 이상)에 미치지 못했거나 시간이 초과되었어요.\n원소 기호 뒤에 붙은 숫자가 해당 원자의 개수예요.",
-                "분자식 읽기 가이드:\n1. 기호 뒤에 숫자가 없으면 1개입니다. (예: H2O → 수소(H) 2개, 산소(O) 1개)\n2. 에탄올(C2H5OH) 같은 분자는 H가 나뉘어 적혀 있어도 총 개수를 합산합니다: C 2개, H (5+1)=6개, O 1개\n3. 제한 시간(75초) 내에 당황하지 말고 H·C·N·O 카드 순서대로 숫자를 맞추세요."
+                "분자식 읽기 가이드:\n1. 기호 뒤에 숫자가 없으면 1개입니다. (예: H2O → 수소(H) 2개, 산소(O) 1개)\n2. 에탄올(C2H5OH) 같은 분자는 H가 나뉘어 적혀 있어도 총 개수를 합산합니다: C 2개, H (5+1)=6개, O 1개\n3. 제한 시간(" + Mathf.CeilToInt(Real(Limit)) + "초) 내에 당황하지 말고 H·C·N·O 카드 순서대로 숫자를 맞추세요."
             );
         }
     }

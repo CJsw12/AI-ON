@@ -10,7 +10,6 @@ public partial class GameController
     GameObject gazeObject;
     HomulerGaze gazeTracker;
     HomulerGazeCalibration gazeCalibration;
-    const string WebcamModelPref = "GazeTest.WebcamModel";   // 0 = EyeMU (fast), 1 = EyeMU + ResNet-34 (accurate)
     int webcamSamplesThisSecond, webcamRate;
     float webcamRateSince;
     string gazeStatus = "웹캠 시작을 눌러 주세요.";
@@ -23,7 +22,23 @@ public partial class GameController
 
     // EyeMU reads only the two eye crops, so looking down (eyelids cover the iris) and to the far sides is weak.
     // The ensemble adds ResNet-34's whole-face gaze direction, which keeps working there, at about twice the cost.
-    static GazeBackbone WebcamModel => PlayerPrefs.GetInt(WebcamModelPref, 1) == 1 ? GazeBackbone.EyeMUPlusResNet34 : GazeBackbone.EyeMU;
+    // The screen fit's ray-to-screen feature needs ResNet-34's angles, so the gaze test always runs this model.
+    const GazeBackbone WebcamModel = GazeBackbone.EyeMUPlusResNet34;
+
+    // Step 1 (UnitEye base calibration) must succeed in this session before step 2 (screen fit) unlocks,
+    // and step 2 must finish before the gaze games start.
+    bool webcamBaseDone, webcamBaseRunning, webcamBaseSeenActive;
+
+    void TickWebcamBaseCalibration()
+    {
+        if (!webcamBaseRunning) return;
+        if (GazeCalibrationActive) { webcamBaseSeenActive = true; return; }
+        if (!webcamBaseSeenActive) return;
+        webcamBaseRunning = webcamBaseSeenActive = false;
+        string message = gazeCalibration != null ? gazeCalibration.ReturnMessage ?? "" : "";
+        webcamBaseDone = message.Length > 0 && !message.StartsWith("Cancelled") && !message.StartsWith("Calibration training failed");
+        webcamFitStatus = webcamBaseDone ? "1번 보정 완료 · 이제 2번 화면 맞춤을 해 주세요." : "1번 보정이 끝나지 않았어요. 다시 해 주세요.";
+    }
 
     void OpenGazeTest()
     {
@@ -49,6 +64,7 @@ public partial class GameController
         gazeObject = null;
         gazeTracker = null;
         gazeCalibration = null;
+        webcamBaseDone = webcamBaseRunning = webcamBaseSeenActive = false;
         CancelWebcamFit();
     }
 
@@ -119,12 +135,6 @@ public partial class GameController
         if (gazeTracker != null && gazeTracker.GazeBackbone != backbone) gazeTracker.SetBackbone(backbone);
     }
 
-    void SetWebcamModel(GazeBackbone backbone)
-    {
-        PlayerPrefs.SetInt(WebcamModelPref, backbone == GazeBackbone.EyeMU ? 0 : 1);
-        PlayerPrefs.Save();
-        if (gazeTracker != null && !GazeCalibrationActive) { CancelWebcamFit(); gazeTracker.SetBackbone(backbone); }
-    }
 
     void UpdateGazeTest()
     {
@@ -147,6 +157,7 @@ public partial class GameController
             lastGazeAt = Time.unscaledTime;
             if (!GazeCalibrationActive && gazeTracker.Provider != null) OnWebcamSample();
         }
+        TickWebcamBaseCalibration();
         TickWebcamFit();
         webcamRawShown = webcamRawHold.Filter(WebcamRawCanvasGaze, Time.unscaledTime);
         if (Time.unscaledTime - webcamRateSince >= 1f)
@@ -220,22 +231,24 @@ public partial class GameController
                 if (NovelUI.Button(new Rect(280, 238, 350, 58), "1. 시선 보정", !webcamFitted, 22))
                 {
                     CancelWebcamFit();   // a new base calibration changes what the screen fit was measured on
+                    webcamBaseDone = false;
+                    webcamBaseRunning = true;
+                    webcamBaseSeenActive = false;
                     gazeTracker.LoadCalibration(9f, 20f, 2);
                 }
-                if (NovelUI.Button(new Rect(650, 238, 350, 58), webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)", false, 22)) BeginWebcamFit();
+                GUI.enabled = tracking && webcamBaseDone;
+                if (NovelUI.Button(new Rect(650, 238, 350, 58), webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)", webcamBaseDone && !webcamFitted, 22)) BeginWebcamFit();
+                GUI.enabled = tracking;
                 NovelUI.Label(new Rect(140, 304, 1000, 54), webcamFitted || webcamFitStatus.Length > 0 ? webcamFitStatus
-                    : "1번 보정 뒤 2번을 하면, 화면 옆·아래 끝까지 시선이 닿도록 다시 맞춰요.", NovelUI.Soft, 16,
+                    : webcamBaseDone ? "2번 화면 맞춤을 하면 시선 게임을 할 수 있어요." : "1번 보정부터 해 주세요. 끝나면 2번이 열려요.", NovelUI.Soft, 16,
                     webcamFitted ? NovelUI.Mint : NovelUI.Plum, TextAnchor.MiddleCenter, webcamFitted ? FontStyle.Bold : FontStyle.Normal);
-                if (NovelUI.Button(new Rect(440, 380, 400, 58), "시선 별잡기", true, 23)) StartStarGame();
+                GUI.enabled = tracking && webcamFitted;
+                if (NovelUI.Button(new Rect(440, 380, 400, 58), "시선 별잡기", webcamFitted, 23)) StartStarGame();
                 GUI.enabled = true;
 
-                bool accurate = gazeTracker.GazeBackbone == GazeBackbone.EyeMUPlusResNet34;
-                NovelUI.Label(new Rect(190, 492, 900, 30), "추적 모델", NovelUI.Soft, 18, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
-                if (NovelUI.Button(new Rect(390, 528, 240, 46), "기본 (빠름)", !accurate, 18) && accurate) SetWebcamModel(GazeBackbone.EyeMU);
-                if (NovelUI.Button(new Rect(650, 528, 240, 46), "정밀 (눈+얼굴 방향)", accurate, 18) && !accurate) SetWebcamModel(GazeBackbone.EyeMUPlusResNet34);
-                string speed = webcamRate > 0 ? $"초당 {webcamRate}번 측정 · 지연 {Mathf.RoundToInt(gazeTracker.MeasuredLatencySeconds * 1000f)}ms" : "측정 속도 확인 중";
-                string advice = webcamRate > 0 && webcamRate < 12 && accurate ? " · 끊기면 기본 모델을 써 보세요" : "";
-                NovelUI.Label(new Rect(140, 582, 1000, 28), $"{speed}{advice} · 모델을 바꾸면 다시 보정해야 해요.", NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
+                string speed = webcamRate > 0 ? $"정밀 모델 · 초당 {webcamRate}번 측정 · 지연 {Mathf.RoundToInt(gazeTracker.MeasuredLatencySeconds * 1000f)}ms" : "측정 속도 확인 중";
+                string advice = webcamRate > 0 && webcamRate < 12 ? " · 느리면 다른 프로그램을 닫아 보세요" : "";
+                NovelUI.Label(new Rect(140, 582, 1000, 28), $"{speed}{advice}", NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
 
                 if (tracking && lastGazeSequence > 0 && (!webcamFitted || webcamMarkerValid))
                 {
