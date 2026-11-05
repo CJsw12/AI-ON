@@ -175,6 +175,9 @@ namespace UnitEye
         public int currentRound = 0;
 
         public int maxRoundsPerPreset = 2;
+        /// <summary>Start each next round by itself after a short notice, and return once training ends,
+        /// instead of waiting for a click every round (a host game sets this; the demo scenes keep clicks).</summary>
+        public bool autoAdvanceRounds = false;
 
         public Calibrations calibrationType = Calibrations.RidgeRegression;
         public bool save = true;
@@ -454,6 +457,7 @@ namespace UnitEye
                 if (_currentTime <= 0)
                 {
                     _isYielding = false;
+                    if (autoAdvanceRounds) _showMessage = false;
                 }
             }
 
@@ -481,6 +485,15 @@ namespace UnitEye
                     : "";
                 _guiMessage = $"Click to start next round\nRound {currentRound}/{_presets.Count * maxRoundsPerPreset}{headTurnNote}\nRight click to cancel calibration and return";
                 _isYielding = false;
+                if (autoAdvanceRounds)
+                {
+                    _guiMessage = $"다음 단계 {currentRound + 1}/{_presets.Count * maxRoundsPerPreset}" +
+                        (_presets[_currentPreset].IsHeadMovement ? "\n점을 계속 보면서 고개를 천천히 돌려 주세요" : "\n점을 눈으로 따라가 주세요") +
+                        "\n(오른쪽 클릭: 취소)";
+                    _started = true;
+                    _isYielding = true;
+                    _currentTime = 2f;
+                }
                 //The dot teleports to the next preset's start; stale trail entries would give the first
                 //sweep samples of the new round a wrong (pre-jump) pursuit-lag label.
                 _dotTrail.Clear();
@@ -580,6 +593,7 @@ namespace UnitEye
             if (quitAfterCalibration) Functions.Quit();
 
             GetComponent<HomulerGaze>().showGazeUI = true;
+            if (autoAdvanceRounds && returnAfter) Returned = true;
         }
 
         //A calibration abandoned by closing play mode or destroying the object must still flush and close its

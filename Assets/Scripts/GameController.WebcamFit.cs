@@ -32,8 +32,8 @@ public partial class GameController
         return certainlyClosed || Time.unscaledTime - since < BlinkMaxSeconds;
     }
 
-    // UnitEye reports screen pixels with y up (its own GazeGame flips with Screen.height - y); IMGUI is y down.
-    Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(new Vector2(gazeTracker.gazeLocation.x, Screen.height - gazeTracker.gazeLocation.y));
+    // gazeLocation is already GUI space (y down): HomulerGaze draws its own dot at it with GUI.DrawTexture.
+    Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
 
     /// <summary>The pointer the game uses: the screen-fitted point when available, UnitEye's otherwise.</summary>
     // Before the screen fit, the UnitEye point gets only the fixation hold (UnitEye already smooths it).
