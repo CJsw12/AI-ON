@@ -18,7 +18,8 @@
 
 - `GameController.IPhoneGaze.cs`: 연결 후 사용할 수 있는 **상하 추적 진단** 버튼 추가. 위/아래 목표를 각각 4초 표시하고 첫 1초를 제외한 새 표본을 수집한다. 얼굴/연결이 유효하며 Blink < 0.7 또는 미제공인 표본만 평균한다. 한 방향에서 표본 5개 미만이면 종료한다. 진단은 보정 계수나 드리프트를 수정하지 않는다.
 - 진단 요약은 Unity Console 및 `%LOCALAPPDATA%/Unity/Editor/Editor.log`의 `[iPhone vertical diagnostic]`에서 확인한다. 순서는 `eye/look/head`의 세로 성분이며 `delta`는 아래 평균에서 위 평균을 뺀 값이다.
-- `GazeMapper.Fit(..., requireVerticalEye: true)`: iPhone 세로 모델에서 고개만 사용하는 후보를 제외했다. 눈 회전 또는 눈모양을 포함한 후보는 허용하며 고개와의 조합도 여전히 가능하다. 웹캠은 기존 기본값 false를 사용한다. **눈 신호의 기여가 충분함을 보장하지 않으며, 고개 이동 보정의 해결책도 아니다. 실험적 변경으로 평가 필요.**
+- `GazeMapper.Fit(..., requireVerticalEye: true)`: iPhone 보정에서만 세로 후보에 적용한다. 현재 `GazeMapper.UsePosition = false`인 상태에서 세로 후보 중 `HeadY` 단독 후보를 제외하며, `HeadY`와 눈 회전 또는 눈모양을 조합한 후보는 허용한다. 가로축에는 적용하지 않는다. 웹캠 화면 맞춤은 `false`를 전달한다(이번 수정으로 분리). **눈 신호의 기여가 충분함을 보장하지 않으며, 고개 이동 보정의 해결책도 아니다. 실험적 변경으로 평가 필요.**
+- iPhone의 `PositionFeature`에서 나온 `posX`/`posY`는 특징 입력에 포함되지만, `GazeMapper.UsePosition = false`라 위치 항을 쓰는 보정 후보에서 제외된다. 따라서 현재 변경을 머리 평행이동 문제 해결로 볼 수 없다.
 - `GazeMapper.PredictUnclamped`: 화면 경계 제한 전 좌표를 진단용으로 노출한다. 기존 `Predict`는 이 결과를 기존처럼 0~1로 제한한다.
 - `[iPhone gaze trace]`: 보정 완료 또는 진단 시작 시 최대 40초, 진단 완료 후 30초간 0.5초 간격으로 기록한다. `phase`, `seq`, `fresh`, `face`, `blink`, `held`, `valid`, `eyeY`, `lookY`, `headY`, `rawY`, `shownY`, `driftY` 포함. rawY와 shownY는 정규화 좌표이며 아래쪽이 증가한다. shownY는 필터 후 마지막 포인터이므로 invalid일 때 유효한 위치로 해석하면 안 된다.
 - `GameController.GazeTest.cs`: 진단 화면 분기와 프레임별 추적 기록 호출 연결.

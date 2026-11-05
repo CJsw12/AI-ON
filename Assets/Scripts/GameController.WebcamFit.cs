@@ -154,7 +154,7 @@ public partial class GameController
             return;
         }
         webcamFitting = false;
-        if (!FitAndCheck(webcamMapper, webcamMeasured, webcamMeasuredSamples))
+        if (!FitAndCheck(webcamMapper, webcamMeasured, webcamMeasuredSamples, requireVerticalEye: false))
         {
             CancelWebcamFit();
             webcamFitStatus = "점마다 시선 값이 충분히 달라지지 않았어요. 먼저 ‘1. 시선 보정’을 하고 다시 해 주세요.";
