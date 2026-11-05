@@ -86,14 +86,14 @@ public sealed class GazeMapper
 
     /// <param name="features">One median feature vector per calibration point.</param>
     /// <param name="samples">Optional single-frame samples per point; they make the error estimate and model choice reflect noise.</param>
-    public bool Fit(IList<double[]> features, IList<Vector2> targets, IList<List<double[]>> samples = null)
+    public bool Fit(IList<double[]> features, IList<Vector2> targets, IList<List<double[]>> samples = null, bool requireVerticalEye = false)
     {
         Reset();
         var tx = new double[targets.Count];
         var ty = new double[targets.Count];
         for (int i = 0; i < targets.Count; i++) { tx[i] = targets[i].x; ty[i] = targets[i].y; }
         Axis x = FitAxis(ModelsX, features, tx, samples, 1280f);
-        Axis y = FitAxis(ModelsY, features, ty, samples, 900f);
+        Axis y = FitAxis(ModelsY, features, ty, samples, 900f, requireVerticalEye);
         if (x == null || y == null) return false;
         axisX = x;
         axisY = y;
@@ -116,17 +116,21 @@ public sealed class GazeMapper
     /// <summary>Normalized point (0..1, y down), clamped to the screen.</summary>
     public Vector2 Predict(double[] features)
     {
-        if (!Ready) return new Vector2(.5f, .5f);
-        var p = new Vector2((float)axisX.Predict(features), (float)axisY.Predict(features)) + Drift;
+        var p = PredictUnclamped(features);
         return new Vector2(Mathf.Clamp01(p.x), Mathf.Clamp01(p.y));
     }
 
-    static Axis FitAxis(int[][] models, IList<double[]> features, double[] targets, IList<List<double[]>> samples, float pixels)
+    // Diagnostics need the value before screen clamping to distinguish saturation from missing input.
+    public Vector2 PredictUnclamped(double[] features) => !Ready ? new Vector2(.5f, .5f) :
+        new Vector2((float)axisX.Predict(features), (float)axisY.Predict(features)) + Drift;
+
+    static Axis FitAxis(int[][] models, IList<double[]> features, double[] targets, IList<List<double[]>> samples, float pixels, bool requireEye = false)
     {
         Axis best = null;
         float bestScore = float.MaxValue;
         foreach (int[] model in models)
         {
+            if (requireEye && Array.IndexOf(model, EyeY) < 0 && Array.IndexOf(model, LookY) < 0) continue;
             float loo = LeaveOneOutError(model, features, targets, pixels);
             if (float.IsNaN(loo)) continue;
             Axis axis = Solve(model, features, targets, -1);

@@ -12,12 +12,13 @@
 ## 1. 형상 (Baseline)
 - **프로젝트 루트**: `AI-ON` (Repository Root)
 - **Git 브랜치**: `main`
-- **직전 커밋 해시**: `8027b74` (feature/player-photo-avatar 병합)
-- **주요 변경 대상**: `Assets/Scripts/GameAiMode.cs`, `Assets/Scripts/AiProfessor.cs`, `PROGRESS.md`
+- **병합 기준**: 원격 main `5f967d0`, 시선 진단 `a8b0bd8`, 로컬 카드게임 병합 기록 `a5b3a49` 통합 점검 (2026-11-05)
+- **주요 변경 대상**: `GameController.GazeTest.cs`, `GameController.IPhoneGaze.cs`, `GazeMapper.cs`, 시선 추적 인수인계 문서
 
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Codex] 2026-11-05 브랜치 통합 및 iPhone 진단 인수인계**: 원격 모든 브랜치 및 로컬 카드게임 브랜치의 main 미반영 커밋을 확인해 통합. PROGRESS 충돌은 main의 최신 5개 섹션 구조에 시선 진단 기록을 합치는 방식으로 해결. 상하 자동 진단 UI·요약 로그, 입력→포인터 연속 기록, iPhone 세로 모델의 눈 신호 포함 조건 추가. 상세 실측값과 재현 순서는 [상하 추적 인수인계](docs/AI/iPhone-Gaze-Debug-Handoff.md) 최신 절 참고. stash는 미커밋 보관본이므로 자동 적용하지 않음.
 - **플레이어 사진 아바타 및 2인 대화 구도 브랜치 무충돌 병합 (`origin/feature/player-photo-avatar` -> `main`)**:
   - 교수 102종 얼굴 정규화 표 ([`PortraitFaces.cs`](Assets/Scripts/PortraitFaces.cs)), 자동 생성 스크립트([`generate_portrait_faces.py`](Tools/generate_portrait_faces.py)), 에디터 검증기([`PortraitFacesCheck.cs`](Assets/Editor/PortraitFacesCheck.cs)) 통합.
   - 플레이어 몸체 에셋([`PlayerBody.png`](Assets/Resources/PlayerBody.png)) 및 웹캠 사진 촬영·배경 제거·얼굴 합성 시스템([`GameController.PlayerPhoto.cs`](Assets/Scripts/GameController.PlayerPhoto.cs)) 통합.
@@ -54,12 +55,14 @@
 ---
 
 ## 4. 결함 및 부채 (Blockers)
+- **iPhone 머리 위치 영향 미해결**: 같은 지점을 볼 때 머리 위치에 따라 포인터가 이동한다는 사용자 보고. 눈 신호를 포함하는 후보 제한은 임시 대응이며 정확도 개선을 보장하지 않음. 진단 자체는 보정 계수를 바꾸지 않는다. 보정 추정 오차 294→157→269px는 자세·표본이 달라 개선율로 해석할 수 없음. 최종 30초 추적 및 Unity 전체 컴파일/실기기 검증 필요.
 - **웹캠 실기 촬영 검증**: 단위 테스트 및 스크립트 빌드는 모두 검증되었으나, 실제 물리 웹캠 디바이스를 통한 얼굴 자동 크롭 및 텍스처 합성은 Unity Editor 플레이 모드에서 확인이 필요합니다.
 - **외부 패키지 의존 스크립트**: UnitEye 및 외부 하드웨어 브리지 스크립트는 독자 CLI 빌드 시 제외되어 있으므로, Editor 환경에서 최종 패키징 시 의존성을 점검해야 합니다.
 
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
+- iPhone에서 같은 중앙 목표를 보며 고개 회전/평행이동/거리 변화를 분리 측정. `[iPhone gaze trace]`로 원시 예측·포인터·blink·fresh를 비교하고 현 인터페이스에 없는 머리 위치/거리 정보 도입 여부 판단.
 - Unity Editor 상에서 플레이어 웹캠 아바타 촬영 기능 및 2인 구도 실기 점검.
 - 팀원 취침 복귀 후 변경 사항(아바타 브랜치 머지, AI GC 최적화, Fallback 강화) 공유.
 - 16개 학과별 스토리 미니게임 및 엔딩 분기 통합 밸런스 모니터링.

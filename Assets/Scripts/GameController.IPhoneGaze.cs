@@ -46,11 +46,18 @@ public partial class GameController
     Vector2 iphoneCanvasGaze;
     bool iphoneMarkerValid, iphoneCalibrated, iphoneUncalibrated, iphoneBlinking;
     float iphoneBlinkSince = -1f, iphoneLastLiveAt = -100f;
+    bool iphoneVerticalDiagnostic, iphoneDiagnosticComplete;
+    int iphoneDiagnosticStage, iphoneDiagnosticSequence;
+    float iphoneDiagnosticStarted;
+    readonly Vector3[] iphoneDiagnosticSums = new Vector3[2];
+    readonly int[] iphoneDiagnosticCounts = new int[2];
+    float iphoneTraceUntil, iphoneTraceNextAt;
 
     void UpdateIPhoneGaze()
     {
         if (!gazeTestOpen || !gazeUseIphone || iphoneSource == null) return;
         iphoneSource.Poll();
+        if (iphoneVerticalDiagnostic) TickIPhoneVerticalDiagnostic();
         // Looking down lowers the eyelids and raises the blink value, so the bar rises with downward gaze;
         // otherwise every bottom-row sample would be thrown away as a blink.
         float lookDown = Mathf.Clamp01(-iphoneSource.LookFeature.y);
@@ -194,6 +201,8 @@ public partial class GameController
     void StopIPhoneGaze()
     {
         iphoneMeasuring = iphoneCalibrating = false;
+        iphoneVerticalDiagnostic = false;
+        iphoneTraceUntil = 0f;
         if (gazeUseIphone) StopStarGame();
         iphoneMarkerValid = false;
         if (iphoneSource != null)
@@ -274,6 +283,7 @@ public partial class GameController
         iphoneCalibrated = true;
         iphoneMarkerValid = false;
         iphoneStatus = $"화면 보정 완료 · {IPhoneAccuracyText()}";
+        BeginIPhoneTrace();
     }
 
     void DrawIPhoneCalibrationScreen()
@@ -318,7 +328,88 @@ public partial class GameController
         return NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18);
     }
 
-    bool FitIPhoneCalibration() => iphoneMapper.Fit(iphoneMeasuredFeatures, IPhoneCalibrationTargets, iphoneMeasuredSamples);
+    bool FitIPhoneCalibration() => iphoneMapper.Fit(iphoneMeasuredFeatures, IPhoneCalibrationTargets, iphoneMeasuredSamples, requireVerticalEye: true);
+
+    void StartIPhoneVerticalDiagnostic()
+    {
+        if (iphoneSource == null || !iphoneSource.HasFreshSample || !iphoneSource.FaceFound) return;
+        StopStarGame();
+        iphoneDiagnosticComplete = false;
+        iphoneVerticalDiagnostic = true;
+        iphoneDiagnosticStage = 0;
+        iphoneDiagnosticSequence = iphoneSource.Sequence;
+        iphoneDiagnosticStarted = Time.unscaledTime;
+        Array.Clear(iphoneDiagnosticSums, 0, iphoneDiagnosticSums.Length);
+        Array.Clear(iphoneDiagnosticCounts, 0, iphoneDiagnosticCounts.Length);
+        BeginIPhoneTrace();
+    }
+
+    void TickIPhoneVerticalDiagnostic()
+    {
+        float elapsed = Time.unscaledTime - iphoneDiagnosticStarted;
+        if (elapsed >= 1f && elapsed < 4f && iphoneSource.HasFreshSample && iphoneSource.FaceFound &&
+            iphoneSource.Sequence != iphoneDiagnosticSequence)
+        {
+            iphoneDiagnosticSequence = iphoneSource.Sequence;
+            if (iphoneSource.Blink < 0f || iphoneSource.Blink < .7f)
+            {
+                iphoneDiagnosticSums[iphoneDiagnosticStage] += new Vector3(iphoneSource.EyeFeature.y, iphoneSource.LookFeature.y, iphoneSource.HeadFeature.y);
+                iphoneDiagnosticCounts[iphoneDiagnosticStage]++;
+            }
+        }
+        if (elapsed < 4f) return;
+        if (iphoneDiagnosticCounts[iphoneDiagnosticStage] < 5)
+        {
+            iphoneVerticalDiagnostic = false;
+            iphoneStatus = "진단 표본이 부족해요. 얼굴과 연결을 확인하고 다시 시작해 주세요.";
+            Debug.LogWarning("[iPhone vertical diagnostic] insufficient fresh open-eye samples.");
+            return;
+        }
+        if (iphoneDiagnosticStage == 0)
+        {
+            iphoneDiagnosticStage = 1;
+            iphoneDiagnosticSequence = iphoneSource.Sequence;
+            iphoneDiagnosticStarted = Time.unscaledTime;
+            return;
+        }
+        iphoneVerticalDiagnostic = false;
+        iphoneDiagnosticComplete = true;
+        iphoneTraceUntil = Time.unscaledTime + 30f;
+        Vector3 up = iphoneDiagnosticSums[0] / iphoneDiagnosticCounts[0];
+        Vector3 down = iphoneDiagnosticSums[1] / iphoneDiagnosticCounts[1];
+        Debug.Log($"[iPhone vertical diagnostic] mode={(iphoneUseUsb ? "USB" : "WiFi")}; model={(iphoneCalibrated ? iphoneMapper.ModelName : "uncalibrated")}; calibration error={(iphoneCalibrated ? iphoneMapper.ErrorPixels.ToString("F1", CultureInfo.InvariantCulture) : "n/a")}; up eye/look/head={up.x:F3}/{up.y:F3}/{up.z:F3} n={iphoneDiagnosticCounts[0]}; down eye/look/head={down.x:F3}/{down.y:F3}/{down.z:F3} n={iphoneDiagnosticCounts[1]}; delta down-up={down.x-up.x:F3}/{down.y-up.y:F3}/{down.z-up.z:F3}");
+    }
+
+    void DrawIPhoneVerticalDiagnostic()
+    {
+        GUI.matrix = Canvas;
+        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
+        NovelUI.Label(new Rect(120, 300, 1040, 65), iphoneDiagnosticStage == 0 ? "화면 위의 점을 바라봐 주세요" : "화면 아래의 점을 바라봐 주세요", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(120, 385, 1040, 70), "아이폰과 고개는 고정하고 눈만 움직여 주세요.\n점이 바뀔 때까지 바라보면 자동으로 측정합니다.", NovelUI.Soft, 20, NovelUI.Plum, TextAnchor.MiddleCenter);
+        float y = iphoneDiagnosticStage == 0 ? 80f : 820f;
+        NovelUI.Fill(new Rect(618, y - 22, 44, 44), NovelUI.DeepPink, 22);
+        NovelUI.Fill(new Rect(632, y - 8, 16, 16), NovelUI.Cream, 8);
+        NovelUI.Label(new Rect(240, 480, 800, 40), $"{Mathf.CeilToInt(Mathf.Max(0f, 4f - (Time.unscaledTime - iphoneDiagnosticStarted)))}초 · {iphoneDiagnosticStage + 1} / 2", NovelUI.Soft, 22, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (NovelUI.Button(new Rect(1040, 24, 190, 46), "진단 취소", false, 18)) iphoneVerticalDiagnostic = false;
+    }
+
+    void BeginIPhoneTrace()
+    {
+        iphoneTraceUntil = Time.unscaledTime + 40f;
+        iphoneTraceNextAt = 0f;
+        Debug.Log($"[iPhone gaze trace] START model={iphoneMapper.ModelName}; error={iphoneMapper.ErrorPixels:F1}; calibrated={iphoneCalibrated}");
+    }
+
+    void TraceIPhoneGaze()
+    {
+        float now = Time.unscaledTime;
+        if (!gazeTestOpen || !gazeUseIphone || iphoneSource == null || now >= iphoneTraceUntil || now < iphoneTraceNextAt) return;
+        iphoneTraceNextAt = now + .5f;
+        Vector2 eye = iphoneSource.EyeFeature, head = iphoneSource.HeadFeature, look = iphoneSource.LookFeature;
+        Vector2 prediction = iphoneMapper.PredictUnclamped(GazeMapper.Features(eye, head, look));
+        string phase = iphoneVerticalDiagnostic ? (iphoneDiagnosticStage == 0 ? "UP" : "DOWN") : "FREE";
+        Debug.Log($"[iPhone gaze trace] t={now:F2} phase={phase} seq={iphoneSource.Sequence} fresh={iphoneSource.HasFreshSample} face={iphoneSource.FaceFound} blink={iphoneSource.Blink:F3} held={iphoneBlinking} valid={iphoneMarkerValid} eyeY={eye.y:F3} lookY={look.y:F3} headY={head.y:F3} rawY={prediction.y:F3} shownY={iphoneCanvasGaze.y / 900f:F3} driftY={iphoneMapper.Drift.y:F3}");
+    }
 
     void DrawIPhoneGazePanel()
     {
@@ -369,6 +460,12 @@ public partial class GameController
             bool faceFound = fresh && iphoneSource.FaceFound;
             string status = faceFound ? iphoneStatus : iphoneSource.Status ?? iphoneStatus;
             NovelUI.Label(new Rect(120, 226, 1040, 42), status, NovelUI.Soft, 20, faceFound ? NovelUI.Mint : NovelUI.DeepPink, TextAnchor.MiddleCenter, FontStyle.Bold);
+            GUI.enabled = faceFound;
+            if (NovelUI.Button(new Rect(460, 565, 360, 54), "상하 추적 진단", false, 20)) StartIPhoneVerticalDiagnostic();
+            GUI.enabled = true;
+            if (iphoneDiagnosticComplete) NovelUI.Label(new Rect(170, 630, 940, 35), Time.unscaledTime < iphoneTraceUntil
+                ? $"진단 완료 · {Mathf.CeilToInt(iphoneTraceUntil - Time.unscaledTime)}초간 위아래를 번갈아 바라봐 주세요. 자동 기록 중"
+                : "진단 완료 · Unity Console에 결과를 기록했어요.", NovelUI.Soft, 17, NovelUI.Mint, TextAnchor.MiddleCenter);
 
             if (!iphoneCalibrated)
             {
