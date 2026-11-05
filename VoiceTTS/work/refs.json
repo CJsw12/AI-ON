@@ -1,0 +1,32 @@
+{
+ "daily_A": {
+  "wav": "C:\\Users\\PC12\\voice-clone\\work\\refs\\daily_A.wav",
+  "text": "안녕하세요, 오늘은 제 목소리를 천천히 들려드릴게요. 창밖에는 꽃잎이 흩날리고, 따뜻한 햇살이 의자 위로 쏟아지네요. 혹시 요즘 읽고 계신 책이 있으신가요? 저는 얼마 전까지 끝까지 읽은 소설이 아직도 맘에 남아 있어요. 왠지 쉬운 결말은 아니었지만, 정말 괜찮았거든요!",
+  "sec": 22.25
+ },
+ "casual": {
+  "wav": "C:\\Users\\PC12\\voice-clone\\work\\refs\\casual.wav",
+  "text": "주말에 시간 되면 같이 영화 보러 갈래? 그 카페 케이크 진짜 맛있던데, 다음에 또 가자. 냉장고에 우유 다 떨어졌으니까 오는 길에 하나만 사다 줄래?",
+  "sec": 14.11
+ },
+ "pron3": {
+  "wav": "C:\\Users\\PC12\\voice-clone\\work\\refs\\pron3.wav",
+  "text": "깜짝 놀라서 뒤를 돌아보니, 꼬마가 씩 웃고 있었어요. 칠판 앞에서 키 큰 친구가 퀴즈 정답을 큰 소리로 외쳤어요. 닭볶음탕을 끓이려면 감자를 먼저 넣어야 돼요.",
+  "sec": 15.9
+ },
+ "emotion3": {
+  "wav": "C:\\Users\\PC12\\voice-clone\\work\\refs\\emotion3.wav",
+  "text": "정말요? 와, 진짜 잘됐다! 축하해요! 어, 깜짝이야! 언제 거기 와 있었어요? 조금만 일찍 왔으면 볼 수 있었을 텐데.",
+  "sec": 14.34
+ },
+ "narration": {
+  "wav": "C:\\Users\\PC12\\voice-clone\\work\\refs\\narration.wav",
+  "text": "지금부터 간단하게 설명해 드리겠습니다. 첫째, 전원 버튼을 3초 동안 길게 눌러 주세요. 둘째, 화면에 파란색 불빛이 깜빡이면 연결이 시작됩니다. 만약 연결이 되지 않는다면, 기기를 껐다가 다시 켜 보시기 바랍니다.",
+  "sec": 19.11
+ },
+ "long_breath": {
+  "wav": "C:\\Users\\PC12\\voice-clone\\work\\refs\\long_breath.wav",
+  "text": "비가 그치고 나면, 우리는 강가를 따라 천천히 걸으면서 이런저런 이야기를 나누곤 했어요.",
+  "sec": 7.29
+ }
+}

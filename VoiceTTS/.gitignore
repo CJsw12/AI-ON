@@ -1,0 +1,8 @@
+.venv/
+py/
+cosyvoice/
+rec/wav/
+work/ecapa/
+work/gen/
+__pycache__/
+output/2*/
