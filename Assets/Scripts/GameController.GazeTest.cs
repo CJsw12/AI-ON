@@ -131,6 +131,7 @@ public partial class GameController
         UpdateIPhoneGaze();
         UpdateWebcamGaze();
         TickStarGame();
+        TraceIPhoneGaze();
     }
 
     void UpdateWebcamGaze()
@@ -167,6 +168,11 @@ public partial class GameController
         if (gazeUseIphone && iphoneCalibrating)
         {
             DrawIPhoneCalibrationScreen();
+            return;
+        }
+        if (gazeUseIphone && iphoneVerticalDiagnostic)
+        {
+            DrawIPhoneVerticalDiagnostic();
             return;
         }
         if (!gazeUseIphone && webcamFitting)
