@@ -99,7 +99,8 @@ public partial class GameController
         gazeTracker = gazeObject.GetComponent<HomulerGaze>();
         gazeCalibration = gazeObject.AddComponent<HomulerGazeCalibration>();
         gazeCalibration.enabled = false;
-        gazeCalibration.autoAdvanceRounds = true;   // no click per round; returns by itself after training
+        gazeCalibration.autoAdvanceRounds = true;
+        gazeCalibration.quickPresets = true;          // ~30 s; the 16-point screen fit refines it   // no click per round; returns by itself after training
         var field = typeof(HomulerGaze).GetField("_calibrationScript", BindingFlags.NonPublic | BindingFlags.Instance);
         if (gazeTracker == null || field == null)
         {
@@ -217,7 +218,7 @@ public partial class GameController
         else
         {
             NovelUI.Label(new Rect(50, 146, 1180, 38), gazeStatus, NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-            NovelUI.Label(new Rect(50, 184, 1180, 42), "1번 보정은 화면을 한 번 클릭하면 시작되고, 단계가 자동으로 이어져요(약 2~3분, 오른쪽 클릭 취소). 그다음 2번을 해요.", NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleCenter);
+            NovelUI.Label(new Rect(50, 184, 1180, 42), "1번 보정은 화면을 한 번 클릭하면 시작되고, 단계가 자동으로 이어져요(약 30초, 오른쪽 클릭 취소). 그다음 2번을 해요.", NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleCenter);
             if (gazeTracker == null)
             {
                 GUI.enabled = !requestingCamera;
@@ -235,7 +236,7 @@ public partial class GameController
                     webcamBaseDone = false;
                     webcamBaseRunning = true;
                     webcamBaseSeenActive = false;
-                    gazeTracker.LoadCalibration(9f, 20f, 1);   // one pass of all six patterns; the 16-point fit refines it
+                    gazeTracker.LoadCalibration(12f, 20f, 1);   // one pass of all six patterns; the 16-point fit refines it
                 }
                 GUI.enabled = tracking && webcamBaseDone;
                 if (NovelUI.Button(new Rect(650, 238, 350, 58), webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)", webcamBaseDone && !webcamFitted, 22)) BeginWebcamFit();

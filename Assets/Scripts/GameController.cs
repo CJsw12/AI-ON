@@ -150,7 +150,14 @@ public partial class GameController : MonoBehaviour
 
     void OnGUI()
     {
-        if (GazeCalibrationActive) { GUI.matrix = Matrix4x4.identity; return; }
+        if (GazeCalibrationActive)
+        {
+            GUI.matrix = Matrix4x4.identity;
+            // Skip the rest of step 1: train on the samples collected so far.
+            if (gazeCalibration.Running && GUI.Button(new Rect(Screen.width - 230, Screen.height - 80, 200, 50), "여기까지 하고 넘어가기"))
+                gazeCalibration.FinishEarly();
+            return;
+        }
         // Fixed canvas prevents dialogue and three-choice questions falling below short windows.
         GUI.matrix = Matrix4x4.identity;
         NovelUI.Load();

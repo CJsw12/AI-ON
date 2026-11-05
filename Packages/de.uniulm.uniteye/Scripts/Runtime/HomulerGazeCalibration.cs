@@ -178,6 +178,14 @@ namespace UnitEye
         /// <summary>Start each next round by itself after a short notice, and return once training ends,
         /// instead of waiting for a click every round (a host game sets this; the demo scenes keep clicks).</summary>
         public bool autoAdvanceRounds = false;
+        /// <summary>Short run (~30 s): corners, interior points and one zig-zag sweep only, no head-turn or
+        /// wavy rounds. For hosts that refine the result with their own screen fit afterwards.</summary>
+        public bool quickPresets = false;
+
+        /// <summary>True while the dot is running (after the first click, before training starts).</summary>
+        public bool Running => _started && !_finished;
+        /// <summary>Stops collecting now and trains on what was captured so far (same as pressing S).</summary>
+        public void FinishEarly() { if (_started && !_finished) _earlyStop = true; }
 
         public Calibrations calibrationType = Calibrations.RidgeRegression;
         public bool save = true;
@@ -294,6 +302,16 @@ namespace UnitEye
         /// </summary>
         private void BuildPresets()
         {
+            if (quickPresets)
+            {
+                _presets = new List<CalibrationPreset>
+                {
+                    new CornerPreset(padding, 1, 2f, normalizedSafeMargin),   // 2 s keeps >= minimumCornerSamples at ~10 fps
+                    new InteriorPreset(padding, 1f),
+                    new ZigZagPreset(padding, true, 3),
+                };
+                return;
+            }
             _presets = new List<CalibrationPreset>
             {
                 new CornerPreset(padding, cornerVisits, cornerDwellSeconds, normalizedSafeMargin),
