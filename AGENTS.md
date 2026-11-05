@@ -5,6 +5,8 @@
 ## 시작할 때
 - `PROGRESS.md`를 먼저 읽고 Done / Blockers / Next Steps를 확인한다.
 - 시선 추적 작업이면 `docs/AI/iPhone-Gaze-Debug-Handoff.md` 최신 절을 읽는다.
+- `git pull`/병합으로 다른 팀원의 커밋을 받았으면, `PROGRESS.md` Done에 새로 생긴 항목을 읽고 사용자에게 **새 기능 요약 + 플레이 방법(어디서 시작해 무엇을 누르는지) + 아직 미검증인 부분**을 짧게 알려 준다. 항목에 `플레이 방법`이 있으면 그대로 전달한다. (Orca 워커로 실행 중이면 생략)
+- 기능을 추가해 `PROGRESS.md`를 갱신할 때는 다른 팀원이 바로 해 볼 수 있게 `플레이 방법` 한 줄을 함께 적는다.
 
 ## Orca 워커로 실행될 때 (Claude 코디네이터)
 프롬프트에 Task / Dispatch ID가 있으면 Orca 워커다. 이때는 아래 규칙을 따른다.

@@ -18,6 +18,12 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude+Codex] 2026-11-05 교수 눈맞춤 카운터 (엔딩 통계)**: 스토리 내내 시선 추적을 켜 두고, 화면의 교수 얼굴 주변(보이지 않는 타원 영역)을 0.45초 이상 보면 "눈맞춤 1회"로 센다. 상세: [Eye-Contact-Counter.md](docs/AI/Eye-Contact-Counter.md)
+  - **플레이 방법**: 타이틀 → 학과·교수 선택 → `시선 추적 준비` 화면에서 웹캠 또는 iPhone 선택 → 웹캠은 `웹캠 시작` 후 `화면 맞춤 (16점)`(1단계 시선 보정 없음), iPhone은 연결 후 16점 보정 → 끝나면 자동으로 스토리 시작. 플레이 중 교수 얼굴을 바라보면 횟수가 쌓이고 엔딩 통계 아래 `눈 마주침 N회`로 표시. 이어하기도 매번 보정 필요, `준비 취소`는 새 게임이면 교수 선택, 이어하기면 타이틀로.
+  - **개발 확인**: 에디터/개발 빌드에서 F8 → 판정 타원(분홍 진입·보라 이탈), 시선 점, 타원 위 `눈맞춤 N`, 증가 시 `+1`. Console `[eye contact]` 로그. 플레이어 빌드에는 표시 없음.
+  - 호감도·엔딩 분기에는 아직 미반영(`EyeContactCount` 등 읽기 전용 속성만 노출). 웹캠/iPhone이 없으면 스토리를 시작할 수 없음(필수 보정).
+  - 같은 묶음: `FitAndCheck`의 `requireVerticalEye`를 iPhone 전용으로 분리(웹캠 화면 맞춤은 false), 인수인계 문서 정정. `눈빛 피하기` 병합 시 `GameController.GazeTest.cs` 충돌은 양쪽 유지로 해결.
+  - 검증: 테스트 5종 exit 0, Unity 컴파일 오류 0, 사용자 실기(웹캠) 준비→플레이→카운트 확인. iPhone 경로와 엔딩·이어하기 실기는 미검증.
 - **[Claude] 2026-11-05 눈빛 피하기 시선 게임 + 연습 난이도 통일**:
   - [`GameController.GazeEyeDodge.cs`](Assets/Scripts/GameController.GazeEyeDodge.cs)/[`GazeEyeDodgeFx.cs`](Assets/Scripts/GameController.GazeEyeDodgeFx.cs): 심한뫼 교수 두 눈의 빨간 레이저가 시선(파란 점, 기존 `StarGaze` 웹캠/iPhone)을 쫓음. 3번 잡히면 끝, 0.1초당 10점, 점점 빨라짐. 기본/찡그림/기쁨 사진 전환과 대사, 스프라이트 효과·효과음(`Resources/EyeDodge`, `Resources/Audio/EyeDodge`), 게임 중 `Darkness` 음악. `화면 효과 끔` 적용, 실제 시간 기준 점수(1/60초 분할 계산), 시선을 놓치면 플레이·무적 시간·말풍선 함께 멈춤.
   - 타이틀 `눈빛 피하기` 버튼: 시선 추적 테스트를 열고 웹캠을 켠 뒤 보정이 끝나면 자동 시작. 웹캠/iPhone 패널에도 시작 버튼.
@@ -73,6 +79,7 @@
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
+- 눈맞춤 카운터: iPhone 경로·엔딩 표시·이어하기 실기 확인. 판정 상수(`GameController.EyeContact.cs`)는 F8로 보며 조정. 호감도 반영 여부는 추후 결정.
 - 눈빛 피하기: 실제 웹캠/iPhone으로 난이도(속도·판정 반경)와 소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`도 같은 `RotateAroundPivot` 문제 여부 확인.
 - AI 모드: 에디터에서 단답형 퀴즈 힌트 대기 중 Enter 동작 확인. 설정에 내 Gemini 키가 있으면 서버(Terra)를 거치지 않으므로 Terra 확인 시 키를 지울 것.
 - iPhone에서 같은 중앙 목표를 보며 고개 회전/평행이동/거리 변화를 분리 측정. `[iPhone gaze trace]`로 원시 예측·포인터·blink·fresh를 비교하고 현 인터페이스에 없는 머리 위치/거리 정보 도입 여부 판단.
