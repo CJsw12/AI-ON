@@ -27,7 +27,8 @@ public partial class GameController
         new Vector2(.29f, .31f), new Vector2(.71f, .69f), new Vector2(.71f, .31f)
     };
     const int GazeFitPoints = 13;
-    const string IPhoneMapperPref = "Gaze.IPhoneMapper";
+    // Wi-Fi and USB report different signals (USB has no eye-shape blendshapes), so each keeps its own calibration.
+    string IPhoneMapperPref => iphoneUseUsb ? "Gaze.IPhoneMapper.Usb" : "Gaze.IPhoneMapper.WiFi";
 
     /// <summary>Fits on the first 13 points and scores the mapper on the remaining check points.</summary>
     static bool FitAndCheck(GazeMapper mapper, double[][] features, List<double[]>[] samples)

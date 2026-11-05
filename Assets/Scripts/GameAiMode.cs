@@ -53,6 +53,7 @@ public partial class GameController
         string key = AiSlotKey;
         if (aiSlot == key) return;
         aiSlot = key;
+        aiPending = null;   // a request from the previous question must not keep this one waiting
         aiTyped = aiQuestion = "";
         aiHint = aiError = null;
         aiShowOptions = aiAsking = false;
