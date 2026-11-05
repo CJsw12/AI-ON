@@ -27,6 +27,7 @@ public partial class GameController
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     bool eyeContactDebugVisible;
     string eyeContactDebugState = "대기";
+    float eyeContactCountedAt = -1f;
 #endif
 
     void BeginEyeContactPreparation(bool fromLoad)
@@ -102,6 +103,7 @@ public partial class GameController
         eyeContactFaceFrame = -1;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         eyeContactDebugState = "대기";
+        eyeContactCountedAt = -1f;
 #endif
     }
 
@@ -239,6 +241,7 @@ public partial class GameController
         Debug.Log($"[eye contact] scene={scene}; time={Time.time:F2}s; count={eyeContactCount}");
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         eyeContactDebugState = "눈맞춤 기록";
+        eyeContactCountedAt = Time.unscaledTime;
 #endif
     }
 
@@ -261,6 +264,36 @@ public partial class GameController
             DrawEyeContactEllipse(eyeContactFaceCenter, eyeContactFaceRadiusX, eyeContactFaceRadiusY, NovelUI.DeepPink);
             DrawEyeContactEllipse(eyeContactFaceCenter, eyeContactFaceRadiusX * EyeContactLeaveRadiusFactor,
                 eyeContactFaceRadiusY * EyeContactLeaveRadiusFactor, NovelUI.Alpha(NovelUI.Berry, .7f));
+
+            int digits = eyeContactCount < 10 ? 1 : eyeContactCount < 100 ? 2 : eyeContactCount < 1000 ? 3 :
+                eyeContactCount < 10000 ? 4 : eyeContactCount < 100000 ? 5 : eyeContactCount < 1000000 ? 6 :
+                eyeContactCount < 10000000 ? 7 : eyeContactCount < 100000000 ? 8 : eyeContactCount < 1000000000 ? 9 : 10;
+            const float countHeight = 42f, popWidth = 58f, popGap = 6f;
+            const float popDuration = .6f, popRise = 28f;
+            float countWidth = 112f + digits * 18f;
+            float groupWidth = countWidth + popGap + popWidth;
+            float countX = Mathf.Clamp(eyeContactFaceCenter.x - countWidth / 2f, 0f, 1280f - groupWidth);
+            float labelY = Mathf.Clamp(eyeContactFaceCenter.y - eyeContactFaceRadiusY * EyeContactLeaveRadiusFactor - countHeight - 8f,
+                0f, 900f - countHeight);
+            Rect countRect = new Rect(countX, labelY, countWidth, countHeight);
+            string countLabel = $"눈맞춤 {eyeContactCount}";
+            NovelUI.Label(new Rect(countRect.x + 1, countRect.y + 2, countRect.width, countRect.height), countLabel,
+                NovelUI.Round, 28, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
+            NovelUI.Label(countRect, countLabel, NovelUI.Round, 28, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+
+            float sinceCount = Time.unscaledTime - eyeContactCountedAt;
+            if (eyeContactCountedAt >= 0f && sinceCount >= 0f && sinceCount < popDuration)
+            {
+                float progress = sinceCount / popDuration;
+                float alpha = 1f - progress;
+                float rise = progress * popRise;
+                Rect popRect = new Rect(countRect.xMax + popGap,
+                    Mathf.Clamp(labelY - rise, 0f, 900f - countHeight), popWidth, countHeight);
+                Color popColor = NovelUI.Alpha(NovelUI.DeepPink, alpha);
+                NovelUI.Label(new Rect(popRect.x + 1, popRect.y + 2, popRect.width, popRect.height), "+1",
+                    NovelUI.Round, 27, NovelUI.Alpha(NovelUI.Berry, alpha), TextAnchor.MiddleLeft, FontStyle.Bold);
+                NovelUI.Label(popRect, "+1", NovelUI.Round, 27, popColor, TextAnchor.MiddleLeft, FontStyle.Bold);
+            }
         }
         if (eyeContactGazeValid)
             NovelUI.Fill(new Rect(eyeContactGaze.x - 7, eyeContactGaze.y - 7, 14, 14), NovelUI.DeepPink, 7);
