@@ -29,8 +29,7 @@ public partial class GameController
     {
         if (!NovelUI.Repaint) return;
         CurrentLine(out string speaker, out _);
-        if (AiHintShown) speaker = ProfessorName;
-        float target = speaker == "나" || AtChoice ? -1f : speaker == ProfessorName ? 1f : 0f;
+        float target = AiHintShown ? 1f : speaker == "나" || AtChoice ? -1f : speaker == ProfessorName ? 1f : 0f;
         duoFocus = Mathf.MoveTowards(duoFocus, target, Time.unscaledDeltaTime * 5f);
     }
 

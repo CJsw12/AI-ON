@@ -239,7 +239,9 @@ public partial class GameController
             Faculty = faculty, Scene = scene, Stage = choiceStage, Line = dialogueIndex, Professor = professor, Affection = affection,
             Questions = questions, Teamwork = teamwork, Interest = interest, Solo = solo, Experienced = experienced,
             ShowResult = showResult, ResultLine = resultLine, ResultKey = resultKey, WrongPick = wrongPick, AiMode = aiMode,
-            HintsUsed = aiSlot == AiSlotKey ? aiHintsUsed : 0
+            // A question still waiting for its reply is not counted: the reply is lost with the save.
+            HintsUsed = aiSlot == AiSlotKey ? Mathf.Max(0, aiHintsUsed - (AiWaiting && aiPendingHint ? 1 : 0)) : 0,
+            Hint = aiSlot == AiSlotKey ? aiHint : null
         });
         slots[slot] = GameSave.Read(slot);
         confirmSlot = -1;
@@ -259,6 +261,7 @@ public partial class GameController
         // Claim this slot now so AiSync keeps the saved count instead of resetting it to 0.
         aiSlot = AiSlotKey;
         aiHintsUsed = Mathf.Min(data.HintsUsed, HintLimit);
+        aiHint = data.Hint;
         memorial = 0; introDone = true; portraitAlpha = 0;
         chapterShown = -1;   // Replays the chapter card as a reminder of where the player is.
         menu = Menu.None;

@@ -11,6 +11,8 @@ public interface IIPhoneGazeSource
     /// send blendshapes. Keeps responding when looking down, where the eyelid hides the iris.
     /// </summary>
     Vector2 LookFeature { get; }
+    /// <summary>Head position (x = sideways, y = up/down) in the tracker's units; zero when not sent.</summary>
+    Vector2 PositionFeature { get; }
     /// <summary>0 = eyes open, 1 = closed; -1 when the source doesn't report it.</summary>
     float Blink { get; }
     bool FaceFound { get; }

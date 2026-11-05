@@ -146,7 +146,7 @@ public partial class GameController
         Rect card = new Rect(170, bottom - 150, 940, 136);
         NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .97f), 30, NovelUI.Pink);
         NovelUI.Pill(card.x + 26, card.y - 18, 36, "AI 자유 대답", NovelUI.Mint, NovelUI.Berry, 18);
-        if (!AiWaiting && NovelUI.Button(new Rect(card.xMax - 190, card.y - 22, 170, 40), "선택지로 고르기", false, 17)) { novelAudio.Play("Toggle"); aiShowOptions = true; return true; }
+        if (NovelUI.Button(new Rect(card.xMax - 190, card.y - 22, 170, 40), AiWaiting ? "취소하고 선택지로" : "선택지로 고르기", false, 17)) { novelAudio.Play("Toggle"); AiCancelPending(); aiShowOptions = true; return true; }
 
         Rect field = new Rect(card.x + 30, card.y + 34, 680, 58);
         bool enter = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);

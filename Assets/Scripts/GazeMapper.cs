@@ -17,12 +17,18 @@ public sealed class GazeMapper
 {
     // Feature layout produced by Features().
     const int EyeX = 0, EyeY = 1, HeadX = 2, HeadY = 3, LookX = 4, LookY = 5,
-        EyeX2 = 6, EyeY2 = 7, EyeXY = 8, EyeX3 = 9, EyeY3 = 10;
+        EyeX2 = 6, EyeY2 = 7, EyeXY = 8, EyeX3 = 9, EyeY3 = 10, PosX = 11, PosY = 12;
     const double Ridge = .005;
     const double MinSpread = 1e-6;
     const float ExtraInputPenalty = .08f;          // prefer simpler fits unless extra features clearly help
-    const float DriftRate = .15f;                  // conservative correction from an inferred game target
-    const float MaxDrift = .15f;                   // the offset never exceeds 15% of the screen
+    // A model with three or more inputs, or no eye input, must beat the best simple eye model by this much.
+    // Thirteen points are few, so without it each calibration picked a different complex model and tracking
+    // was good once and odd the next three times.
+    const float SwitchMargin = .3f;
+    /// <summary>Head-position models are experimental: off until tested on a device (see the iPhone handoff doc).</summary>
+    public static bool UsePosition = false;
+    const float DriftRate = .1f;                   // conservative correction from an inferred game target
+    const float MaxDrift = .1f;                    // the offset never exceeds 10% of the screen
     const float MaxAnchorMiss = .2f;               // a bigger miss is more likely a wrong anchor than drift
 
     static readonly int[][] ModelsX =
@@ -31,6 +37,8 @@ public sealed class GazeMapper
         new[] { EyeX, HeadX, LookX }, new[] { EyeX, EyeX2, EyeXY }, new[] { EyeX, EyeX3 }, new[] { EyeX, HeadX, EyeX3 },
         // One side stretched more than the other (x² + x³), and an edge stretch helped by the eye-shape cue.
         new[] { EyeX, EyeX2, EyeX3 }, new[] { EyeX, LookX, EyeX3 },
+        // Head position: the same screen point is seen at another eye angle once the head slides sideways.
+        new[] { EyeX, HeadX, PosX }, new[] { EyeX, LookX, PosX }, new[] { EyeX, HeadX, LookX, PosX },
     };
     static readonly int[][] ModelsY =
     {
@@ -38,6 +46,8 @@ public sealed class GazeMapper
         new[] { EyeY, HeadY, LookY }, new[] { EyeY, EyeY2, EyeXY }, new[] { EyeY, EyeY3 }, new[] { EyeY, HeadY, EyeY3 },
         // Only the bottom squashed (y² + y³: a laptop camera sits above the screen), and edge stretch + eyelid cue.
         new[] { EyeY, EyeY2, EyeY3 }, new[] { EyeY, LookY, EyeY3 },
+        // Head position (up/down slide); only chosen when the calibration actually saw the head move.
+        new[] { EyeY, HeadY, PosY }, new[] { EyeY, LookY, PosY }, new[] { HeadY, LookY, PosY }, new[] { EyeY, HeadY, LookY, PosY },
     };
 
     sealed class Axis
@@ -65,13 +75,67 @@ public sealed class GazeMapper
     /// <summary>Online drift correction in normalized screen units, added to every prediction.</summary>
     public Vector2 Drift { get; private set; }
 
-    public static double[] Features(Vector2 eye, Vector2 head, Vector2 look = default) => new double[]
+    /// <summary>pos: head position (x = sideways, y = up/down); zero when the source doesn't send it, and then the
+    /// position models are skipped because the input never moved.</summary>
+    public static double[] Features(Vector2 eye, Vector2 head, Vector2 look = default, Vector2 pos = default) => new double[]
     {
         eye.x, eye.y, head.x, head.y, look.x, look.y,
         eye.x * eye.x, eye.y * eye.y, eye.x * eye.y, eye.x * eye.x * eye.x, eye.y * eye.y * eye.y,
+        pos.x, pos.y,
     };
 
-    public void Reset() { axisX = axisY = null; ErrorPixels = 0; ModelName = ""; Drift = Vector2.zero; }
+    public void Reset() { axisX = axisY = null; ErrorPixels = 0; ModelName = ""; Drift = Vector2.zero; CheckPixels = -1; }
+
+    /// <summary>Mean error in canvas pixels on check points that were not used for the fit; -1 until measured.
+    /// Unlike ErrorPixels this is a real measurement, not an estimate from the calibration points.</summary>
+    public float CheckPixels { get; private set; } = -1;
+
+    public float Check(IList<double[]> features, IList<Vector2> targets)
+    {
+        if (!Ready) return CheckPixels = -1;
+        float sum = 0; int n = 0;
+        for (int i = 0; i < features.Count; i++)
+        {
+            if (features[i] == null) continue;
+            Vector2 miss = PredictUnclamped(features[i]) - targets[i];
+            sum += new Vector2(miss.x * 1280f, miss.y * 900f).magnitude; n++;
+        }
+        return CheckPixels = n == 0 ? -1 : sum / n;
+    }
+
+    // Saved calibration: "x;y" axes, each "used|mean|spread|weight|error" with comma-separated numbers.
+    public string Save()
+    {
+        if (!Ready) return "";
+        string Join(double[] v) => string.Join(",", Array.ConvertAll(v, d => d.ToString("R", System.Globalization.CultureInfo.InvariantCulture)));
+        string Axis(Axis a) => string.Join(",", a.Used) + "|" + Join(a.Mean) + "|" + Join(a.Spread) + "|" + Join(a.Weight) + "|" + a.Error.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+        return Axis(axisX) + ";" + Axis(axisY) + ";" + CheckPixels.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    public bool Load(string text)
+    {
+        try
+        {
+            string[] parts = (text ?? "").Split(';');
+            if (parts.Length != 3) return false;
+            double[] Nums(string s) => s == "" ? new double[0] : Array.ConvertAll(s.Split(','), v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture));
+            Axis Read(string s)
+            {
+                string[] f = s.Split('|');
+                return new Axis { Used = Array.ConvertAll(f[0].Split(','), int.Parse), Mean = Nums(f[1]), Spread = Nums(f[2]), Weight = Nums(f[3]), Error = float.Parse(f[4], System.Globalization.CultureInfo.InvariantCulture) };
+            }
+            Axis x = Read(parts[0]), y = Read(parts[1]);
+            // Feature layout changed since the save: drop it rather than predict nonsense.
+            foreach (int u in x.Used) if (u >= Features(Vector2.zero, Vector2.zero).Length) return false;
+            foreach (int u in y.Used) if (u >= Features(Vector2.zero, Vector2.zero).Length) return false;
+            axisX = x; axisY = y; Drift = Vector2.zero;
+            ErrorPixels = Mathf.Sqrt(x.Error * x.Error + y.Error * y.Error);
+            ModelName = $"가로 {Describe(x.Used)} · 세로 {Describe(y.Used)}";
+            CheckPixels = float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture);
+            return true;
+        }
+        catch (Exception) { Reset(); return false; }
+    }
 
     /// <summary>
     /// The player was certainly looking at a known spot and the pointer missed it by <paramref name="miss"/>
@@ -107,7 +171,7 @@ public sealed class GazeMapper
         var parts = new List<string>();
         foreach (int f in used)
         {
-            string name = f == EyeX || f == EyeY ? "눈" : f == HeadX || f == HeadY ? "고개" : f == LookX || f == LookY ? "눈모양" : "곡선";
+            string name = f == EyeX || f == EyeY ? "눈" : f == HeadX || f == HeadY ? "고개" : f == LookX || f == LookY ? "눈모양" : f == PosX || f == PosY ? "머리위치" : "곡선";
             if (!parts.Contains(name)) parts.Add(name);
         }
         return string.Join("+", parts);
@@ -126,11 +190,12 @@ public sealed class GazeMapper
 
     static Axis FitAxis(int[][] models, IList<double[]> features, double[] targets, IList<List<double[]>> samples, float pixels, bool requireEye = false)
     {
-        Axis best = null;
-        float bestScore = float.MaxValue;
+        Axis best = null, simple = null;
+        float bestScore = float.MaxValue, simpleScore = float.MaxValue;
         foreach (int[] model in models)
         {
             if (requireEye && Array.IndexOf(model, EyeY) < 0 && Array.IndexOf(model, LookY) < 0) continue;
+            if (!UsePosition && (Array.IndexOf(model, PosX) >= 0 || Array.IndexOf(model, PosY) >= 0)) continue;
             float loo = LeaveOneOutError(model, features, targets, pixels);
             if (float.IsNaN(loo)) continue;
             Axis axis = Solve(model, features, targets, -1);
@@ -142,13 +207,12 @@ public sealed class GazeMapper
                 error = Mathf.Sqrt(loo * loo + scatter * scatter);
             }
             float score = error * (1f + ExtraInputPenalty * (model.Length - 1));
-            if (score < bestScore)
-            {
-                bestScore = score;
-                axis.Error = error;
-                best = axis;
-            }
+            axis.Error = error;
+            if (score < bestScore) { bestScore = score; best = axis; }
+            if (IsSimple(model) && score < simpleScore) { simpleScore = score; simple = axis; }
         }
+        // Stay with the simple eye model unless the complex one is clearly better.
+        if (simple != null && best != simple && bestScore > simpleScore * (1f - SwitchMargin)) return simple;
         return best;
     }
 
@@ -253,6 +317,14 @@ public sealed class GazeMapper
     }
 
     /// <summary>Per-dimension median of the samples taken at one calibration point (ignores blinks and glances).</summary>
+    // One or two inputs, at least one of them an eye signal (rotation or eye shape).
+    static bool IsSimple(int[] model)
+    {
+        if (model.Length > 2) return false;
+        foreach (int f in model) if (f == EyeX || f == EyeY || f == LookX || f == LookY) return true;
+        return false;
+    }
+
     public static double[] Median(List<double[]> samples)
     {
         int count = samples[0].Length;
@@ -275,13 +347,16 @@ public sealed class GazeMapper
 /// </summary>
 public sealed class GazeSmoother
 {
-    readonly float minCutoff, beta, derivativeCutoff;
-    Vector2 value, velocity;
+    readonly float minCutoff, beta, derivativeCutoff, holdRadius;
+    Vector2 value, velocity, held;
     float lastTime;
     bool started;
 
-    public GazeSmoother(float minCutoff = .5f, float beta = .004f, float derivativeCutoff = 1f)
+    /// <param name="holdRadius">Fixation hold in canvas pixels: while the gaze wobbles inside this circle the pointer
+    /// stays still, and once it leaves the pointer is pulled along at the circle's edge. 0 turns it off.</param>
+    public GazeSmoother(float minCutoff = .5f, float beta = .004f, float derivativeCutoff = 1f, float holdRadius = 0f)
     {
+        this.holdRadius = holdRadius;
         this.minCutoff = minCutoff;
         this.beta = beta;
         this.derivativeCutoff = derivativeCutoff;
@@ -297,6 +372,7 @@ public sealed class GazeSmoother
             value = point;
             velocity = Vector2.zero;
             lastTime = time;
+            held = value;
             return value;
         }
         float dt = Mathf.Max(time - lastTime, 1e-3f);
@@ -305,7 +381,12 @@ public sealed class GazeSmoother
         velocity = Vector2.Lerp(velocity, rawVelocity, Alpha(derivativeCutoff, dt));
         float cutoff = minCutoff + beta * velocity.magnitude;
         value = Vector2.Lerp(value, point, Alpha(cutoff, dt));
-        return value;
+        if (holdRadius <= 0) return value;
+        // Small wobble while fixating is tracker noise, not eye movement: keep the pointer still.
+        Vector2 off = value - held;
+        float distance = off.magnitude;
+        if (distance > holdRadius) held += off * (1f - holdRadius / distance);
+        return held;
     }
 
     static float Alpha(float cutoff, float dt)

@@ -13,7 +13,7 @@ public partial class GameController
 
     readonly GazeMapper webcamMapper = new GazeMapper();
     // UnitEye already smooths its output, so this filter is lighter than the iPhone one.
-    readonly GazeSmoother webcamSmoother = new GazeSmoother(1.2f, .006f);
+    readonly GazeSmoother webcamSmoother = new GazeSmoother(.8f, .006f, 1f, 30f);   // webcam frames scatter more: stronger smoothing and a wider hold
     readonly float[] webcamShapes = new float[10];
     readonly List<double[]> webcamCapture = new List<double[]>();
     readonly double[][] webcamMeasured = new double[IPhoneCalibrationTargets.Length][];
@@ -35,7 +35,10 @@ public partial class GameController
     Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
 
     /// <summary>The pointer the game uses: the screen-fitted point when available, UnitEye's otherwise.</summary>
-    Vector2 WebcamCanvasGaze => webcamFitted ? webcamCanvasGaze : WebcamRawCanvasGaze;
+    // Before the screen fit, the UnitEye point gets only the fixation hold (UnitEye already smooths it).
+    readonly GazeSmoother webcamRawHold = new GazeSmoother(4f, .006f, 1f, 30f);
+    Vector2 webcamRawShown;
+    Vector2 WebcamCanvasGaze => webcamFitted ? webcamCanvasGaze : webcamRawShown;
 
     // Called once per fresh UnitEye sample.
     void OnWebcamSample()
@@ -122,7 +125,7 @@ public partial class GameController
             return;
         }
         webcamFitting = false;
-        if (!webcamMapper.Fit(webcamMeasured, IPhoneCalibrationTargets, webcamMeasuredSamples))
+        if (!FitAndCheck(webcamMapper, webcamMeasured, webcamMeasuredSamples))
         {
             CancelWebcamFit();
             webcamFitStatus = "점마다 시선 값이 충분히 달라지지 않았어요. 먼저 ‘1. 시선 보정’을 하고 다시 해 주세요.";
@@ -139,12 +142,7 @@ public partial class GameController
         if (gazeTracker != null) gazeTracker.onlineDriftCorrection = true;
     }
 
-    string WebcamFitAccuracyText()
-    {
-        float error = webcamMapper.ErrorPixels;
-        string grade = error < 110f ? "좋음" : error < 190f ? "보통" : "낮음 · 다시 해 보세요";
-        return $"{webcamMapper.ModelName} · 오차 약 {Mathf.RoundToInt(error)}px · {grade}";
-    }
+    string WebcamFitAccuracyText() => GazeAccuracyText(webcamMapper, 110f, 190f);
 
     void DrawWebcamFitScreen()
     {

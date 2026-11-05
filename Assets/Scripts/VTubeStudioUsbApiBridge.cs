@@ -35,6 +35,7 @@ public sealed class VTubeStudioUsbApiBridge : MonoBehaviour, IIPhoneGazeSource
 
     public Vector2 EyeFeature { get; private set; }
     public Vector2 HeadFeature { get; private set; }
+    public Vector2 PositionFeature => Vector2.zero;   // The desktop API path has no head position yet.
     public float Blink { get; private set; } = -1f;
     public Vector2 LookFeature => Vector2.zero;   // the desktop API exposes no ARKit look blendshapes
     public bool FaceFound { get; private set; }

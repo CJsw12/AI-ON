@@ -105,7 +105,7 @@ public class CoffeeOrder : MiniGame
     {
         cup.Add(ingredient); pourStartedAt = Now;
         int index = cup.Count - 1;
-        warning = round > 0 && (index >= recipes[round].Length || recipes[round][index] != ingredient) ? "순서가 달라요. 컵을 비우고 다시 시도할 수 있어요." : "";
+        warning = round == 1 && (index >= recipes[round].Length || recipes[round][index] != ingredient) ? "순서가 달라요. 컵을 비우고 다시 시도할 수 있어요." : "";
         NovelUI.Sound?.Invoke("Select");
     }
     static bool Matches(IReadOnlyList<int> actual, int[] expected, bool ordered)

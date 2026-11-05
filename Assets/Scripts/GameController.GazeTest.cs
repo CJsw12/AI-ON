@@ -148,6 +148,7 @@ public partial class GameController
             if (!GazeCalibrationActive && gazeTracker.Provider != null) OnWebcamSample();
         }
         TickWebcamFit();
+        webcamRawShown = webcamRawHold.Filter(WebcamRawCanvasGaze, Time.unscaledTime);
         if (Time.unscaledTime - webcamRateSince >= 1f)
         {
             webcamRate = webcamSamplesThisSecond;
@@ -221,7 +222,7 @@ public partial class GameController
                     CancelWebcamFit();   // a new base calibration changes what the screen fit was measured on
                     gazeTracker.LoadCalibration(9f, 20f, 2);
                 }
-                if (NovelUI.Button(new Rect(650, 238, 350, 58), webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (13점)", false, 22)) BeginWebcamFit();
+                if (NovelUI.Button(new Rect(650, 238, 350, 58), webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)", false, 22)) BeginWebcamFit();
                 NovelUI.Label(new Rect(140, 304, 1000, 54), webcamFitted || webcamFitStatus.Length > 0 ? webcamFitStatus
                     : "1번 보정 뒤 2번을 하면, 화면 옆·아래 끝까지 시선이 닿도록 다시 맞춰요.", NovelUI.Soft, 16,
                     webcamFitted ? NovelUI.Mint : NovelUI.Plum, TextAnchor.MiddleCenter, webcamFitted ? FontStyle.Bold : FontStyle.Normal);

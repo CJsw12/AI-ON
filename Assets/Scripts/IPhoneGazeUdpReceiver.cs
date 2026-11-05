@@ -28,6 +28,7 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
         public long Timestamp;
         public bool FaceFound;
         public Vector3 Rotation;
+        public Vector3 Position;   // VTube Studio sends the face position next to its rotation.
         public Vector3 EyeLeft;
         public Vector3 EyeRight;
         public BlendShape[] BlendShapes;
@@ -54,6 +55,7 @@ public sealed class IPhoneGazeUdpReceiver : MonoBehaviour, IIPhoneGazeSource
     public string Error { get; private set; }
     public Vector2 EyeFeature => Latest == null ? Vector2.zero : new Vector2((Latest.EyeLeft.y + Latest.EyeRight.y) * .5f, (Latest.EyeLeft.x + Latest.EyeRight.x) * .5f);
     public Vector2 HeadFeature => Latest == null ? Vector2.zero : new Vector2(Latest.Rotation.y, Latest.Rotation.x);
+    public Vector2 PositionFeature => Latest == null ? Vector2.zero : new Vector2(Latest.Position.x, Latest.Position.y);
     public float Blink { get; private set; } = -1f;
     public Vector2 LookFeature { get; private set; }
     public bool FaceFound => Latest != null && Latest.FaceFound;

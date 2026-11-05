@@ -1,5 +1,15 @@
 # iPhone 시선 추적 연결 장애 인수인계
 
+## 2026년 11월 5일 Claude 보완 (미검증, 미커밋)
+
+- **머리 위치 입력 추가**: `IPhoneGazeUdpReceiver.TrackingData.Position`(VTube Studio가 Rotation 옆에 보내는 얼굴 위치)을 읽어 `IIPhoneGazeSource.PositionFeature`로 노출. USB/API 경로는 아직 0.
+- **GazeMapper 후보 추가**: `PosX/PosY`(특징 인덱스 11·12)를 넣은 가로 3개·세로 4개 후보. 위치가 전혀 안 움직이면(분산 < MinSpread) 후보가 자동 제외되므로 기존 동작은 그대로. 상태 줄 모델 이름에 "머리위치"로 표시.
+- **한계**: 회귀라서 보정 중 머리가 실제로 움직여야 위치 보정을 배운다. 머리 고정 13점 보정만으로는 효과가 없다. 다음 담당자는 보정 13점 중 일부를 머리를 옆/위로 옮긴 상태에서 측정하는 방식을 시험할 것.
+- **추적 기록**: `[iPhone gaze trace]`에 `posX`, `posY`, `model` 추가. 같은 점을 보며 머리를 평행이동할 때 posY와 rawY가 같이 움직이는지 먼저 확인.
+- **웹캠 상하**: `WebcamFit`의 `webcamMapper.Fit`도 `requireVerticalEye: true`. 세로를 고개 각도만으로 맞추는 후보를 빼서, 눈만 위아래로 움직일 때 포인터가 따라오게 함. 실기기 검증 필요.
+- **들쭉날쭉 대응(웹캠·iPhone 공통)**: 사용자 보고 "한 번 잘되고 세 번 이상함"(웹캠이 특히 심함). 원인 추정은 13점 보정마다 다른 복잡 모델이 선택되는 것. `GazeMapper.SwitchMargin = .3`: 입력 3개 이상이거나 눈 신호가 없는 모델은 가장 좋은 단순 눈 모델(입력 1~2개, 눈 회전/눈모양 포함)보다 30% 이상 나을 때만 선택. 머리 위치 후보는 `GazeMapper.UsePosition = false`로 기본 꺼 둠(켜고 끈 비교 실험용). 드리프트 보정 DriftRate .15→.1, MaxDrift .15→.1.
+- **검증**: Unity 6000.3.23f1 배치 모드 컴파일 오류 0, `Tests/*.ps1` 5종 exit 0. 실기기(웹캠·iPhone) 검증은 못 함. VTube Studio 실제 패킷에 `Position`이 있는지 먼저 trace로 확인할 것(없으면 posX/posY가 0으로 찍힘).
+
 ## 2026년 11월 5일 후속 인수인계 상하 추적과 머리 위치 문제
 
 이 절은 아래 과거 기록보다 최신이다. 작업 브랜치는 `feature/player-photo-avatar`이며, 플레이어 사진 기능 커밋 `8027b74` 위에서 진행했다. 현재 증상은 **같은 화면 지점을 보더라도 머리 위치를 바꾸면 포인터 위치가 달라지는 것으로 사용자가 보고한 상태**다. 해결 완료로 취급하지 말 것.
@@ -173,3 +183,8 @@ Select-String C:\Temp\gaze.txt -Pattern '11125|DropReason|unreachable'
 4. NIC 도착, WFP 드롭, ICMP unreachable, Unity 상태 문구/샘플 수 중 어느 단계까지 확인했는지 기록한다.
 5. 학교 네트워크 정책상 기기 간 UDP가 차단되면 Windows 설정을 반복 변경하지 말고 승인된 네트워크 또는 USB/API 경로로 테스트한다.
 
+
+### 추가 (같은 날, 미검증·미커밋)
+- 보정 16점 = 맞춤 13점 + 검증 3점 (.29,.31) (.71,.69) (.71,.31). 검증점은 fit에서 빼고 실측 오차(`GazeMapper.CheckPixels`)를 상태 문구에 표시하며, 기준을 넘으면 "다시 보정 권장"이라고 띄운다(iPhone 90/160px, 웹캠 110/190px).
+- iPhone 보정은 PlayerPrefs `Gaze.IPhoneMapper`에 로컬로만 저장한다(`GazeMapper.Save/Load`). 연결할 때 자동으로 불러온다. 서버로는 전송하지 않는다. 웹캠은 UnitEye 기본 보정에 의존하므로 저장하지 않는다.
+- `GazeContact.cs`: 교수 눈 맞춤용 히스테리시스. 들어올 때는 90px 반경 안에 .25초, 나갈 때는 160px 반경 밖에 .35초 있어야 상태가 바뀐다. 아직 어디에도 연결하지 않았다.

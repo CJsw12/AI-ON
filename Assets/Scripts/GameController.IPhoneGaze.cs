@@ -22,8 +22,41 @@ public partial class GameController
         new Vector2(.50f, .31f),
         new Vector2(.08f, .50f), new Vector2(.29f, .50f), new Vector2(.50f, .50f), new Vector2(.71f, .50f), new Vector2(.92f, .50f),
         new Vector2(.50f, .69f),
-        new Vector2(.08f, .88f), new Vector2(.50f, .88f), new Vector2(.92f, .88f)
+        new Vector2(.08f, .88f), new Vector2(.50f, .88f), new Vector2(.92f, .88f),
+        // Check points: measured like the rest but left out of the fit, so their error is a real accuracy test.
+        new Vector2(.29f, .31f), new Vector2(.71f, .69f), new Vector2(.71f, .31f)
     };
+    const int GazeFitPoints = 13;
+    const string IPhoneMapperPref = "Gaze.IPhoneMapper";
+
+    /// <summary>Fits on the first 13 points and scores the mapper on the remaining check points.</summary>
+    static bool FitAndCheck(GazeMapper mapper, double[][] features, List<double[]>[] samples)
+    {
+        var fitTargets = new Vector2[GazeFitPoints]; Array.Copy(IPhoneCalibrationTargets, fitTargets, GazeFitPoints);
+        var fitFeatures = new double[GazeFitPoints][]; Array.Copy(features, fitFeatures, GazeFitPoints);
+        var fitSamples = new List<double[]>[GazeFitPoints]; Array.Copy(samples, fitSamples, GazeFitPoints);
+        if (!mapper.Fit(fitFeatures, fitTargets, fitSamples, requireVerticalEye: true)) return false;
+        int checks = IPhoneCalibrationTargets.Length - GazeFitPoints;
+        var checkTargets = new Vector2[checks]; Array.Copy(IPhoneCalibrationTargets, GazeFitPoints, checkTargets, 0, checks);
+        var checkFeatures = new double[checks][]; Array.Copy(features, GazeFitPoints, checkFeatures, 0, checks);
+        mapper.Check(checkFeatures, checkTargets);
+        return true;
+    }
+
+    static string GazeAccuracyText(GazeMapper mapper, float good, float fair)
+    {
+        float error = mapper.CheckPixels >= 0 ? mapper.CheckPixels : mapper.ErrorPixels;
+        string kind = mapper.CheckPixels >= 0 ? "검증점 실측 오차" : "추정 오차";
+        string grade = error < good ? "좋음" : error < fair ? "보통" : "낮음 · 다시 보정 권장";
+        return $"{mapper.ModelName} · {kind} 약 {Mathf.RoundToInt(error)}px · {grade}";
+    }
+
+    void TryLoadIPhoneCalibration()
+    {
+        if (!iphoneMapper.Load(PlayerPrefs.GetString(IPhoneMapperPref, ""))) return;
+        iphoneCalibrated = true;
+        iphoneStatus += " 저장된 보정을 불러왔어요 · 자세나 휴대폰 위치가 바뀌었으면 다시 보정해 주세요.";
+    }
 
     IPhoneGazeUdpReceiver iphoneReceiver;
     IIPhoneGazeSource iphoneSource;
@@ -42,7 +75,7 @@ public partial class GameController
     readonly double[][] iphoneMeasuredFeatures = new double[IPhoneCalibrationTargets.Length][];
     readonly List<double[]>[] iphoneMeasuredSamples = new List<double[]>[IPhoneCalibrationTargets.Length];
     readonly GazeMapper iphoneMapper = new GazeMapper();
-    readonly GazeSmoother iphoneSmoother = new GazeSmoother();
+    readonly GazeSmoother iphoneSmoother = new GazeSmoother(.5f, .004f, 1f, 18f);
     Vector2 iphoneCanvasGaze;
     bool iphoneMarkerValid, iphoneCalibrated, iphoneUncalibrated, iphoneBlinking;
     float iphoneBlinkSince = -1f, iphoneLastLiveAt = -100f;
@@ -85,7 +118,7 @@ public partial class GameController
         if (!iphoneCalibrating)
             iphoneStatus = iphoneCalibrated ? $"iPhone 추적 중 · 보정 완료 ({IPhoneAccuracyText()})" : "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
         Vector2 feature = iphoneSource.EyeFeature;
-        double[] features = GazeMapper.Features(feature, iphoneSource.HeadFeature, iphoneSource.LookFeature);
+        double[] features = GazeMapper.Features(feature, iphoneSource.HeadFeature, iphoneSource.LookFeature, iphoneSource.PositionFeature);
         // Eye rotation jumps while the eyelids close, so blink frames are left out of calibration and don't move the pointer.
         bool blinking = iphoneBlinking;
         if (iphoneCalibrating && !iphoneMeasuring && Time.unscaledTime >= iphoneTargetShownAt + IPhoneCalibrationSettleSeconds)
@@ -126,12 +159,7 @@ public partial class GameController
         iphoneMarkerValid = true;
     }
 
-    string IPhoneAccuracyText()
-    {
-        float error = iphoneMapper.ErrorPixels;
-        string grade = error < 90f ? "좋음" : error < 160f ? "보통" : "낮음 · 다시 보정 추천";
-        return $"{iphoneMapper.ModelName} 기준 오차 약 {Mathf.RoundToInt(error)}px · {grade}";
-    }
+    string IPhoneAccuracyText() => GazeAccuracyText(iphoneMapper, 90f, 160f);
 
     void StartIPhoneGaze()
     {
@@ -168,6 +196,7 @@ public partial class GameController
         iphoneCalibrationPoint = 0;
         iphoneMarkerValid = false;
         iphoneStatus = "연결 요청을 보냈어요. 얼굴 데이터를 기다리는 중이에요.";
+        TryLoadIPhoneCalibration();
     }
 
     void StartIPhoneUsbGaze()
@@ -196,6 +225,7 @@ public partial class GameController
         iphoneCalibrationPoint = 0;
         iphoneMarkerValid = false;
         iphoneStatus = "VTube Studio PC API에 연결 중이에요.";
+        TryLoadIPhoneCalibration();
     }
 
     void StopIPhoneGaze()
@@ -283,6 +313,8 @@ public partial class GameController
         iphoneCalibrated = true;
         iphoneMarkerValid = false;
         iphoneStatus = $"화면 보정 완료 · {IPhoneAccuracyText()}";
+        PlayerPrefs.SetString(IPhoneMapperPref, iphoneMapper.Save());
+        PlayerPrefs.Save();
         BeginIPhoneTrace();
     }
 
@@ -328,7 +360,7 @@ public partial class GameController
         return NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18);
     }
 
-    bool FitIPhoneCalibration() => iphoneMapper.Fit(iphoneMeasuredFeatures, IPhoneCalibrationTargets, iphoneMeasuredSamples, requireVerticalEye: true);
+    bool FitIPhoneCalibration() => FitAndCheck(iphoneMapper, iphoneMeasuredFeatures, iphoneMeasuredSamples);
 
     void StartIPhoneVerticalDiagnostic()
     {
@@ -406,9 +438,9 @@ public partial class GameController
         if (!gazeTestOpen || !gazeUseIphone || iphoneSource == null || now >= iphoneTraceUntil || now < iphoneTraceNextAt) return;
         iphoneTraceNextAt = now + .5f;
         Vector2 eye = iphoneSource.EyeFeature, head = iphoneSource.HeadFeature, look = iphoneSource.LookFeature;
-        Vector2 prediction = iphoneMapper.PredictUnclamped(GazeMapper.Features(eye, head, look));
+        Vector2 prediction = iphoneMapper.PredictUnclamped(GazeMapper.Features(eye, head, look, iphoneSource.PositionFeature));
         string phase = iphoneVerticalDiagnostic ? (iphoneDiagnosticStage == 0 ? "UP" : "DOWN") : "FREE";
-        Debug.Log($"[iPhone gaze trace] t={now:F2} phase={phase} seq={iphoneSource.Sequence} fresh={iphoneSource.HasFreshSample} face={iphoneSource.FaceFound} blink={iphoneSource.Blink:F3} held={iphoneBlinking} valid={iphoneMarkerValid} eyeY={eye.y:F3} lookY={look.y:F3} headY={head.y:F3} rawY={prediction.y:F3} shownY={iphoneCanvasGaze.y / 900f:F3} driftY={iphoneMapper.Drift.y:F3}");
+        Debug.Log($"[iPhone gaze trace] t={now:F2} phase={phase} seq={iphoneSource.Sequence} fresh={iphoneSource.HasFreshSample} face={iphoneSource.FaceFound} blink={iphoneSource.Blink:F3} held={iphoneBlinking} valid={iphoneMarkerValid} eyeY={eye.y:F3} lookY={look.y:F3} headY={head.y:F3} posX={iphoneSource.PositionFeature.x:F3} posY={iphoneSource.PositionFeature.y:F3} model={iphoneMapper.ModelName} rawY={prediction.y:F3} shownY={iphoneCanvasGaze.y / 900f:F3} driftY={iphoneMapper.Drift.y:F3}");
     }
 
     void DrawIPhoneGazePanel()
