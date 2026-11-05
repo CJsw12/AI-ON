@@ -33,6 +33,7 @@ public partial class GameController
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     bool eyeContactDebugVisible;
+    bool eyeContactLookAwayDialogueBlocked;
     string eyeContactDebugState = "대기";
     float eyeContactCountedAt = -1f;
 #endif
@@ -112,6 +113,7 @@ public partial class GameController
         eyeContactLookAwayCooldown = 0f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         eyeContactDebugState = "대기";
+        eyeContactLookAwayDialogueBlocked = false;
         eyeContactCountedAt = -1f;
 #endif
     }
@@ -175,6 +177,7 @@ public partial class GameController
             eyeContactLookAwayDwell = 0f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             eyeContactDebugState = "시선 이탈 끼어들기";
+            eyeContactLookAwayDialogueBlocked = false;
 #endif
             return;
         }
@@ -203,6 +206,7 @@ public partial class GameController
             eyeContactLookAwayDwell = 0f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             eyeContactDebugState = "깜빡임 · 진행 정지";
+            eyeContactLookAwayDialogueBlocked = false;
 #endif
             return;
         }
@@ -212,7 +216,10 @@ public partial class GameController
         bool heldSkip = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         bool chapterCardVisible = scene >= 1 && scene <= 6 && (chapterShown != scene || Time.unscaledTime - chapterAt <= 2.6f);
         bool dialogueBlocked = scene < 1 || scene > 6 || showResult || ChoiceUiVisible || AiBoxField || AiWaiting || AiHintShown || chapterCardVisible;
-        bool blocked = menu != Menu.None || miniGame != null || practice != null || skip || heldSkip || eyeContactPreparationMode || dialogueBlocked;
+        bool blocked = menu != Menu.None || miniGame != null || practice != null || skip || heldSkip || eyeContactPreparationMode;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        eyeContactLookAwayDialogueBlocked = dialogueBlocked && !blocked && portraitVisible && gazeValid;
+#endif
         if (blocked || !portraitVisible || !gazeValid)
         {
             eyeContactDwell = 0f;
@@ -231,7 +238,7 @@ public partial class GameController
         float leaveY = ny / EyeContactLeaveRadiusFactor;
         bool outsideLeave = leaveX * leaveX + leaveY * leaveY > 1f;
 
-        if (!lookAwayTriggered && eyeContactLookAwayPlaySeconds >= EyeContactLookAwayMinimumPlaySeconds && eyeContactLookAwayCooldown <= 0f)
+        if (!lookAwayTriggered && !dialogueBlocked && eyeContactLookAwayPlaySeconds >= EyeContactLookAwayMinimumPlaySeconds && eyeContactLookAwayCooldown <= 0f)
         {
             if (outsideLeave) eyeContactLookAwayDwell += dt;
             else eyeContactLookAwayDwell = 0f;
@@ -396,7 +403,10 @@ public partial class GameController
         NovelUI.Card(new Rect(14, 18, 390, 128), NovelUI.Alpha(Color.white, .94f), 12, NovelUI.Pink, 2);
         NovelUI.Label(new Rect(28, 24, 360, 28), $"눈맞춤 {eyeContactCount}회 · 응시 {eyeContactTotalSeconds:F1}초", NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleLeft, FontStyle.Bold);
         NovelUI.Label(new Rect(28, 56, 360, 30), eyeContactDebugState, NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleLeft);
-        NovelUI.Label(new Rect(28, 84, 360, 24), eyeContactFaceDrawn ? "영역: 분홍 진입 · 보라 이탈" : "영역 대기 중", NovelUI.Soft, 13, NovelUI.Plum, TextAnchor.MiddleLeft);
+        string areaState = lookAwayInterruptActive ? "끼어들기 중 · 눈맞춤 정지"
+            : eyeContactLookAwayDialogueBlocked ? "눈맞춤 집계 · 이탈 판정 제외"
+            : eyeContactFaceDrawn ? "영역: 분홍 진입 · 보라 이탈" : "영역 대기 중";
+        NovelUI.Label(new Rect(28, 84, 360, 24), areaState, NovelUI.Soft, 13, NovelUI.Plum, TextAnchor.MiddleLeft);
         NovelUI.Label(new Rect(28, 106, 360, 24), $"이탈 {eyeContactLookAwayDwell:F1}/{EyeContactLookAwayDwellSeconds:F0}초 · 쿨다운 {eyeContactLookAwayCooldown:F0}초 · 발동 {(lookAwayTriggered ? "완료" : "대기")}", NovelUI.Soft, 13, NovelUI.Plum, TextAnchor.MiddleLeft);
         GUI.matrix = saved;
     }
