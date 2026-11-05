@@ -31,12 +31,12 @@ public partial class GameController
     string IPhoneMapperPref => iphoneUseUsb ? "Gaze.IPhoneMapper.Usb" : "Gaze.IPhoneMapper.WiFi";
 
     /// <summary>Fits on the first 13 points and scores the mapper on the remaining check points.</summary>
-    static bool FitAndCheck(GazeMapper mapper, double[][] features, List<double[]>[] samples)
+    static bool FitAndCheck(GazeMapper mapper, double[][] features, List<double[]>[] samples, bool requireVerticalEye)
     {
         var fitTargets = new Vector2[GazeFitPoints]; Array.Copy(IPhoneCalibrationTargets, fitTargets, GazeFitPoints);
         var fitFeatures = new double[GazeFitPoints][]; Array.Copy(features, fitFeatures, GazeFitPoints);
         var fitSamples = new List<double[]>[GazeFitPoints]; Array.Copy(samples, fitSamples, GazeFitPoints);
-        if (!mapper.Fit(fitFeatures, fitTargets, fitSamples, requireVerticalEye: true)) return false;
+        if (!mapper.Fit(fitFeatures, fitTargets, fitSamples, requireVerticalEye: requireVerticalEye)) return false;
         int checks = IPhoneCalibrationTargets.Length - GazeFitPoints;
         var checkTargets = new Vector2[checks]; Array.Copy(IPhoneCalibrationTargets, GazeFitPoints, checkTargets, 0, checks);
         var checkFeatures = new double[checks][]; Array.Copy(features, GazeFitPoints, checkFeatures, 0, checks);
@@ -361,7 +361,7 @@ public partial class GameController
         return NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18);
     }
 
-    bool FitIPhoneCalibration() => FitAndCheck(iphoneMapper, iphoneMeasuredFeatures, iphoneMeasuredSamples);
+    bool FitIPhoneCalibration() => FitAndCheck(iphoneMapper, iphoneMeasuredFeatures, iphoneMeasuredSamples, requireVerticalEye: true);
 
     void StartIPhoneVerticalDiagnostic()
     {
