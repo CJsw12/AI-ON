@@ -7,12 +7,29 @@
 - 시선 추적 작업이면 `docs/AI/iPhone-Gaze-Debug-Handoff.md` 최신 절을 읽는다.
 
 ## 역할 분담: Claude = 코디네이터, Codex = 구현 워커
-- Claude는 요구 분석, 설계, 작업 명세 작성, 결과 검토, 사용자 보고를 맡는다.
-- 여러 파일에 걸친 구현, 반복적인 수정, 독립 리뷰는 `orchestration` 스킬로 Codex 워커에게 맡긴다:
-  `orca orchestration worker-start --spec "<명세>" --agent codex --worktree <current|new-child>`
-- 한두 줄 수정, 파일 읽기, 짧은 조사는 Claude가 직접 처리한다. 위임 비용이 더 크다.
+Claude는 요구 분석, 설계, 작업 명세 작성, 결과 검토, 사용자 보고를 맡는다.
+이 프로젝트에서는 아래 기준이 Orca `orchestration` 스킬의 기본 안내("자체 서브에이전트 우선")보다 우선한다.
+
+### 위임 판단 (위에서부터 순서대로 첫 번째로 맞는 항목을 따른다)
+1. **사용자가 실행자를 지정함** → 그대로 따른다. "Codex로/Codex 워커로" → Codex 워커, "직접 해/Claude가 해" → 직접.
+2. **Unity 에디터·실기기(iPhone, 웹캠)·사용자 PC 설정이 필요함** → 위임하지 않는다. Claude가 준비하고 사용자에게 실행을 요청한다.
+3. **설계 결정이나 사용자 확인이 먼저 필요함** → 위임 전에 사용자에게 묻는다. 결정이 끝난 뒤 4~6번을 적용한다.
+4. **코드 변경 작업 → Codex 워커** (`--worktree new-child`). 아래 중 하나라도 해당하면:
+   - 2개 이상 파일 수정, 또는 한 파일에서 30줄 이상 변경
+   - 새 기능·리팩터링·버그 수정 구현
+   - 테스트를 실행해 통과시키는 것이 완료 조건인 작업
+5. **변경 후 독립 리뷰 → Codex 워커** (`--worktree current`, 읽기 전용). Claude가 직접 쓴 코드가 20줄을 넘으면 커밋 전에 Codex 리뷰를 받는다.
+6. **나머지 → Claude가 직접 또는 Claude 서브에이전트**
+   - 직접: 1개 파일 30줄 미만 수정, 문서·설정 수정, 파일 읽기, git 조회, 짧은 질문 답변
+   - Claude 서브에이전트(Agent 도구): 여러 파일에 걸친 코드 검색·조사처럼 결론만 필요한 읽기 작업
+
+### 위임 실행 규칙
+- 위임 전에 "무엇을 / 누구에게 / 어느 worktree" 한 줄을 사용자에게 알린다.
+- 실행: `orca orchestration worker-start --spec-file - --agent codex --worktree <new-child|current> --task-title "<제목>"`
 - 워커를 시작하면 턴을 끝낸다. 폴링하지 않는다. Orca가 `worker_done`/질문으로 깨운다.
 - 워커 결과는 그대로 믿지 않는다. diff를 직접 읽고, 근거가 빠졌거나 모순이 있을 때만 검증을 다시 돌린다.
+- 수정 요청은 새 워커를 띄우지 말고 `orca orchestration send --to dispatch:<id>`로 같은 워커에게 보낸다.
+- `worker-start`가 실패하면 그대로 재시도하지 않는다. 터미널 출력으로 원인을 확인해 사용자에게 보고하고, 사용자가 원하면 Claude가 직접 처리한다.
 
 ### worktree 선택
 - 코드 수정 작업: `--worktree new-child` (같은 폴더를 Claude/Codex가 동시에 수정하는 충돌 방지).
