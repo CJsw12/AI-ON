@@ -725,7 +725,7 @@ public partial class GameController : MonoBehaviour
         NovelUI.Card(face, Color.white, 30, hover ? NovelUI.DeepPink : NovelUI.Pink, hover ? 4 : 3);
         Rect photo = new Rect(face.x + 18, face.y + 18, face.width - 36, 210);
         NovelUI.Fill(photo, NovelUI.Blush, 22);
-        string picture = Professor.Picture(info, who, hover ? "Happy" : "");
+        string picture = Professor.Picture(info, who, hover ? (info.Image == "ProfessorKim" ? "Hover" : "Happy") : "");
         Texture2D portrait = Resources.Load<Texture2D>(picture);
         // Hovering zooms in on the face.
         if (portrait != null && !DrawPortraitInFrame(photo, portrait, hover ? .44f : .3f, hover ? .42f : .3f) && NovelUI.Repaint)

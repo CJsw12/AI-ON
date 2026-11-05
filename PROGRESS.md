@@ -18,6 +18,7 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Codex] 2026-11-05 심한뫼 교수 사진 교체**: IMG_6931 기본, IMG_6939 기쁨, IMG_6950 화남 사진을 배경 제거 PNG로 교체하고, IMG_6937 근접 사진을 교수 선택 카드 마우스 오버 전용 `ProfessorKimHoverTransparent`로 연결. 얼굴 위치 표는 심한뫼 4장만 재생성하고 기존 에셋 GUID와 다른 교수 데이터를 보존. Unity 6000.3.23f1 배치 가져오기·스크립트 컴파일 완료(로그 return code 0), 회귀 테스트 5종 및 `git diff --check` 통과. 기존 AiProfessor 경고와 다른 교수 로컬 초상 9장의 얼굴 위치 표 미등록 경고는 남아 있음. 선택 화면 실제 마우스 오버 및 플레이 화면 시각 검증은 미검증.
 - **[Claude] 2026-11-05 AI 서버 GPT-6.1 Terra 전환 + 채점·입력 버그 수정**:
   - [`worker.js`](Server/ai-proxy/worker.js): `gpt-6.1-terra`(12초) 우선, 실패·시간 초과·빈 응답·일일 한도(하루 500회, `TERRA_DAILY_LIMIT`) 초과 시 Gemini(22초)로 자동 전환. OpenAI 401/403/429면 10분간 Terra 건너뜀. 응답 헤더 `X-AION-Model`. 배포 완료(버전 2a9046dd, 시크릿 `OPENAI_API_KEY`). 빌린 OpenAI 계정이라 계정 쪽 한도를 못 걸어 일일 횟수가 비용 상한.
   - [`AiProfessor.cs`](Assets/Scripts/AiProfessor.cs) `GradeAnswer`: 판정 값은 허용 단어와 정확히 일치, 선택지는 0~N 정수만 인정(나머지는 형식 오류).

@@ -1,6 +1,6 @@
 // 컴퓨터공학과: fixed events and choices; relationship changes only the professor's response.
-// Both professors' tones live here ("교수|김가람|이명희"); the quiz questions come from AiSwQuizzes.
-// 김가람: a terse tsundere who praises sideways. 이명희: a chatty dev geek full of game and meme metaphors.
+// Both professors' tones live here ("교수|심한뫼|이명희"); the quiz questions come from AiSwQuizzes.
+// 심한뫼: a terse tsundere who praises sideways. 이명희: a chatty dev geek full of game and meme metaphors.
 public static class AiSwStory
 {
     public static readonly string[][] Dialogue = {
@@ -160,7 +160,7 @@ public static class AiSwStory
         } };
 
     // Scores and replies follow the twelve slots; null rows are quizzes or minigames.
-    // 김가람 likes quiet effort, owning mistakes and working things out alone; 이명희 likes curiosity and company.
+    // 심한뫼 likes quiet effort, owning mistakes and working things out alone; 이명희 likes curiosity and company.
     static readonly int[][] KimScores = {
         new[] {-1, 1}, new[] {1, 0, 2}, new[] {2, 1, -1}, null, null, null,
         null, new[] {1, 0, 2}, new[] {2, -2, 1}, null, null, new[] {1, 1, 2}
@@ -259,7 +259,7 @@ public static class AiSwStory
         Levels = new[] { "전공자", "비전공자" },
         LevelNotes = new[] { "코드를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "김가람 교수", Description = "과묵한 츤데레 · 말은 짧아도 속으로 챙김", TagA = "#츤데레", TagB = "#나쁘지않네요", Image = "ProfessorKim" },
+            new Professor { Name = "심한뫼 교수", Description = "과묵한 츤데레 · 말은 짧아도 속으로 챙김", TagA = "#츤데레", TagB = "#나쁘지않네요", Image = "ProfessorKim" },
             new Professor { Name = "이명희 교수", Description = "수다스러운 개발 덕후 · 게임과 밈으로 설명", TagA = "#개발덕후", TagB = "#TMI장인", Image = "ProfessorLee" }
         },
         Fond = new[] { "…요즘은 좀 믿고 맡겨요.", "아 진짜, 학생이랑 얘기하면 시간 순삭이에요!" },

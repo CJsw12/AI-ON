@@ -34,7 +34,7 @@ CASCADES = [cv2.CascadeClassifier(cv2.data.haarcascades + n)
 
 
 def professor_of(name):
-    return re.sub(r"(Happy|Frown)?Transparent$", "", name)
+    return re.sub(r"(Happy|Frown|Hover)?Transparent$", "", name)
 
 
 def detect(img, bbox):
