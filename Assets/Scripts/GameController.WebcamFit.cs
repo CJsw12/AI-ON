@@ -2,10 +2,8 @@ using System.Collections.Generic;
 using UnitEye;
 using UnityEngine;
 
-// Webcam "screen fit": 13 fixation targets measured on top of UnitEye's own calibration.
-// UnitEye's ridge calibration pulls estimates toward the screen centre and a laptop camera above the screen sees
-// the eyes worst when they look down, so the far sides and the bottom fall short. Fitting each axis again on
-// fixations at those edges, with head pose and MediaPipe's eye-look blendshapes as extra inputs, stretches them back.
+// Webcam "screen fit": 13 fixation targets plus 3 checks. The regular test layers this on UnitEye's calibration;
+// mandatory preparation may skip that step and fit from whichever gaze, head and eye-angle inputs move.
 public partial class GameController
 {
     // 16 points × (.6 + .9) s ≈ 24 s, so the screen fit stays near 30 s even with a retry or two.
@@ -20,11 +18,12 @@ public partial class GameController
     readonly List<double[]> webcamCapture = new List<double[]>();
     readonly double[][] webcamMeasured = new double[IPhoneCalibrationTargets.Length][];
     readonly List<double[]>[] webcamMeasuredSamples = new List<double[]>[IPhoneCalibrationTargets.Length];
-    bool webcamFitting, webcamFitMeasuring, webcamFitted, webcamMarkerValid, webcamBlinking, webcamLidsDown;
+    bool webcamFitting, webcamFitMeasuring, webcamFitted, webcamFitOnlySession, webcamMarkerValid, webcamBlinking, webcamLidsDown;
     int webcamFitPoint;
     float webcamTargetShownAt, webcamMeasureAt, webcamBlinkSince = -1f;
     Vector2 webcamCanvasGaze;
     string webcamFitStatus = "";
+    bool WebcamFitOnlyGaze => eyeContactPreparationMode || webcamFitOnlySession;
 
     /// <summary>True while the eyes are really shut: closed briefly, or closed hard. A long half-closure is a downward look.</summary>
     static bool ShortBlink(bool lidsDown, bool certainlyClosed, ref float since)
@@ -36,6 +35,10 @@ public partial class GameController
 
     // gazeLocation is already GUI space (y down): HomulerGaze draws its own dot at it with GUI.DrawTexture.
     Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
+
+    static bool IsFiniteWebcamPoint(Vector2 point) =>
+        !float.IsNaN(point.x) && !float.IsInfinity(point.x) &&
+        !float.IsNaN(point.y) && !float.IsInfinity(point.y);
 
     /// <summary>The pointer the game uses: the screen-fitted point when available, UnitEye's otherwise.</summary>
     // Before the screen fit, the UnitEye point gets only the fixation hold (UnitEye already smooths it).
@@ -49,6 +52,9 @@ public partial class GameController
         // Without a face the head pose and blendshapes are stale; never fit or point with them.
         if (!gazeTracker.IsUserPresent) { webcamMarkerValid = false; return; }
         Vector2 raw = WebcamRawCanvasGaze;
+        bool rawGazeFinite = IsFiniteWebcamPoint(raw);
+        if (WebcamFitOnlyGaze && !rawGazeFinite)
+            raw = Vector2.zero;   // keep the feature finite; the invalid frame is excluded from fit samples below
         Vector3 pose = gazeTracker.Provider.HeadPoseEuler;   // pitch, yaw, roll
         Vector2 look = Vector2.zero;
         float lids = gazeTracker.Blinking ? 1f : 0f;
@@ -78,10 +84,12 @@ public partial class GameController
         // Only accept it when blendshapes confirm a downward look and the eye is not strongly closed.
         bool usableDownwardLook = hasShapes && shapeLookY < -.1f && lids < WebcamBlinkClosed && !webcamBlinking;
         bool usableForFit = !webcamLidsDown || usableDownwardLook;
-        if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + WebcamCaptureSeconds)
+        if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + WebcamCaptureSeconds &&
+            (!WebcamFitOnlyGaze || rawGazeFinite))
             webcamCapture.Add(features);
 
         if (!webcamFitted) return;
+        if (WebcamFitOnlyGaze && !rawGazeFinite) { webcamMarkerValid = false; return; }
         if (webcamBlinking && webcamMarkerValid) return;   // hold the pointer through a real blink
         Vector2 p = webcamMapper.Predict(features);
         if (!webcamMarkerValid) webcamSmoother.Reset();
@@ -122,13 +130,16 @@ public partial class GameController
     void BeginWebcamFit()
     {
         StopStarGame();
+        webcamFitOnlySession = eyeContactPreparationMode;
         // UnitEye's drift layer would shift its output under the new fit, so the fit's own anchors take over.
         gazeTracker.onlineDriftCorrection = false;
         webcamFitting = true;
         webcamFitMeasuring = webcamFitted = webcamMarkerValid = false;
         webcamFitPoint = 0;
         webcamTargetShownAt = Time.unscaledTime;
-        webcamFitStatus = "화면 점을 바라봐 주세요. 자동으로 표본을 모읍니다.";
+        webcamFitStatus = eyeContactPreparationMode
+            ? "화면의 점을 차례로 바라봐 주세요. 각 점은 자동으로 측정돼요."
+            : "화면 점을 바라봐 주세요. 자동으로 표본을 모읍니다.";
     }
 
     void CompleteWebcamFitPoint()
@@ -139,6 +150,7 @@ public partial class GameController
         {
             webcamTargetShownAt = Time.unscaledTime;
             webcamFitStatus = !gazeTracker.IsUserPresent ? "얼굴이 잡히지 않았어요. 웹캠을 바라보고 같은 점을 다시 응시해 주세요."
+                : eyeContactPreparationMode ? "측정 신호가 부족했어요. 얼굴이 잘 보이도록 하고 같은 점을 다시 바라봐 주세요."
                 : "표본이 부족했어요(눈 감김 포함). 같은 점을 다시 바라봐 주세요.";
             return;
         }
@@ -157,7 +169,9 @@ public partial class GameController
         if (!FitAndCheck(webcamMapper, webcamMeasured, webcamMeasuredSamples, requireVerticalEye: false))
         {
             CancelWebcamFit();
-            webcamFitStatus = "점마다 시선 값이 충분히 달라지지 않았어요. 먼저 ‘1. 시선 보정’을 하고 다시 해 주세요.";
+            webcamFitStatus = eyeContactPreparationMode
+                ? "점마다 시선 값이 충분히 달라지지 않았어요. 얼굴이 잘 보이게 하고 다시 해 주세요."
+                : "점마다 시선 값이 충분히 달라지지 않았어요. 먼저 ‘1. 시선 보정’을 하고 다시 해 주세요.";
             return;
         }
         webcamFitted = true;
@@ -169,6 +183,7 @@ public partial class GameController
     void CancelWebcamFit()
     {
         webcamFitting = webcamFitMeasuring = webcamFitted = webcamMarkerValid = false;
+        webcamFitOnlySession = false;
         if (gazeTracker != null) gazeTracker.onlineDriftCorrection = true;
     }
 

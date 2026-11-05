@@ -25,8 +25,7 @@ public partial class GameController
     // The screen fit's ray-to-screen feature needs ResNet-34's angles, so the gaze test always runs this model.
     const GazeBackbone WebcamModel = GazeBackbone.EyeMUPlusResNet34;
 
-    // Step 1 (UnitEye base calibration) must succeed in this session before step 2 (screen fit) unlocks,
-    // and step 2 must finish before the gaze games start.
+    // The regular gaze test keeps its two-step flow; mandatory preparation uses only the screen fit.
     bool webcamBaseDone, webcamBaseRunning, webcamBaseSeenActive;
 
     void TickWebcamBaseCalibration()
@@ -37,7 +36,9 @@ public partial class GameController
         webcamBaseRunning = webcamBaseSeenActive = false;
         string message = gazeCalibration != null ? gazeCalibration.ReturnMessage ?? "" : "";
         webcamBaseDone = message.Length > 0 && !message.StartsWith("Cancelled") && !message.StartsWith("Calibration training failed");
-        webcamFitStatus = webcamBaseDone ? "1번 보정 완료 · 이제 2번 화면 맞춤을 해 주세요." : "1번 보정이 끝나지 않았어요. 다시 해 주세요.";
+        webcamFitStatus = eyeContactPreparationMode
+            ? webcamBaseDone ? "웹캠 추적 준비가 끝났어요." : "웹캠 추적 준비에 실패했어요. 다시 해 주세요."
+            : webcamBaseDone ? "1번 보정 완료 · 이제 2번 화면 맞춤을 해 주세요." : "1번 보정이 끝나지 않았어요. 다시 해 주세요.";
     }
 
     void OpenGazeTest()
@@ -164,7 +165,11 @@ public partial class GameController
         }
         TickWebcamBaseCalibration();
         TickWebcamFit();
-        webcamRawShown = webcamRawHold.Filter(WebcamRawCanvasGaze, Time.unscaledTime);
+        Vector2 rawGaze = WebcamRawCanvasGaze;
+        if (!WebcamFitOnlyGaze || IsFiniteWebcamPoint(rawGaze))
+            webcamRawShown = webcamRawHold.Filter(rawGaze, Time.unscaledTime);
+        else
+            webcamRawHold.Reset();
         if (Time.unscaledTime - webcamRateSince >= 1f)
         {
             webcamRate = webcamSamplesThisSecond;
@@ -223,7 +228,10 @@ public partial class GameController
         else
         {
             NovelUI.Label(new Rect(50, 146, 1180, 38), gazeStatus, NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-            NovelUI.Label(new Rect(50, 184, 1180, 42), "1번 보정은 화면을 한 번 클릭하면 시작되고, 단계가 자동으로 이어져요(약 30초, 오른쪽 클릭 취소). 그다음 2번을 해요.", NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleCenter);
+            string webcamInstruction = eyeContactPreparationMode
+                ? "화면의 점들을 차례로 바라봐 주세요. 얼굴이 잘 보이면 자동으로 측정해요."
+                : "1번 보정은 화면을 한 번 클릭하면 시작되고, 단계가 자동으로 이어져요(약 30초, 오른쪽 클릭 취소). 그다음 2번을 해요.";
+            NovelUI.Label(new Rect(50, 184, 1180, 42), webcamInstruction, NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleCenter);
             if (gazeTracker == null)
             {
                 GUI.enabled = !requestingCamera;
@@ -234,20 +242,33 @@ public partial class GameController
             {
                 bool tracking = gazeTracker.IsUserPresent && Time.unscaledTime - lastGazeAt < 2f;
                 GUI.enabled = tracking;
-                // Two rounds of every calibration pattern (corners, interior, head turns, sweeps).
-                if (NovelUI.Button(new Rect(280, 238, 350, 58), "1. 시선 보정", !webcamFitted, 22))
+                if (!eyeContactPreparationMode)
                 {
-                    CancelWebcamFit();   // a new base calibration changes what the screen fit was measured on
-                    webcamBaseDone = false;
-                    webcamBaseRunning = true;
-                    webcamBaseSeenActive = false;
-                    gazeTracker.LoadCalibration(12f, 20f, 1);   // one pass of all six patterns; the 16-point fit refines it
+                    // Two rounds of every calibration pattern (corners, interior, head turns, sweeps).
+                    if (NovelUI.Button(new Rect(280, 238, 350, 58), "1. 시선 보정", !webcamFitted, 22))
+                    {
+                        CancelWebcamFit();   // a new base calibration changes what the screen fit was measured on
+                        webcamBaseDone = false;
+                        webcamBaseRunning = true;
+                        webcamBaseSeenActive = false;
+                        gazeTracker.LoadCalibration(12f, 20f, 1);   // one pass of all six patterns; the 16-point fit refines it
+                    }
                 }
-                GUI.enabled = tracking && webcamBaseDone;
-                if (NovelUI.Button(new Rect(650, 238, 350, 58), webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)", webcamBaseDone && !webcamFitted, 22)) BeginWebcamFit();
+                GUI.enabled = tracking && (eyeContactPreparationMode || webcamBaseDone);
+                Rect fitButtonRect = eyeContactPreparationMode
+                    ? new Rect(440, 238, 400, 58)
+                    : new Rect(650, 238, 350, 58);
+                string fitButtonLabel = eyeContactPreparationMode
+                    ? webcamFitted ? "화면 맞춤 다시" : "화면 맞춤 (16점)"
+                    : webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)";
+                bool canBeginFit = !webcamFitted && (eyeContactPreparationMode || webcamBaseDone);
+                if (NovelUI.Button(fitButtonRect, fitButtonLabel, canBeginFit, 22)) BeginWebcamFit();
                 GUI.enabled = tracking;
+                string fitPrompt = eyeContactPreparationMode
+                    ? "16점 화면 맞춤을 마치면 시선 추적 준비가 끝나요."
+                    : webcamBaseDone ? "2번 화면 맞춤을 하면 시선 게임을 할 수 있어요." : "1번 보정부터 해 주세요. 끝나면 2번이 열려요.";
                 NovelUI.Label(new Rect(140, 304, 1000, 54), webcamFitted || webcamFitStatus.Length > 0 ? webcamFitStatus
-                    : webcamBaseDone ? "2번 화면 맞춤을 하면 시선 게임을 할 수 있어요." : "1번 보정부터 해 주세요. 끝나면 2번이 열려요.", NovelUI.Soft, 16,
+                    : fitPrompt, NovelUI.Soft, 16,
                     webcamFitted ? NovelUI.Mint : NovelUI.Plum, TextAnchor.MiddleCenter, webcamFitted ? FontStyle.Bold : FontStyle.Normal);
                 GUI.enabled = tracking && webcamFitted;
                 if (NovelUI.Button(new Rect(440, 380, 400, 58), "시선 별잡기", webcamFitted, 23)) StartStarGame();
@@ -257,7 +278,8 @@ public partial class GameController
                 string advice = webcamRate > 0 && webcamRate < 12 ? " · 느리면 다른 프로그램을 닫아 보세요" : "";
                 NovelUI.Label(new Rect(140, 582, 1000, 28), $"{speed}{advice}", NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleCenter);
 
-                if (tracking && lastGazeSequence > 0 && (!webcamFitted || webcamMarkerValid))
+                if (tracking && lastGazeSequence > 0 && (!webcamFitted || webcamMarkerValid) &&
+                    (!eyeContactPreparationMode || webcamFitted || IsFiniteWebcamPoint(WebcamRawCanvasGaze)))
                 {
                     Vector2 point = WebcamCanvasGaze;
                     if (point.x >= 0 && point.x <= 1280 && point.y >= 0 && point.y <= 900)
