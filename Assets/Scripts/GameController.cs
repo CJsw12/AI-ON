@@ -56,6 +56,7 @@ public partial class GameController : MonoBehaviour
     {
         UpdateGazeTest();
         TickClickCalibration();
+        TickGazeGameSession();
         UpdatePhotoCapture();
         novelAudio.SetMood(DodgeScreenOpen ? "Darkness" : S.Mood(scene, choiceStage));   // tense music for the gaze-dodge game
         AiImeUpdate();
@@ -215,6 +216,7 @@ public partial class GameController : MonoBehaviour
     void DrawScreen()
     {
         if (gazeTestOpen) { DrawGazeTest(); return; }
+        if (storyGazeEvent != GazeGame.None) { DrawStoryGazeIntro(); return; }
         if (photoCaptureOpen) { DrawPhotoCapture(); return; }
         if (memorial > 0) { Memorial(); return; }
         if (!introDone) { Intro(); return; }
@@ -420,8 +422,10 @@ public partial class GameController : MonoBehaviour
         if (!showResult) { dialogueIndex++; return; }
         showResult = false;
         nonsenseResultActive = false;
+        bool lastSlot = scene == 6 && choiceStage == 1;
         if (choiceStage == 0) { choiceStage = 1; dialogueIndex = 0; }
         else { choiceStage = dialogueIndex = 0; scene++; ReadLog.Flush(); }
+        QueueStoryGazeEvents(lastSlot);
     }
 
     // Skip, backlog and back buttons on the dialogue box's top edge.
@@ -742,8 +746,6 @@ public partial class GameController : MonoBehaviour
             if (NovelUI.Button(new Rect(card.x + 258, card.yMax - 66, 112, 46), "미니게임", false, 19)) OpenMenu(Menu.Practice);
             if (NovelUI.Button(new Rect(card.x + 380, card.yMax - 66, 124, 46), "엔딩 도감", false, 19)) OpenMenu(Menu.Gallery);
             if (NovelUI.Button(new Rect(card.x + 514, card.yMax - 66, 116, 46), "설정", false, 19)) OpenMenu(Menu.Settings);
-            if (NovelUI.Button(new Rect(990, 678, 250, 54), "눈빛 맞추기", true, 20)) StartEyeMatchFromTitle();
-            if (NovelUI.Button(new Rect(990, 744, 250, 54), "눈빛 피하기", true, 20)) StartDodgeFromTitle();
             if (NovelUI.Button(new Rect(990, 810, 250, 54), "시선 추적 테스트", false, 20)) OpenGazeTest();
             int college = NovelUI.Segmented(new Rect(card.x + 40, card.y + 80, card.width - 80, 48), Stories.Colleges, titleCollege, 18);
             if (college != titleCollege) { novelAudio.Play("Toggle"); titleCollege = college; }
@@ -902,6 +904,7 @@ public partial class GameController : MonoBehaviour
         EndEyeContactSession();
         ResetEyeContactRun();
         scene = affection = entryStep = dialogueIndex = choiceStage = questions = teamwork = interest = solo = 0;
+        matchEventDone = dodgeEventDone = dodgePending = false; storyGazeEvent = GazeGame.None; gazeSession = GazeGame.None;
         professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear(); wrongPick = -1;
         shownAffection = lastDelta = 0; lineKey = voiceKey = null; miniGame = null;
         novelAudio.StopVoice();

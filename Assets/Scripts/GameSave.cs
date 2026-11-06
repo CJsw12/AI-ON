@@ -24,6 +24,7 @@ public static class GameSave
         public float EyeContactSeconds;
         public bool EyeContactTrackingEnabled;
         public bool LookAwayTriggered;
+        public int GazeEvents;        // story gaze events already shown (bit 1 눈빛 맞추기, bit 2 눈빛 피하기); absent (0) in older saves.
         public DateTime SavedAt;
     }
 
@@ -37,7 +38,7 @@ public static class GameSave
             d.Experienced ? "1" : "0", d.ShowResult ? "1" : "0", Convert.ToBase64String(Encoding.UTF8.GetBytes(d.ResultLine ?? "")),
             d.ResultKey ?? "", d.WrongPick.ToString(), d.AiMode ? "1" : "0", d.HintsUsed.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(d.Hint ?? "")),
             Math.Max(0, d.EyeContactCount).ToString(), Mathf.Max(0f, d.EyeContactSeconds).ToString("R", CultureInfo.InvariantCulture), d.EyeContactTrackingEnabled ? "1" : "0",
-            d.LookAwayTriggered ? "1" : "0"
+            d.LookAwayTriggered ? "1" : "0", Math.Max(0, d.GazeEvents).ToString()
         };
         PlayerPrefs.SetString(Key(slot), string.Join("|", fields));
         PlayerPrefs.Save();
@@ -49,7 +50,7 @@ public static class GameSave
     {
         string[] f = PlayerPrefs.GetString(Key(slot), "").Split('|');
         // Optional fields added over time keep older saves loadable.
-        if (f.Length < 15 || f.Length > 24 || f[0] != Version) return null;
+        if (f.Length < 15 || f.Length > 25 || f[0] != Version) return null;
         try
         {
             int eyeContactCount = f.Length > 20 ? Math.Max(0, int.Parse(f[20])) : 0;
@@ -71,7 +72,8 @@ public static class GameSave
                 Hint = f.Length > 19 && f[19] != "" ? Encoding.UTF8.GetString(Convert.FromBase64String(f[19])) : null,
                 EyeContactCount = eyeContactCount, EyeContactSeconds = eyeContactSeconds,
                 EyeContactTrackingEnabled = f.Length > 22 && f[22] == "1",
-                LookAwayTriggered = f.Length > 23 && f[23] == "1"
+                LookAwayTriggered = f.Length > 23 && f[23] == "1",
+                GazeEvents = f.Length > 24 ? Math.Max(0, int.Parse(f[24])) : 0
             };
             bool valid = d.Faculty >= 0 && d.Faculty < Stories.All.Length && d.Scene >= 1 && d.Scene <= 6 && (d.Stage == 0 || d.Stage == 1) && d.Line >= 0 && (d.Professor == 0 || d.Professor == 1);
             return valid ? d : null;

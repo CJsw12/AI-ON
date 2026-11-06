@@ -508,7 +508,8 @@ public partial class GameController
         NovelUI.Label(new Rect(340, 524 + lift, 600, 70), matchCleared ? "클리어!" : "아쉬워요", NovelUI.Round, 52, NovelUI.Alpha(matchCleared ? NovelUI.DeepPink : NovelUI.Plum, a), TextAnchor.MiddleCenter);
 
         // Affection line with its icon: a pink heart that bounces in with the text, or a grey cracked heart.
-        string line = matchCleared ? $"호감도 +{matchAffectionGain}" : "호감도 변화 없음";
+        string line = gazeSession != GazeGame.None && !gazeSessionStory ? (matchCleared ? "성공! (연습이라 호감도는 그대로예요)" : "아쉬워요! (연습)")
+            : matchCleared ? $"호감도 +{matchAffectionGain}" : "호감도 변화 없음";
         float w = NovelUI.Width(line, NovelUI.Soft, 24) * 1.15f + 16f;   // bold is wider than the measured regular text
         Vector2 center = new Vector2(640f + 22f, 613f + lift);
         Matrix4x4 keep = GUI.matrix;
@@ -530,8 +531,8 @@ public partial class GameController
             NovelUI.Soft, 17, NovelUI.Alpha(NovelUI.Plum, a), TextAnchor.MiddleCenter);
         NovelUI.Label(new Rect(340, 708 + lift, 600, 30), $"최고 기록 {Mathf.Max(matchBest, 0f):F1}초", NovelUI.Soft, 16, NovelUI.Alpha(NovelUI.Plum, a), TextAnchor.MiddleCenter);
         if (a < 1f) return;   // the buttons appear once the card has settled
-        if (NovelUI.Button(new Rect(370, 770, 250, 62), "한 판 더", true, 23)) StartEyeMatchGame();
-        if (NovelUI.Button(new Rect(660, 770, 250, 62), "돌아가기", false, 23)) StopEyeMatchGame();
+        if (!storyGazeSession && NovelUI.Button(new Rect(370, 770, 250, 62), "한 판 더", true, 23)) StartEyeMatchGame();
+        if (NovelUI.Button(new Rect(storyGazeSession ? 515 : 660, 770, 250, 62), "돌아가기", false, 23)) StopEyeMatchGame();
     }
 
     void DrawEyeMatchSpeech(float now)

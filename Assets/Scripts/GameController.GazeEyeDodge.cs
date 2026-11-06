@@ -297,8 +297,8 @@ public partial class GameController
             NovelUI.Label(new Rect(340, 468, 600, 40), dodgeNewBest ? "새 최고 기록이에요!" : $"최고 기록 {dodgeBest}점",
                 NovelUI.Soft, 22, dodgeNewBest ? NovelUI.Berry : NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
             NovelUI.Label(new Rect(340, 510, 600, 30), "눈빛이 바로 따라오면 크게 휙 옮겨 보세요.", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
-            if (NovelUI.Button(new Rect(370, 570, 250, 62), "한 판 더", true, 23)) StartDodgeGame();
-            if (NovelUI.Button(new Rect(660, 570, 250, 62), "돌아가기", false, 23)) LeaveDodgeGame();
+            if (!storyGazeSession && NovelUI.Button(new Rect(370, 570, 250, 62), "한 판 더", true, 23)) StartDodgeGame();
+            if (NovelUI.Button(new Rect(storyGazeSession ? 515 : 660, 570, 250, 62), "돌아가기", false, 23)) LeaveDodgeGame();
             return;
         }
 

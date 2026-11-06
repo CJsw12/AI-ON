@@ -51,6 +51,8 @@ public partial class GameController
 
     void CloseGazeTest()
     {
+        // A story gaze event borrowed this screen: keep the camera and the story's eye-contact session running.
+        if (storyGazeSession && eyeContactSessionActive) { gazeTestOpen = false; return; }
         gazeTestOpen = false;
         eyeContactSessionActive = false;
         dodgeAfterCalibration = false;
