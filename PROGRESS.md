@@ -18,6 +18,11 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Antigravity] 2026-11-06 시선 추적 코드 정적 검토 및 수치/메모리 예외 방어 보강**:
+  - [GazeMapper.cs](Assets/Scripts/GazeMapper.cs): Median() 호출 시 빈 리스트에 대한 ArgumentOutOfRangeException 방어 가드 추가, PredictUnclamped()에 특성 벡터 NaN/Infinity 가드 추가, GazeSmoother.Filter()에 유효하지 않은 좌표 입력 시 내부 필터 상태(alue, held) 영구 오염 방지 가드 적용.
+  - [GameController.ClickCalibration.cs](Assets/Scripts/GameController.ClickCalibration.cs): 프레임 지연이나 시선 중단 시 무한정 리스트가 누적되지 않도록 clickGazeHistory 및 clickMouseHistory 큐에 최대 150개 상한 용량(MaxHistoryCapacity) 가드 추가.
+  - [GameController.EyeContact.cs](Assets/Scripts/GameController.EyeContact.cs): 교수 얼굴 타원 정규화 계산 시 반지름이 0에 수렴할 경우 발생할 수 있는 0 나눔/Infinity 예외 방어(Mathf.Max(..., 1f) 적용).
+  - 검증: 기존 및 신규 포함 Tests/*.ps1 7종 단위 테스트 전수 PASS (Exit 0), git diff --check 공백 오류 0.
 - **[Codex] 2026-11-06 iPhone 보정 품질 검사**: 목표가 실제 Repaint된 뒤 1.25초를 기다리고 표본을 수집한다. Wi-Fi 눈 회전 표본의 흔들림이 크면 같은 점을 다시 측정하며, 독립 검증 평균 160px 또는 P95 240px를 넘으면 성공 처리·저장·스토리 자동 진행을 막는다. 실패 안내를 유지하고, 평균 오차가 큰 저장 보정도 재사용하지 않는다. USB는 신호 단위가 달라 각도 기반 안정성 검사를 적용하지 않는다.
   - **플레이 방법**: Play → 시선 추적 테스트 → iPhone 추적 → 연결 → 화면 보정 시작 → 분홍 점 응시. 불안정한 점은 자동 재측정하며 실패 시 결과를 저장하지 않았다는 안내가 나온다.
   - 검증: 기존 회귀 5종 및 새 보정 검사 17항목 exit 0, Unity 컴파일 오류 0, Editor에서 저품질 보정 거부·기존 프로필 보존·안내 유지·정상 보정 저장 테스트 통과. `git diff --check` 통과. 실제 정확도 개선과 재측정 횟수는 미검증이며 검사 한계값도 실기 조정이 필요하다.

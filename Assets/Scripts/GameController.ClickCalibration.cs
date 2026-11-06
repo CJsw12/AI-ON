@@ -32,8 +32,10 @@ public partial class GameController
         if (!Finite(point)) return;
         foreach (double f in features) if (double.IsNaN(f) || double.IsInfinity(f)) return;   // never let NaN reach the refit
         float seen = gazeUseIphone ? now : WebcamFrameTime();
+        const int MaxHistoryCapacity = 150;
         clickGazeHistory.Add((seen, features, point));
-        while (clickGazeHistory.Count > 0 && clickGazeHistory[0].time < now - ClickLookFrom - ClickReleaseTimeout - 1f) clickGazeHistory.RemoveAt(0);
+        while (clickGazeHistory.Count > MaxHistoryCapacity || (clickGazeHistory.Count > 0 && clickGazeHistory[0].time < now - ClickLookFrom - ClickReleaseTimeout - 1f))
+            clickGazeHistory.RemoveAt(0);
     }
 
     void TickClickCalibration()
@@ -41,7 +43,8 @@ public partial class GameController
         float now = Time.unscaledTime;
         Vector2 mouseNow = Input.mousePosition;
         clickMouseHistory.Add((now, mouseNow));
-        while (clickMouseHistory.Count > 0 && clickMouseHistory[0].time < now - ClickAimSeconds) clickMouseHistory.RemoveAt(0);
+        while (clickMouseHistory.Count > MaxHistoryCapacity || (clickMouseHistory.Count > 0 && clickMouseHistory[0].time < now - ClickAimSeconds))
+            clickMouseHistory.RemoveAt(0);
         // Resolve the previous press first, so a fast second press cannot overwrite a click that already fired.
         if (clickPending && NovelUI.LastPressedFrame >= clickPendingFrame) { clickPending = false; LearnPendingClick(); }
         else if (clickPending && now - clickPendingAt > ClickReleaseTimeout) clickPending = false;
