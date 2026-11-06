@@ -27,11 +27,11 @@ public partial class GameController
     void HighlightTab(Rect card)
     {
         NovelUI.Label(new Rect(card.x, card.y + 176, card.width, 30), "시선으로 하는 교수님과의 특별한 순간", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
-        if (Tile(new Rect(card.x + 50, card.y + 220, card.width - 100, 90), "눈빛 맞추기", "교수님의 눈빛을 시선으로 따라가요 · 스토리에서는 호감도 4 이상일 때 등장", false))
+        if (Tile(new Rect(card.x + 50, card.y + 220, card.width - 100, 148), "눈빛 맞추기", "분홍 점을 시선으로 따라가요.\n스토리 등장: 호감도 4 이상", false))
             StartGazeGame(GazeGame.Match, false);
-        if (Tile(new Rect(card.x + 50, card.y + 318, card.width - 100, 90), "눈빛 피하기", "다가오는 눈빛을 시선으로 피해요 · 스토리에서는 마지막에 호감도 8 이상일 때 등장", false))
+        if (Tile(new Rect(card.x + 50, card.y + 386, card.width - 100, 148), "눈빛 피하기", "다가오는 빨간 눈빛을 피해요.\n스토리 등장: 마지막 장면 · 호감도 8 이상", false))
             StartGazeGame(GazeGame.Dodge, false);
-        NovelUI.Label(new Rect(card.x + 40, card.y + 430, card.width - 80, 60), "웹캠이나 iPhone 시선 보정이 필요해요.\n보정이 안 돼 있으면 보정 화면부터 열려요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(card.x + 40, card.y + 560, card.width - 80, 66), "웹캠이나 iPhone 시선 보정이 필요해요.\n보정이 안 돼 있으면 보정 화면부터 열려요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
     }
 
     // Opens the gaze test screen; the game starts right away when the tracker is ready, otherwise once calibrated.

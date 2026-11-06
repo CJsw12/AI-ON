@@ -803,7 +803,7 @@ public partial class GameController : MonoBehaviour
         Color ink = primary ? Color.white : NovelUI.Berry;
         NovelUI.Heart(new Rect(face.x + 30, face.y + face.height / 2 - 20, 40, 40), primary ? Color.white : NovelUI.Pink);
         NovelUI.Label(new Rect(face.x + 90, face.y + 18, face.width - 110, 40), heading, NovelUI.Round, 30, ink, TextAnchor.MiddleLeft);
-        NovelUI.Label(new Rect(face.x + 90, face.y + 60, face.width - 110, 30), description, NovelUI.Soft, 19, ink, TextAnchor.MiddleLeft, FontStyle.Bold);
+        NovelUI.Label(new Rect(face.x + 90, face.y + 60, face.width - 110, Mathf.Max(30, face.height - 76)), description, NovelUI.Soft, 19, ink, TextAnchor.MiddleLeft, FontStyle.Bold);
         return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 
@@ -814,7 +814,7 @@ public partial class GameController : MonoBehaviour
         Rect face = hover ? new Rect(rect.x, rect.y - 5, rect.width, rect.height) : rect;
         if (hover) NovelUI.Glow(new Rect(face.x - 40, face.y - 40, face.width + 80, face.height + 80), NovelUI.Alpha(NovelUI.Pink, .45f));
         NovelUI.Card(face, Color.white, 30, hover ? NovelUI.DeepPink : NovelUI.Pink, hover ? 4 : 3);
-        Rect photo = new Rect(face.x + 18, face.y + 18, face.width - 36, 210);
+        Rect photo = new Rect(face.x + 18, face.y + 18, face.width - 36, 190);
         NovelUI.Fill(photo, NovelUI.Blush, 22);
         string picture = Professor.Picture(info, who, hover ? (info.Image == "ProfessorKim" ? "Hover" : "Happy") : "");
         Texture2D portrait = Resources.Load<Texture2D>(picture);
@@ -834,11 +834,11 @@ public partial class GameController : MonoBehaviour
             }
         }
         NovelUI.Label(new Rect(face.x, photo.yMax + 14, face.width, 40), info.Name, NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
-        NovelUI.Label(new Rect(face.x + 20, photo.yMax + 56, face.width - 40, 30), info.Description, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
+        NovelUI.Label(new Rect(face.x + 20, photo.yMax + 56, face.width - 40, 60), info.Description, NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
         float a = NovelUI.Width(info.TagA, NovelUI.Round, 17) + 30, b = NovelUI.Width(info.TagB, NovelUI.Round, 17) + 30;
         float x = face.center.x - (a + b + 10) / 2;
-        NovelUI.Pill(x, photo.yMax + 98, 32, info.TagA, NovelUI.Blush, NovelUI.DeepPink, 17);
-        NovelUI.Pill(x + a + 10, photo.yMax + 98, 32, info.TagB, NovelUI.Blush, NovelUI.DeepPink, 17);
+        NovelUI.Pill(x, photo.yMax + 126, 32, info.TagA, NovelUI.Blush, NovelUI.DeepPink, 17);
+        NovelUI.Pill(x + a + 10, photo.yMax + 126, 32, info.TagB, NovelUI.Blush, NovelUI.DeepPink, 17);
         return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 

@@ -13,6 +13,7 @@ public partial class GameController
     int aiRun;                   // Bumped on every new run or load so a late reply can't land in another game.
     string aiSlot;               // The slot the state below belongs to.
     string aiTyped = "", aiQuestion = "", aiHint, aiError;
+    Vector2 aiErrorScroll;
     bool aiShowOptions, aiAsking;
     int aiHintsUsed, aiMin, aiMax;
     Task<AiProfessor.Result> aiPending;
@@ -43,6 +44,7 @@ public partial class GameController
         aiSlot = null;
         aiTyped = aiQuestion = "";
         aiHint = aiError = null;
+        aiErrorScroll = Vector2.zero;
         aiShowOptions = aiAsking = false;
         aiHintsUsed = 0;
     }
@@ -56,6 +58,7 @@ public partial class GameController
         aiPending = null;   // a request from the previous question must not keep this one waiting
         aiTyped = aiQuestion = "";
         aiHint = aiError = null;
+        aiErrorScroll = Vector2.zero;
         aiShowOptions = aiAsking = false;
         aiHintsUsed = 0;
     }
@@ -130,6 +133,7 @@ public partial class GameController
     void AiSend(string system, string user, bool hint)
     {
         aiError = null;
+        aiErrorScroll = Vector2.zero;
         aiPendingSlot = AiSlotKey;
         aiPendingHint = hint;
         aiPending = AiProfessor.Ask(system, user);
@@ -147,7 +151,14 @@ public partial class GameController
             return false;
         }
 
-        Rect card = new Rect(170, bottom - 150, 940, 136);
+        bool showError = aiError != null && !AiWaiting;
+        string note = aiError != null ? "앗, " + aiError + " · 다시 보내거나 '선택지로 전환'을 누르세요" : "AI 교수님이 대답을 듣고 호감도를 정해요 (Enter로 보내기)";
+        float noteWidth = showError ? 720 : 880;
+        float textWidth = noteWidth - 20; // Reserve space for the scrollbar on long errors.
+        float noteContentHeight = NovelUI.Text(NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.UpperLeft, FontStyle.Bold).CalcHeight(new GUIContent(note), textWidth);
+        float noteHeight = Mathf.Clamp(noteContentHeight, 30, 140);
+        float cardHeight = 106 + noteHeight;
+        Rect card = new Rect(170, bottom - 14 - cardHeight, 940, cardHeight);
         NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .97f), 30, NovelUI.Pink);
         NovelUI.Pill(card.x + 26, card.y - 18, 36, "AI 자유 대답", NovelUI.Mint, NovelUI.Berry, 18);
         if (NovelUI.Button(new Rect(card.xMax - 190, card.y - 22, 170, 40), AiWaiting ? "취소하고 선택지로" : "선택지로 고르기", false, 17)) { novelAudio.Play("Toggle"); AiCancelPending(); aiShowOptions = true; return true; }
@@ -174,8 +185,7 @@ public partial class GameController
         }
         GUI.enabled = true;
 
-        string note = aiError != null ? "앗, " + aiError + " · 다시 보내거나 '선택지로 전환'을 누르세요" : "AI 교수님이 대답을 듣고 호감도를 정해요 (Enter로 보내기)";
-        if (aiError != null && !AiWaiting)
+        if (showError)
         {
             if (NovelUI.Button(new Rect(card.xMax - 180, card.y + 94, 160, 36), "선택지로 전환", false, 16))
             {
@@ -184,7 +194,12 @@ public partial class GameController
                 return true;
             }
         }
-        NovelUI.Label(new Rect(card.x + 34, card.y + 98, card.width - (aiError != null && !AiWaiting ? 220 : 60), 30), note, NovelUI.Soft, 17, aiError != null ? NovelUI.DeepPink : NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        Rect noteRect = new Rect(card.x + 34, card.y + 98, noteWidth, noteHeight);
+        bool scrollNote = noteContentHeight > noteHeight;
+        if (scrollNote)
+            aiErrorScroll = GUI.BeginScrollView(noteRect, aiErrorScroll, new Rect(0, 0, textWidth, noteContentHeight), false, true);
+        NovelUI.Label(scrollNote ? new Rect(0, 0, textWidth, noteContentHeight) : new Rect(noteRect.x, noteRect.y, textWidth, noteRect.height), note, NovelUI.Soft, 17, aiError != null ? NovelUI.DeepPink : NovelUI.Plum, TextAnchor.UpperLeft, FontStyle.Bold);
+        if (scrollNote) GUI.EndScrollView();
         return true;
     }
 
