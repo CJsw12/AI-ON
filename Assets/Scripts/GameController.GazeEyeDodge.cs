@@ -1,9 +1,9 @@
 using UnityEngine;
 
-// "눈빛 피하기": two red beams leave 심한뫼 교수님's eyes and chase the player's gaze (the blue dot). Keep moving your
+// "눈빛 피하기": two red beams leave the selected professor's eyes and chase the player's gaze (the blue dot). Keep moving your
 // eyes to dodge them; three catches end the game. Every 0.1 s survived is worth 10 points, and the beams speed up
 // the longer you last. Works with the webcam (UnitEye) and the iPhone through StarGaze.
-// The professor frowns 5 s after the start and after each catch, smiles for 3 s after a catch, and talks in a
+// The selected professor's smiling portrait stays fixed throughout play and results. The professor talks in a
 // speech bubble: "학생?" at the start, a random frown line, and one line per catch (the last one typed slowly).
 public partial class GameController
 {
@@ -16,6 +16,9 @@ public partial class GameController
         public DodgeFace(string picture, float width, float height, Vector2 leftEye, Vector2 rightEye)
         {
             Picture = picture;
+            // Match the small UV inset used when drawing the texture (source coordinates are top-down).
+            leftEye.y = (leftEye.y - height * .002f) / .996f;
+            rightEye.y = (rightEye.y - height * .002f) / .996f;
             Vector2 middle = (leftEye + rightEye) / 2f;
             // Same eye spacing as the neutral photo, but never so small that the cut-off torso ends above the screen bottom.
             float scale = Mathf.Max(DodgeEyeSpacing / (rightEye.x - leftEye.x), (900f - DodgeEyeLine.y) / (height - middle.y));
@@ -28,14 +31,8 @@ public partial class GameController
 
     static readonly Vector2 DodgeEyeLine = new Vector2(640f, 257f);   // midpoint between the pupils on screen
     const float DodgeEyeSpacing = 60f;
-    // Pupils measured on the source pictures (Unity imports them stretched to powers of two, so the source size is used).
-    static readonly DodgeFace[] DodgeFaces =
-    {
-        new DodgeFace("ProfessorKimTransparent", 1086f, 1448f, new Vector2(484f, 254f), new Vector2(596f, 256f)),
-        new DodgeFace("ProfessorKimFrownTransparent", 1162f, 1354f, new Vector2(506f, 288f), new Vector2(627f, 290f)),
-        new DodgeFace("ProfessorKimHappyTransparent", 1498f, 1050f, new Vector2(702f, 191f), new Vector2(792f, 192f)),
-    };
-    const int DodgeNeutral = 0, DodgeFrown = 1, DodgeHappy = 2;
+    DodgeFace dodgePortrait;
+    string dodgeProfessorName;
     static readonly string[] DodgeFrownLines = { "흠..", "바빠요?", "놓치지 않아!" };
     static readonly string[] DodgeCatchLines = { "커피 한 잔 하죠", "제 강의실로 와주세요", "대학원생 해볼래요?" };
 
@@ -47,7 +44,6 @@ public partial class GameController
     const float DodgeHitRadius = 46f;      // beam centre to gaze point
     const float DodgeSafeSeconds = 1.6f;   // after a catch the beams rest in the eyes and can't catch
     const float DodgeFrownAfter = 5f;      // seconds of play after the start or a catch
-    const float DodgeHappySeconds = 3f;
     const float DodgeLastLineSeconds = 2f; // the last line types out this slowly before the result appears
     const float DodgeLineHold = 2.2f;      // a finished line stays this long
     const string DodgeBestPref = "GazeTest.EyeDodgeBestScore";
@@ -67,11 +63,30 @@ public partial class GameController
     float DodgeSpeed => Mathf.Min(DodgeMaxSpeed, DodgeStartSpeed + DodgeSpeedGain * dodgeAlive);
     bool DodgeShowingResult => dodgeFinished && Time.unscaledTime >= dodgeResultAt;
 
-    /// <summary>Times are on the play clock (dodgeAlive), so a pause for a lost gaze doesn't change the face.</summary>
-    int DodgeMood => dodgeFinished || (dodgeLivesLeft < DodgeLives && dodgeAlive < dodgeMoodFrom + DodgeHappySeconds) ? DodgeHappy
-        : dodgeAlive >= dodgeMoodFrom + DodgeFrownAfter ? DodgeFrown : DodgeNeutral;
-    DodgeFace DodgeFaceNow => DodgeFaces[DodgeMood];
+    DodgeFace DodgeFaceNow => dodgePortrait;
     Vector2 DodgeEye(int i) => DodgeFaceNow.Eye(i);
+
+    void PrepareDodgePortrait()
+    {
+        // Story selection owns these fields. With no selection yet, use this faculty's first professor.
+        Story story = Stories.All[Mathf.Clamp(faculty, 0, Stories.All.Length - 1)];
+        int who = Mathf.Clamp(professor, 0, story.Professors.Length - 1);
+        Professor selected = story.Professors[who];
+        string picture = Professor.Picture(selected, who, "Happy");
+        dodgeProfessorName = selected.Name;
+        if (ProfessorDodgeEyes.TryGet(picture, out var eyes))
+            dodgePortrait = new DodgeFace(picture, eyes.Width, eyes.Height, eyes.Left, eyes.Right);
+        else
+        {
+            // Keep the selected professor if a new portrait has not had its exact anchors measured yet.
+            bool framed = PortraitFaces.Face.TryGetValue(picture, out var face);
+            float aspect = framed ? face.Aspect : 1f;
+            float x = framed ? face.X * aspect : .5f, y = framed ? face.Y - face.Size * .12f : .2f;
+            float half = framed ? face.Size * .18f : .06f;
+            dodgePortrait = new DodgeFace(picture, aspect, 1f, new Vector2(x - half, y), new Vector2(x + half, y));
+            Debug.LogWarning("[eye dodge] Missing measured pupil anchors for " + picture + "; update ProfessorDodgeEyes.");
+        }
+    }
 
     bool dodgeAfterCalibration;   // opened from the title: start the game as soon as the eye tracker is calibrated
 
@@ -97,6 +112,7 @@ public partial class GameController
     void StartDodgeGame()
     {
         StopStarGame();
+        PrepareDodgePortrait();
         dodgeAfterCalibration = false;   // started by hand: no second automatic start later
         if (dodgeBest < 0) dodgeBest = PlayerPrefs.GetInt(DodgeBestPref, 0);
         dodgeActive = true;
@@ -284,7 +300,7 @@ public partial class GameController
         if (picture != null && Event.current.type == EventType.Repaint)
             // Slightly inset texture coordinates: the repeat-wrapped import bleeds its bottom row into a line along the top edge.
             GUI.DrawTextureWithTexCoords(face.Screen, picture, new Rect(0f, .002f, 1f, .996f));
-        NovelUI.Label(new Rect(0, 14, 1280, 52), "눈빛 피하기", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(0, 14, 1280, 52), "눈빛 피하기 · " + dodgeProfessorName, NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
 
         if (DodgeShowingResult)
         {

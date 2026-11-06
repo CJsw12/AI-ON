@@ -73,8 +73,8 @@ public partial class GameController
         NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .97f), 36, NovelUI.Pink);
         NovelUI.Pill(card.x + 40, card.y + 34, 40, "EVENT", NovelUI.Pink, Color.white, 18);
         NovelUI.Label(new Rect(card.x, card.y + 80, card.width, 50), match ? "눈빛 맞추기" : "눈빛 피하기", NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-        // Both games are filmed with 심한뫼 교수님, so with any other professor he appears as a special guest.
-        bool sim = professor >= 0 && ProfessorName.Contains("심한뫼");
+        // The recorded eye-match video stars Sim; eye-dodge uses the selected professor's portrait.
+        bool sim = !match || (professor >= 0 && ProfessorName.Contains("심한뫼"));
         string line = match ? "...잠깐, 제 눈을 한번 봐 줄래요?" : "마지막으로 하나만요. 제 눈빛, 피할 수 있겠어요?";
         string who = sim ? ProfessorName : "특별 출연 · 심한뫼 교수님";
         if (!sim) line = (match ? "옆 연구실 심한뫼 교수님이 불쑥 찾아오셨다. " : "엔딩 직전, 심한뫼 교수님이 다시 나타나셨다. ") + "\"" + line + "\"";
