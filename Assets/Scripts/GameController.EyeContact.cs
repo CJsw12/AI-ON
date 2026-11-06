@@ -352,6 +352,7 @@ public partial class GameController
             lineStartedAt += paused;
             if (typedAt >= 0f) typedAt += paused;
             lookAwayInterruptActive = false;
+            reactAt = -10; // 닫는 즉시 원래 표정으로 복귀
             novelAudio.Play("Advance");
         }
     }
