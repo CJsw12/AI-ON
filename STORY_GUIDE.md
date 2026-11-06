@@ -160,7 +160,11 @@ public static readonly Story Data = new Story {
   - 스마트시스템: `CampusHallway`(복도), `RobotLab`(로봇 실습실), `RainyRamp`(비 오는 학생식당 경사로), `MeetingRoom`(회의실), `CampusExterior`(캠퍼스 밖)
   - 경영: `Auditorium`(강당), `StationeryOutside`·`StationeryInside`·`StationeryCoffee`(행운문구 밖·안·커피 코너), `CampusCafe`(교내 카페), `Cafeteria`(학식), `ProfessorOffice`(교수 상담실)
   - 체육: `ArtsField`(운동장), `ArtsStudio`(거울 실기실), `ArtsCafeteriaStairs`(학생식당 밖 계단), `ArtsStage`(공연장), `ArtsGreenRoom`(공연장 휴게실)
+  - 실용음악: `MusicAuditorium`(악기가 놓인 OT 강당), `MusicPracticeRoom`(합주실, 2·4장), `MusicLounge`(작곡 과방), `MusicRehearsalStage`(밴드 리허설 무대), `MusicGreenRoom`(공연장 휴게실), `MusicBuskingStreet`(축제 버스킹 거리, 6장·엔딩). 미니게임과 연습 모드도 해당 장소를 사용합니다.
+  - 실용음악 신도윤 교수의 사진 키는 `ProfessorShin`입니다. 기본·웃음·화남은 `ProfessorShinTransparent.png`, `ProfessorShinHappyTransparent.png`, `ProfessorShinFrownTransparent.png`이며, 제공된 실용음악과 교수 원본 세 장을 투명 처리해 사용합니다. 류보라 교수는 main에 추가된 `ProfessorRyuBoRa` 이미지를 사용합니다.
+    - 신도윤의 원본 상반신 구도가 다른 교수보다 커서 `GameEffects.PortraitRect()`에서 세 표정 모두 78% 배율로 표시합니다. 머리 윗부분의 높이는 기존 이미지 기준으로 유지하며, 선택 카드·도감은 기존 얼굴 자르기를 사용합니다.
   - 타이틀 화면은 `CampusExterior`를 씁니다.
+  - 시각디자인: `DesignExhibition`(1·6장 포스터 전시, 5장 복도), `DesignStudio`(2·5장 실기실과 엔딩 작업실), `DesignComputerLab`(3장), `DesignPrintRoomNight`(4장). 커피 미니게임은 기존 `CampusCafe`를 사용합니다. 하은채 교수는 `ProfessorHa` 기본·Happy·Frown 투명 이미지를 사용하며, 남궁현 교수는 main에 추가된 `ProfessorNamgungHyun` 이미지를 사용합니다.
 - `Mood`(배경음)는 `Campus`(밝음), `Study`(차분), `Crisis`(긴장) 중 하나입니다. 갈등이 터지는 챕터에 `Crisis`를 씁니다.
 - 교수님 사진: `Image = "ProfessorPark"`이면 `Assets/Resources/`에서 `ProfessorParkTransparent.png`(기본), `ProfessorParkHappyTransparent.png`(웃음), `ProfessorParkFrownTransparent.png`(화남) 세 장을 씁니다. 이름은 영문으로 짓고 다른 교수와 겹치지 않게 합니다. 지금 쓰는 이름: `ProfessorKim`, `ProfessorLee`, `ProfessorPark`, `ProfessorChoi`, `ProfessorHan`, `ProfessorYoon`, `ProfessorSeo`, `ProfessorKang`.
   - 형식은 배경을 지운 투명 PNG, 1698×926입니다. 상반신이 가운데에 오고, 머리 위 끝은 위에서 60px 지점, 몸은 690px쯤에서 아래로 흐려지게 합니다. 게임이 이 그림을 화면 전체에 그리고, 카드·엔딩 사진은 이 위치를 기준으로 얼굴을 잘라 씁니다. 세 표정의 크기와 위치가 같아야 표정이 바뀔 때 튀지 않습니다. 물리학과는 20세기 물리학자풍 콧수염과 유쾌한 남성 강의자 초상화를 포함합니다.

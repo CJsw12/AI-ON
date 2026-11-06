@@ -688,6 +688,11 @@ public partial class GameController : MonoBehaviour
             }
             if (k > .6f && (GUI.Button(NovelUI.Window, GUIContent.none, GUIStyle.none) || IntroPressed())) { novelAudio.Play("Advance"); introDone = true; }
         }
+        Rect consentNotice = new Rect(704, 824, 552, 58);
+        NovelUI.Fill(consentNotice, NovelUI.Alpha(NovelUI.Cream, .88f), 12);
+        NovelUI.Label(new Rect(716, 828, 528, 50),
+            "본 게임에 사용된 심한뫼 교수님의 사진과 영상,\n음성을 바탕으로 제작한 TTS 음성은 본인의 동의를 받아 활용되었습니다.",
+            NovelUI.Soft, 14, NovelUI.Berry, TextAnchor.MiddleRight);
         GUI.matrix = Matrix4x4.identity;
         float fadeIn = 1 - Mathf.Clamp01(t / .8f);
         if (fadeIn > 0) { GUI.color = new Color(.24f, .1f, .17f, fadeIn); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white; }

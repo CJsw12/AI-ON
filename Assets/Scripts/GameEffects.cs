@@ -102,8 +102,11 @@ public partial class GameController
     // Where the professor's picture goes: breathing, a slide up as they appear, a hop or a shake after a reaction.
     Rect PortraitRect()
     {
-        Rect full = new Rect(0, 0, Screen.width, Screen.height);
-        if (!GameSettings.Effects) return full;
+        // Shin's source bust is larger than the existing portraits; keep its head at the same height.
+        float framing = S.Professors[professor].Image == "ProfessorShin" ? .78f : 1f;
+        Rect full = new Rect(Screen.width * (1 - framing) / 2, Screen.height * (1 - framing) * (60f / 926f),
+            Screen.width * framing, Screen.height * framing);
+        if (!GameSettings.Effects) return new Rect(Mathf.Round(full.x), Mathf.Round(full.y), Mathf.Round(full.width), Mathf.Round(full.height));
         float t = Time.unscaledTime, unit = Screen.height / 900f;
         float scale = 1 + .008f * Mathf.Sin(t * 1.7f);
         float x = 0, y = (1 - portraitAlpha) * 28 * unit;
@@ -111,8 +114,8 @@ public partial class GameController
         if (reactDelta > 0 && k < .5f) y -= Mathf.Sin(k / .5f * Mathf.PI) * 30 * unit;
         if ((reactDelta < 0 || !reactCorrect) && k < .55f) x += Mathf.Sin(k * 46) * 14 * unit * (1 - k / .55f);
         float w = full.width * scale, h = full.height * scale;
-        // Scale around the bottom centre so the feet stay put; pixel-snap to avoid subpixel raster jitter.
-        return new Rect(Mathf.Round(x + (full.width - w) / 2), Mathf.Round(y + full.height - h), Mathf.Round(w), Mathf.Round(h));
+        // Scale around the bottom centre so the feet stay put.
+        return new Rect(Mathf.Round(full.x + x + (full.width - w) / 2), Mathf.Round(full.y + y + full.height - h), Mathf.Round(w), Mathf.Round(h));
     }
 
     // "CHAPTER n" banner that slides in when a chapter starts (or a save is loaded).

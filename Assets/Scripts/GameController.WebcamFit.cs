@@ -158,6 +158,8 @@ public partial class GameController
             lids = Mathf.Max(webcamShapes[8], webcamShapes[9]);
         }
         float shapeLookY = look.y;   // blendshape up/down, kept for the eyelid check below
+        gazeLabWebcamHeadPosition = Vector3.zero;
+        gazeLabWebcamRay = Vector2.zero;
         // In the "정밀" model the ResNet34 face-gaze network reports gaze yaw/pitch, which already accounts for
         // head turn. It is a far steadier signal than webcam eyeLook blendshapes, so it takes the look slot.
         if (gazeTracker.GazeBackbone == UnitEye.GazeBackbone.EyeMUPlusResNet34)
@@ -165,12 +167,19 @@ public partial class GameController
             float[] all = gazeTracker.Provider.GetFeatures();
             int at = UnitEye.HomulerEyeMURunner.FeatureCount;
             if (all != null && all.Length >= at + 2 && !float.IsNaN(all[at]) && !float.IsNaN(all[at + 1]))
-                look = GazeOnScreenPlane(all[at], all[at + 1], all, HomulerEyeMURunner.ContextFeatureStart);
+            {
+                gazeLabWebcamRay = new Vector2(all[at], all[at + 1]);
+                int context = HomulerEyeMURunner.ContextFeatureStart;
+                if (all.Length >= context + 3)
+                    gazeLabWebcamHeadPosition = new Vector3(all[context], all[context + 1], all[context + 2]);
+                look = GazeOnScreenPlane(all[at], all[at + 1], all, context);
+            }
         }
         webcamLidsDown = gazeTracker.Blinking;
         webcamBlinking = ShortBlink(webcamLidsDown, hasShapes && lids >= WebcamBlinkClosed, ref webcamBlinkSince);
 
         double[] features = GazeMapper.Features(new Vector2(raw.x / 1280f, raw.y / 900f), new Vector2(pose.y, pose.x), look);
+        gazeLabWebcamFeatures = features;
         // A sustained partial closure while looking down can be eyelid occlusion rather than a blink.
         // Only accept it when blendshapes confirm a downward look and the eye is not strongly closed.
         bool usableDownwardLook = hasShapes && shapeLookY < -.1f && lids < WebcamBlinkClosed && !webcamBlinking;

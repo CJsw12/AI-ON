@@ -1,0 +1,20 @@
+[
+    {
+        "section":  "① 문제 정의",
+        "characters":  283,
+        "minimum":  50,
+        "maximum":  400
+    },
+    {
+        "section":  "② AI 활용",
+        "characters":  416,
+        "minimum":  100,
+        "maximum":  600
+    },
+    {
+        "section":  "⑤ 발전 가능성",
+        "characters":  249,
+        "minimum":  50,
+        "maximum":  300
+    }
+]

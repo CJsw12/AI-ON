@@ -51,6 +51,7 @@ public partial class GameController
 
     void CloseGazeTest()
     {
+        CloseGazeLab();
         // A story gaze event borrowed this screen: keep the camera and the story's eye-contact session running.
         if (storyGazeSession && eyeContactSessionActive) { gazeTestOpen = false; return; }
         gazeTestOpen = false;
@@ -62,6 +63,7 @@ public partial class GameController
 
     void StopWebcamTracking()
     {
+        if (!gazeUseIphone) CloseGazeLab();
         if (!gazeUseIphone) StopStarGame();
         if (gazeCameraRequest != null) StopCoroutine(gazeCameraRequest);
         gazeCameraRequest = null;
@@ -153,6 +155,7 @@ public partial class GameController
         TickEyeMatchGame();
         TraceIPhoneGaze();
         UpdateEyeContactTracking();
+        TickGazeLab();
     }
 
     void UpdateWebcamGaze()
@@ -187,6 +190,7 @@ public partial class GameController
 
     void DrawGazeTest()
     {
+        if (gazeLabOpen) { DrawGazeLab(); return; }
         if (GazeCalibrationActive)
         {
             GUI.matrix = Matrix4x4.identity;
@@ -225,6 +229,7 @@ public partial class GameController
             return;
         }
         NovelUI.Label(new Rect(0, 18, 1280, 55), eyeContactPreparationMode ? "시선 추적 준비" : "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (!eyeContactPreparationMode && NovelUI.Button(new Rect(1010, 26, 230, 42), "움직이는 공 · 로그", false, 18)) OpenGazeLab();
         bool chooseIphone = gazeUseIphone;
         if (NovelUI.Button(new Rect(390, 91, 230, 48), "노트북 웹캠", !gazeUseIphone, 19)) chooseIphone = false;
         if (NovelUI.Button(new Rect(660, 91, 230, 48), "iPhone 추적", gazeUseIphone, 19)) chooseIphone = true;

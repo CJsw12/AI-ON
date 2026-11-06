@@ -102,7 +102,7 @@ public static class MusicStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Mixer, Title = "합주실 믹싱 콘솔", Place = "ArtsStudio", Note = "챕터 2 · 브리프대로 네 채널 페이더 맞추기",
+                Kind = MiniGameKind.Mixer, Title = "합주실 믹싱 콘솔", Place = "MusicPracticeRoom", Note = "챕터 2 · 브리프대로 네 채널 페이더 맞추기",
                 Replies = new[] {
                     new[] { "(한숨) …다시. 보컬이 묻혔습니다. 귀를 씻고 오세요.", "절반은 들립니다. 절반은 안 들립니다. 다시.", "…됐습니다. 이 밸런스, 기억해 두세요." },
                     new[] { "음, 좀 와글와글하지만 그것도 거리 사운드 같아서 나쁘지 않아~", "오, 반쯤 섞였다! 나머진 귀가 알아서 찾아갈 거야.", "와~ 네 채널이 서로 수다 떠는 소리 들려? 이 바이브야!" }
@@ -128,7 +128,7 @@ public static class MusicStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Chord, Title = "코드 진행 완성", Place = "DeptLounge", Note = "챕터 3 · 네 마디 진행의 빈칸에 맞는 코드 고르기",
+                Kind = MiniGameKind.Chord, Title = "코드 진행 완성", Place = "MusicLounge", Note = "챕터 3 · 네 마디 진행의 빈칸에 맞는 코드 고르기",
                 Replies = new[] {
                     new[] { "…다시. 진행이 해결이 안 됩니다. 귀가 불편합니다.", "두 마디는 됩니다. 나머지 두 마디, 다시.", "…됐습니다. 이 정도면 합주실에 들일 수 있습니다." },
                     new[] { "틀린 코드? 그거 텐션이라고 우기면 재즈야~ 근데 다시 한번 가 보자!", "반은 찰떡, 반은 실험적이야~ 둘 다 맛있어.", "와, 이 진행 기분 좋다! 바로 잼 가자!" }
@@ -166,7 +166,7 @@ public static class MusicStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "리허설 끝 휴게실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 지친 밴드를 위해 주문서대로 커피 내리기", Customers = new[] { "밴드 멤버", "보컬 선배" },
+                Kind = MiniGameKind.Coffee, Title = "리허설 끝 휴게실 커피", Place = "MusicGreenRoom", Note = "챕터 5 · 지친 밴드를 위해 주문서대로 커피 내리기", Customers = new[] { "밴드 멤버", "보컬 선배" },
                 Replies = new[] {
                     new[] { "(한숨) 샷이 틀렸습니다. 이런 데서 틀리면 무대에서도 틀립니다.", "제 건 정확합니다. 동기 것, 다시 확인.", "…정확합니다. 이제 커피 말고 말을 건네세요." },
                     new[] { "주문이랑 달라도 괜찮아~ 즉흥 블렌드라 생각할게!", "내 건 완전 좋아! 동기 건 살짝 다른 맛이래, 그것도 재밌네~", "와~ 다들 표정이 풀렸어. 커피도 음악이었네!" }
@@ -217,7 +217,7 @@ public static class MusicStory
         Levels = new[] { "경험자", "입문자" },
         LevelNotes = new[] { "숫자와 용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
-            new Professor { Name = "신도윤 교수", Description = "까칠한 완벽주의 프로듀서 · 예민한 귀, 인정은 짧게", TagA = "#다시", TagB = "#반박도정확히", Image = "ProfessorShinDoYoon", LookAwayLine = "…시선은 여기 두세요. 연주처럼 집중해서요." },
+            new Professor { Name = "신도윤 교수", Description = "까칠한 완벽주의 프로듀서 · 예민한 귀, 인정은 짧게", TagA = "#다시", TagB = "#반박도정확히", Image = "ProfessorShin", LookAwayLine = "…시선은 여기 두세요. 연주처럼 집중해서요." },
             new Professor { Name = "류보라 교수", Description = "자유로운 즉흥파 · 느낌과 바이브, 틀려도 그게 재즈", TagA = "#바이브", TagB = "#틀려도재즈", Image = "ProfessorRyuBoRa", LookAwayLine = "어머, 시선도 즉흥 연주 중이야? 여기 봐~" }
         },
         Chapters = new[] { "", "원, 투, 쓰리, 포", "믹싱 콘솔", "느리게, 아니 빠르게", "빠진 카포 표시", "누구의 후렴", "거리의 버스킹" },
@@ -242,9 +242,9 @@ public static class MusicStory
         },
         Mood = (chapter, stage) => chapter == 5 ? "Crisis" : chapter <= 1 || chapter >= 6 ? "Campus" : "Study",
         Background = (chapter, stage, line) =>
-            chapter == 1 ? "Auditorium" :
-            chapter == 3 ? "DeptLounge" :
-            chapter == 5 ? (stage == 0 && line < 5 ? "ArtsStage" : "ArtsGreenRoom") :
-            chapter == 6 || chapter == 7 ? "FestivalStreet" : "MusicRehearsalStudio"
+            chapter == 1 ? "MusicAuditorium" :
+            chapter == 3 ? "MusicLounge" :
+            chapter == 5 ? (stage == 0 && line < 5 ? "MusicRehearsalStage" : "MusicGreenRoom") :
+            chapter == 6 || chapter == 7 ? "MusicBuskingStreet" : "MusicPracticeRoom"
     };
 }

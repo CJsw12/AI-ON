@@ -108,7 +108,7 @@ public static class VisualDesignStory
         new Slot {
             Stat = 'i',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Cards, Title = "색채 용어 짝 맞추기", Place = "ArtsStudio", Note = "챕터 2 · 색상환 앞에서 색채 용어와 뜻 짝짓기",
+                Kind = MiniGameKind.Cards, Title = "색채 용어 짝 맞추기", Place = "DesignStudio", Note = "챕터 2 · 색상환 앞에서 색채 용어와 뜻 짝짓기",
                 Pairs = new[,] {
                     { "색상", "빨강, 파랑처럼 색의 이름" },
                     { "명도", "색이 밝고 어두운 정도" },
@@ -126,7 +126,7 @@ public static class VisualDesignStory
         new Slot {
             Stat = 's',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Timing, Title = "본문 행간 맞추기", Place = "ComputerLab", Note = "챕터 3 · 그리드 위 본문 행간을 10pt에서 멈추기",
+                Kind = MiniGameKind.Timing, Title = "본문 행간 맞추기", Place = "DesignComputerLab", Note = "챕터 3 · 그리드 위 본문 행간을 10pt에서 멈추기",
                 Header = "LEADING CHECK", Rule = "본문 9pt · 행간 10pt · 기준선은 그리드 위에", Counter = "행간 {0}pt", Running = "행간 넓히는 중 · 10pt에서 정지",
                 Button = "●  행간 고정", Instructions = "행간이 10pt가 되는 순간 고정하세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8pt부터 숫자가 숨겨집니다.",
                 Levels = new[] { "제목 없는 본문", "점점 빨라지는 슬라이더", "눈으로만 맞추기" },
@@ -228,7 +228,7 @@ public static class VisualDesignStory
         LevelNotes = new[] { "용어를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
             new Professor { Name = "남궁현 교수", Description = "고상한 귀족풍 미학자 · 우아한 격식과 미술사의 안목", TagA = "#하시지요", TagB = "#미술사", Image = "ProfessorNamgungHyun", LookAwayLine = "시선이 떠도는군요. 이쪽을 보시지요." },
-            new Professor { Name = "하은채 교수", Description = "트렌디 MZ 디자이너 · 솔직하고 빠른 피드백", TagA = "#갓벽", TagB = "#팩폭크리틱", Image = "ProfessorHaEunChae", LookAwayLine = "시선 어디 갔어요? 피드백은 여기서 들어요!" }
+            new Professor { Name = "하은채 교수", Description = "트렌디 MZ 디자이너 · 솔직하고 빠른 피드백", TagA = "#갓벽", TagB = "#팩폭크리틱", Image = "ProfessorHa", LookAwayLine = "시선 어디 갔어요? 피드백은 여기서 들어요!" }
         },
         Chapters = new[] { "", "그림 없는 포스터", "두 가지 색의 봄", "보이지 않는 뼈대", "붙어 버린 글자", "크리틱 데이", "공모전 벽 앞에서" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
@@ -252,11 +252,11 @@ public static class VisualDesignStory
         },
         Mood = (chapter, stage) => chapter == 4 || chapter == 5 && stage == 0 ? "Crisis" : chapter <= 1 || chapter >= 6 ? "Campus" : "Study",
         Background = (chapter, stage, line) =>
-            chapter == 1 ? "CampusHallway" :
-            chapter == 3 ? "ComputerLab" :
-            chapter == 4 ? "Library" :
-            chapter == 5 ? (stage == 1 && line >= 2 ? "CampusCafe" : "VisualDesignStudio") :
-            chapter == 6 ? "Auditorium" :
-            chapter == 7 ? "DeptLounge" : "VisualDesignStudio"
+            chapter == 1 ? "DesignExhibition" :
+            chapter == 3 ? "DesignComputerLab" :
+            chapter == 4 ? "DesignPrintRoomNight" :
+            chapter == 5 ? (stage == 1 && line == 2 ? "DesignExhibition" : "DesignStudio") :
+            chapter == 6 ? "DesignExhibition" :
+            "DesignStudio"
     };
 }

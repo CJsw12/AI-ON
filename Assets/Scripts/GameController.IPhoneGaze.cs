@@ -7,7 +7,7 @@ using UnityEngine;
 
 public partial class GameController
 {
-    const float IPhoneCalibrationSettleSeconds = .75f;
+    const float IPhoneCalibrationSettleSeconds = 1.25f;
     const float IPhoneCalibrationCaptureSeconds = 1.2f;
     const float IPhoneRawPreviewScale = 450f;
     const float IPhoneBlinkThreshold = .7f;
@@ -64,6 +64,13 @@ public partial class GameController
     void TryLoadIPhoneCalibration()
     {
         if (!iphoneMapper.Load(PlayerPrefs.GetString(IPhoneMapperPref, ""))) return;
+        if (float.IsNaN(iphoneMapper.CheckPixels) || float.IsInfinity(iphoneMapper.CheckPixels) ||
+            iphoneMapper.CheckPixels < 0 || iphoneMapper.CheckPixels > 160f)
+        {
+            iphoneCalibrationFailure = "저장된 보정의 검증 오차가 커서 새 화면 보정이 필요해요.";
+            iphoneStatus = iphoneCalibrationFailure;
+            return;
+        }
         iphoneCalibrated = true;
         iphoneStatus += " 저장된 보정을 불러왔어요 · 자세나 휴대폰 위치가 바뀌었으면 다시 보정해 주세요.";
     }
@@ -81,6 +88,8 @@ public partial class GameController
     bool iphoneCalibrating, iphoneMeasuring;
     int iphoneCalibrationPoint, iphoneLastCaptureSequence, iphoneLastLiveSequence;
     float iphoneTargetShownAt, iphoneMeasureAt;
+    readonly IPhoneCalibrationGate iphoneCalibrationGate = new IPhoneCalibrationGate();
+    string iphoneCalibrationFailure;
     readonly List<double[]> iphoneCaptureAll = new List<double[]>(), iphoneCaptureOpen = new List<double[]>();
     readonly double[][] iphoneMeasuredFeatures = new double[IPhoneCalibrationTargets.Length][];
     readonly List<double[]>[] iphoneMeasuredSamples = new List<double[]>[IPhoneCalibrationTargets.Length];
@@ -126,12 +135,19 @@ public partial class GameController
         }
 
         if (!iphoneCalibrating)
-            iphoneStatus = iphoneCalibrated ? $"iPhone 추적 중 · 보정 완료 ({IPhoneAccuracyText()})" : "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
+            iphoneStatus = iphoneCalibrated ? $"iPhone 추적 중 · 보정 완료 ({IPhoneAccuracyText()})" :
+                iphoneCalibrationFailure ?? "iPhone 얼굴·눈 추적 중 · 화면 보정이 필요해요.";
         Vector2 feature = iphoneSource.EyeFeature;
         double[] features = GazeMapper.Features(feature, iphoneSource.HeadFeature, iphoneSource.LookFeature, iphoneSource.PositionFeature);
         // Eye rotation jumps while the eyelids close, so blink frames are left out of calibration and don't move the pointer.
         bool blinking = iphoneBlinking;
-        if (iphoneCalibrating && !iphoneMeasuring && Time.unscaledTime >= iphoneTargetShownAt + IPhoneCalibrationSettleSeconds)
+        if (iphoneCalibrating && !iphoneCalibrationGate.CanCapture(Time.unscaledTime, IPhoneCalibrationSettleSeconds))
+        {
+            // A hidden/stalled Game view must not collect samples for a target the user cannot see.
+            if (iphoneMeasuring) { iphoneMeasuring = false; ResetIPhoneCalibrationTarget(); }
+            return;
+        }
+        if (iphoneCalibrating && !iphoneMeasuring)
             BeginIPhoneCalibrationCapture();
 
         if (iphoneMeasuring && iphoneSource.Sequence != iphoneLastCaptureSequence)
@@ -241,6 +257,8 @@ public partial class GameController
 
     void StopIPhoneGaze()
     {
+        iphoneCalibrationFailure = null;
+        if (gazeUseIphone) CloseGazeLab();
         iphoneMeasuring = iphoneCalibrating = false;
         iphoneVerticalDiagnostic = false;
         iphoneTraceUntil = 0f;
@@ -267,12 +285,19 @@ public partial class GameController
             return;
         }
         iphoneCalibrating = true;
+        iphoneCalibrationFailure = null;
         iphoneMeasuring = false;
         iphoneCalibrated = false;
         iphoneMarkerValid = false;
         iphoneCalibrationPoint = 0;
-        iphoneTargetShownAt = Time.unscaledTime;
+        ResetIPhoneCalibrationTarget();
         iphoneStatus = "화면 점을 바라봐 주세요. 자동으로 표본을 모읍니다.";
+    }
+
+    void ResetIPhoneCalibrationTarget()
+    {
+        iphoneCalibrationGate.Reset();
+        iphoneTargetShownAt = float.PositiveInfinity;
     }
 
     void BeginIPhoneCalibrationCapture()
@@ -290,15 +315,21 @@ public partial class GameController
         iphoneMeasuring = false;
         if (iphoneCaptureAll.Count < 20)
         {
-            iphoneTargetShownAt = Time.unscaledTime;
+            ResetIPhoneCalibrationTarget();
             iphoneStatus = "표본이 부족해요. 연결을 확인하고 같은 점을 다시 응시해 주세요.";
             return;
         }
         // Closed-eye frames are never used: if too few open-eye frames remain, measure this point again.
-        if (iphoneCaptureOpen.Count < 10)
+        if (iphoneCaptureOpen.Count < 20)
         {
-            iphoneTargetShownAt = Time.unscaledTime;
+            ResetIPhoneCalibrationTarget();
             iphoneStatus = "눈을 감은 표본이 많았어요. 눈을 뜨고 같은 점을 다시 바라봐 주세요.";
+            return;
+        }
+        if (!iphoneUseUsb && !IPhoneCalibrationGate.Stable(iphoneCaptureOpen))
+        {
+            ResetIPhoneCalibrationTarget();
+            iphoneStatus = "눈 신호가 움직여 같은 점을 다시 측정해요. 분홍 점 중심을 계속 바라봐 주세요.";
             return;
         }
         // The median ignores quick glances that a plain average would drag along.
@@ -309,18 +340,26 @@ public partial class GameController
         NovelUI.Sound?.Invoke("Select");
         if (iphoneCalibrationPoint < IPhoneCalibrationTargets.Length)
         {
-            iphoneTargetShownAt = Time.unscaledTime;
+            ResetIPhoneCalibrationTarget();
             iphoneStatus = $"다음 점을 바라봐 주세요. 자동 측정이 이어집니다. ({iphoneCalibrationPoint + 1}/{IPhoneCalibrationTargets.Length})";
             return;
         }
         if (!FitIPhoneCalibration())
         {
             iphoneCalibrationPoint = 0;
-            iphoneTargetShownAt = Time.unscaledTime;
+            ResetIPhoneCalibrationTarget();
             iphoneStatus = "눈·고개 움직임이 점마다 충분히 달라지지 않았어요. 휴대폰을 고정하고 다시 보정해 주세요.";
             return;
         }
         iphoneCalibrating = false;
+        if (!IPhoneCalibrationGate.Accurate(iphoneMapper.CheckPixels, iphoneMapper.CheckP95))
+        {
+            iphoneCalibrated = iphoneMarkerValid = false;
+            iphoneCalibrationFailure = $"보정을 저장하지 않았어요 · {IPhoneAccuracyText()} · 화면 보정을 다시 시작해 주세요.";
+            iphoneStatus = iphoneCalibrationFailure;
+            Debug.LogWarning($"[iPhone calibration] Rejected independent check: mean={iphoneMapper.CheckPixels:F1}px, p95={iphoneMapper.CheckP95:F1}px.");
+            return;
+        }
         iphoneCalibrated = true;
         iphoneMarkerValid = false;
         iphoneStatus = $"화면 보정 완료 · {IPhoneAccuracyText()}";
@@ -333,12 +372,17 @@ public partial class GameController
     void DrawIPhoneCalibrationScreen()
     {
         if (DrawGazeTargetScreen(IPhoneCalibrationTargets, iphoneCalibrationPoint, iphoneMeasuring, iphoneTargetShownAt, iphoneMeasureAt,
-                IPhoneCalibrationSettleSeconds, iphoneStatus, "분홍 점을 바라봐 주세요 · 평소처럼 고개를 조금 돌려도 괜찮아요."))
+                IPhoneCalibrationSettleSeconds, iphoneStatus, "분홍 점 중심을 바라봐 주세요 · 고개와 자세를 편하게 유지해 주세요."))
         {
             iphoneCalibrating = iphoneMeasuring = false;
             iphoneMarkerValid = false;
             iphoneStatus = "보정을 취소했어요.";
             if (eyeContactPreparationMode) CancelEyeContactPreparation();
+        }
+        else if (Event.current.type == EventType.Repaint)
+        {
+            if (float.IsPositiveInfinity(iphoneTargetShownAt)) iphoneTargetShownAt = Time.unscaledTime;
+            iphoneCalibrationGate.MarkRendered(Time.unscaledTime);
         }
     }
 

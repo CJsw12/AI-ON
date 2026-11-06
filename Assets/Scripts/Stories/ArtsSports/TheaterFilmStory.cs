@@ -127,7 +127,7 @@ public static class TheaterFilmStory
         new Slot {
             Stat = 's',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Timing, Title = "롤링 10박 후 액션", Place = "CampusExterior", Note = "챕터 3 · 카메라가 돈 뒤 정확히 10박에 '액션' 외치기",
+                Kind = MiniGameKind.Timing, Title = "롤링 10박 후 액션", Place = "FilmCampusShoot", Note = "챕터 3 · 카메라가 돈 뒤 정확히 10박에 '액션' 외치기",
                 Header = "ROLLING", Rule = "카메라 롤링 → 슬레이트 → 10박 뒤 액션", Counter = "{0}박", Running = "카메라 녹화 중 · 10박에 액션",
                 Button = "●  액션!", Instructions = "카메라가 돈 뒤 박자를 세어 10박째에 '액션'을 외치세요.\n처음 한 번 연습한 뒤 세 단계에 도전합니다.\n마지막 단계는 8박부터 숫자가 숨겨집니다.",
                 Levels = new[] { "맑은 아침 촬영", "급해지는 감독", "숫자 없이 감으로" },
@@ -177,7 +177,7 @@ public static class TheaterFilmStory
         new Slot {
             Stat = 't',
             Game = new MiniGameTheme {
-                Kind = MiniGameKind.Coffee, Title = "리허설 뒤 분장실 커피", Place = "ArtsGreenRoom", Note = "챕터 5 · 큐 사고 뒤 분장실에서 커피 내리기", Customers = new[] { "주연 배우", "조명 스태프" },
+                Kind = MiniGameKind.Coffee, Title = "리허설 뒤 분장실 커피", Place = "TheaterDressingRoom", Note = "챕터 5 · 큐 사고 뒤 분장실에서 커피 내리기", Customers = new[] { "주연 배우", "조명 스태프" },
                 Replies = new[] {
                     new[] { "아아, 주문과 다른 잔이로다! 큐 시트처럼, 순서를 지키는 법을 익히게!", "나의 잔은 완벽하도다! 동기의 잔도 다시 살피게!", "오오, 모든 잔이 완벽하도다! 이제 그 커피와 함께, 진심 어린 사과의 독백을!" },
                     new[] { "틀렸어. 순서대로 해.", "내 건 맞아. 동기 거 다시 봐.", "다 맞아. 이제 가서 사과해." }
@@ -229,7 +229,7 @@ public static class TheaterFilmStory
         LevelNotes = new[] { "용어와 숫자를 직접 입력해서 문제 풀기", "쉬운 설명과 객관식으로 문제 풀기" },
         Professors = new[] {
             new Professor { Name = "엄태오 교수", Description = "과장된 연극톤 · 모든 순간이 드라마인 낭만파", TagA = "#오오이얼마나", TagB = "#인생은무대", Image = "ProfessorEomTaeO", LookAwayLine = "오오, 시선을 이 무대로 돌려 주시게!" },
-            new Professor { Name = "차유리 교수", Description = "쿨한 무심 감독 · 짧지만 정확한 한마디", TagA = "#컷다시", TagB = "#오케이", Image = "ProfessorChaYuRi", LookAwayLine = "시선은 여기. 아직 촬영 중이야, 계속 봐." }
+            new Professor { Name = "차유리 교수", Description = "쿨한 무심 감독 · 짧지만 정확한 한마디", TagA = "#컷다시", TagB = "#오케이", Image = "ProfessorCha", LookAwayLine = "시선은 여기. 아직 촬영 중이야, 계속 봐." }
         },
         Chapters = new[] { "", "딱, 슬레이트", "괄호 속 문장", "콘티 여섯 장", "비 오는 테이크", "어둠 속의 독백", "막이 오르면" },
         Dialogue = Dialogue, FollowUp = FollowUp, HiddenDialogue = HiddenDialogue, HiddenFollowUp = HiddenFollowUp,
@@ -255,9 +255,9 @@ public static class TheaterFilmStory
         Background = (chapter, stage, line) =>
             chapter == 1 ? "TheaterBlackBox" :
             chapter == 2 ? "TheaterBlackBox" :
-            chapter == 3 ? "CampusExterior" :
-            chapter == 4 ? (stage == 0 ? "RainyRamp" : "ComputerLab") :
-            chapter == 5 ? (stage == 0 && line < 5 ? "ArtsStage" : "ArtsGreenRoom") :
-            "TheaterBlackBox"
+            chapter == 3 ? "FilmCampusShoot" :
+            chapter == 4 ? (stage == 0 ? "RainyRamp" : "FilmEditingRoom") :
+            chapter == 5 ? (stage == 0 && line < 5 ? "TheaterPerformanceStage" : "TheaterDressingRoom") :
+            "TheaterPerformanceStage"
     };
 }
