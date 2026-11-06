@@ -199,6 +199,30 @@ public static class AiProfessor
         return sb.ToString();
     }
 
+    public static string LectureQuestionPrompt(Story story, int professor, int affection, LectureProblem problem)
+    {
+        var sb = new StringBuilder(Persona(story, professor, affection, null));
+        sb.Append("\n이번 장면은 학생이 고른 전공 주제의 짧은 강의 뒤에 이어지는 퀴즈다. 교수 말투는 위 페르소나를 따르되, 정답은 코드가 계산한 값으로 고정되어 있다.\n");
+        sb.Append("주제: ").Append(AiSwLectures.TopicName(problem.Topic)).Append("\n학습 요점: ").Append(problem.Concept).Append('\n');
+        sb.Append("문제 유형: ").Append(problem.Experienced ? "전공자 직접 입력" : "비전공자 객관식").Append("\n코드가 만든 수치: ").Append(string.Join(", ", problem.RequiredInputs)).Append('\n');
+        sb.Append("기준 문제: ").Append(problem.Prompt).Append("\n정답(풀이에만 사용): ").Append(problem.CorrectInput).Append('\n');
+        sb.Append("보기와 오답 착각(출력하지 말 것):\n");
+        foreach (var choice in problem.Choices)
+            sb.Append(choice.Value).Append(choice.IsCorrect ? " (정답)" : " (오답: " + choice.Misconception + ")").Append('\n');
+        sb.Append("모든 코드 수치는 문제 문장에 빠짐없이 그대로 포함한다. 정답, 보기, 계산 규칙을 바꾸거나 새 조건을 만들지 않는다. 다른 보기 값을 정답이라고 쓰지 않는다.\n");
+        sb.Append("정확히 두 줄만 출력한다. '문제: <본문>' 다음 줄에 '풀이: <정답을 포함한 1~2문장>'. 문제는 140자 이하, 풀이는 160자 이하로 쓴다. 따옴표나 이름표는 쓰지 않는다.");
+        return sb.ToString();
+    }
+
+    public static string LectureMisconceptionPrompt(Story story, int professor, int affection, LectureProblem problem, string picked, string misconception)
+    {
+        var sb = new StringBuilder(Persona(story, professor, affection, null));
+        sb.Append("\n학생이 강의 퀴즈를 틀렸다. 아래 사실만 사용해 교수 말투로 1~2문장, 120자 이하의 맞춤 해설을 써라.\n");
+        sb.Append("주제: ").Append(AiSwLectures.TopicName(problem.Topic)).Append("\n정답: ").Append(problem.CorrectInput).Append("\n학생이 고른 답: ").Append(picked).Append("\n이 오답이 나온 착각: ").Append(misconception).Append('\n');
+        sb.Append("학생의 답이 왜 그 착각으로 이어지는지 짚고 정답도 포함한다. 다른 숫자를 정답처럼 말하지 않는다. 대사만 출력하고 따옴표나 이름표는 쓰지 않는다.");
+        return sb.ToString();
+    }
+
     // ---- Scoring rules ----------------------------------------------------------------------
     // The model only labels the answer; the score comes from these fixed rules so every player is graded alike.
     //   무례 (rude, banmal, score-begging, prompt tricks)      → the slot's lowest score (at most -1)
@@ -287,10 +311,13 @@ public static class AiProfessor
     static readonly Regex ReplyLine = new Regex(@"(?m)^\W*대답\s*[:：]\s*([\s\S]*)");
 
     // Model text goes into rich-text labels: no tags, no wrapping quotes, bounded length.
-    public static string Clean(string text)
+    public static string Clean(string text) => Clean(text, 220);
+
+    public static string Clean(string text, int maxLength)
     {
+        if (text == null) return "";
         text = text.Replace('<', '〈').Replace('>', '〉').Trim().Trim('"', '“', '”', '\'');
-        if (text.Length > 220) text = text.Substring(0, 220) + "…";
+        if (text.Length > maxLength) text = text.Substring(0, maxLength) + "…";
         return text;
     }
     static string Plain(string text) => Regex.Replace(text ?? "", "<[^>]+>", "").Replace("\n", " ");

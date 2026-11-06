@@ -131,7 +131,7 @@ public abstract class MiniGame
     }
 }
 
-public enum MiniGameKind { Cards, Timing, Coffee, BugHunt, CircuitProbe, PriceTag, Rhythm, Route, Cashier, Tray, Molecule, Indicator, Microscope, BasePair, Stroop, Observation, Chord, Mixer, ImpactLab }
+public enum MiniGameKind { Cards, Timing, Coffee, BugHunt, CircuitProbe, PriceTag, Rhythm, Route, Cashier, Tray, Molecule, Indicator, Microscope, BasePair, Stroop, Observation, Chord, Mixer, ImpactLab, Lecture }
 
 // One faculty's words for a minigame. Fields left null keep the game's own AI-SW text.
 public class MiniGameTheme
@@ -172,6 +172,7 @@ public static class MiniGames
             case MiniGameKind.Chord: return new ChordProgression(theme);
             case MiniGameKind.Mixer: return new MixingBoard(theme);
             case MiniGameKind.ImpactLab: return new ImpactLab(theme, professor, experienced, practice);
+            case MiniGameKind.Lecture: return new Lecture(theme, professor, experienced);
             default: return new CoffeeOrder(professor, theme, practice);
         }
     }

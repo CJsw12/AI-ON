@@ -54,7 +54,7 @@ public static class AiSwStory
             "나레이션|막힌 부분을 들고 도서관 3층 스터디룸으로 갔다. 교수님은 그곳에서 오피스아워를 연다.",
             "교수|…문 앞에서 세 번째네요. 들어와요.|문 앞에서 세 바퀴째 순찰 중이던데요? 여긴 안전 구역이에요, 들어와요!",
             "나|검색 함수가 빈 목록만 돌려줘요. 테스트에 쓴 시간표랑 실행 결과를 같이 가져왔어요.",
-            "교수|그러라고 있는 시간이에요. 어디서 막혔어요.|오피스아워는 질문 무제한 이벤트예요! 어디서 막혔는지 화면 공유해 줘요, 같이 디버깅해요!"
+            "교수|…검색 결과가 비었네요. 원인을 보기 전에 기초부터 짚어요. 오늘은 뭘 배워 볼까요?|오, 빈 목록 버그네요! 원인부터 좁히기 전에 기초 레벨업도 해 봐요. 오늘은 뭘 배워 볼까요?"
         },
         new[] {
             "나레이션|교수님은 코드 리뷰를 하며 입력, 검색, 출력 부분을 나눠 표시했다. 한 함수에 모두 넣었을 때보다 읽기 쉬웠다.",
@@ -158,6 +158,7 @@ public static class AiSwStory
             new[] { "…이거 제가 시킨 거 아닌데요. 됐어요, 마실게요.", "제 건 맞네요. …다른 건 주문서 다시 봐요.", "다 맞네요. …커피는 잘 타네요. 고마워요." },
             new[] { "어… 이건 제 주문이 아닌데요? 하하, 랜덤 박스 뽑은 기분이에요. 이것도 맛있어요!", "제 커피는 완벽해요! 동기 것만 살짝 다른 버전으로 패치됐네요.", "주문 전부 완벽! 버그 없는 커피, 이게 바로 무결점 빌드죠!" }
         } };
+    static readonly MiniGameTheme Lecture = new MiniGameTheme { Kind = MiniGameKind.Lecture, Title = "주제 선택형 전공 강의", Place = "ComputerLab", Note = "챕터 4 · 자료구조·알고리즘·컴퓨터 기초 중 골라 퀴즈 풀기", Replies = AiSwLectures.Replies };
 
     // Scores and replies follow the twelve slots; null rows are quizzes or minigames.
     // 심한뫼 likes quiet effort, owning mistakes and working things out alone; 이명희 likes curiosity and company.
@@ -237,7 +238,7 @@ public static class AiSwStory
                 Options = stage == 0 ? Choices(chapter) : ExtraChoices(chapter),
                 Scores = new[] { KimScores[i], LeeScores[i] }, Replies = new[] { KimReplies[i], LeeReplies[i] }
             };
-            int quiz = i == 4 ? 0 : i == 6 ? 2 : i == 10 ? 4 : -1;
+            int quiz = i == 4 ? 0 : i == 10 ? 4 : -1;
             if (quiz >= 0) {
                 slots[i].Major = Voiced(AiSwQuizzes.Find(chapter, stage, true), QuizReplies[quiz]);
                 slots[i].Minor = Voiced(AiSwQuizzes.Find(chapter, stage, false), QuizReplies[quiz + 1]);
@@ -246,9 +247,9 @@ public static class AiSwStory
         slots[0].Stats = "--"; slots[1].Stats = "qts"; slots[2].Stats = "ii-"; slots[7].Stats = "its"; slots[8].Stats = "t-s"; slots[11].Stats = "its";
         slots[3].Game = Cards; slots[3].Stat = 't';
         slots[5].Game = Loop; slots[5].Stat = 'i';
+        slots[6].Game = Lecture; slots[6].Stat = 'i';
         slots[9].Game = Coffee; slots[9].Stat = 'q';
         slots[4].Stat = 'i';   // Chapter 3 quiz: interest in the material.
-        slots[6].Stat = 'q';   // The office-hour quiz counts as a question.
         slots[10].Stat = 'q';  // Chapter 6 quiz: as in the other faculties, every quiz raises a stat.
         return slots;
     }

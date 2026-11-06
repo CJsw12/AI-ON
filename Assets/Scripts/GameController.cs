@@ -459,7 +459,12 @@ public partial class GameController : MonoBehaviour
             float width = NovelUI.Width("미니게임", NovelUI.Round, 18) + 36;
             NovelUI.Pill(card.center.x - width / 2, card.y - 18, 36, "미니게임", NovelUI.Lemon, NovelUI.Berry, 18);
             NovelUI.Label(new Rect(card.x, card.y + 24, card.width, 50), slot.Game.Title, NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
-            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26)) { novelAudio.Play("Select"); MiniGame.Easy = !experienced; miniGame = MiniGames.Create(slot.Game, professor, false, experienced); }
+            if (NovelUI.Button(new Rect(card.center.x - 130, card.y + 90, 260, 60), "도전하기!", true, 26))
+            {
+                novelAudio.Play("Select"); MiniGame.Easy = !experienced;
+                miniGame = MiniGames.Create(slot.Game, professor, false, experienced);
+                if (miniGame is Lecture lecture) lecture.ConfigureAi(aiMode, S, affection);
+            }
             return;
         }
         Quiz quiz = slot.Quiz(experienced);

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // Pop-up menus drawn over the game: settings, the five save slots, the ending book, the backlog and minigame practice.
@@ -505,12 +506,16 @@ public partial class GameController
         Story story = Stories.All[practiceFaculty];
         // Same layout for every faculty. The difficulty applies to every minigame (non-majors run on a 0.75x clock,
         // and some games also change their content), so it is always shown.
+        Slot[] games = story.Slots.Where(slot => slot.Game != null).ToArray();
+        bool compact = games.Length > 3;
+        float tileHeight = compact ? 70 : 90;
+        float tileStep = compact ? 76 : 98;
         float y = card.y + 240;
-        foreach (Slot slot in story.Slots)
+        foreach (Slot slot in games)
         {
-            if (slot.Game == null) continue;
-            if (Tile(new Rect(card.x + 50, y, card.width - 100, 90), slot.Game.Title, slot.Game.Note, false)) StartPractice(slot.Game);
-            y += 98;
+            Rect tile = new Rect(card.x + 50, y, card.width - 100, tileHeight);
+            if (compact ? PracticeGameTile(tile, slot.Game) : Tile(tile, slot.Game.Title, slot.Game.Note, false)) StartPractice(slot.Game);
+            y += tileStep;
         }
         NovelUI.Label(new Rect(card.x, card.y + 548, card.width, 30), "연습 난이도", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
         int mode = NovelUI.Segmented(new Rect(card.center.x - 190, card.y + 580, 380, 44), new[] { "비전공자", "전공자" }, practiceExperienced ? 1 : 0, 19);
@@ -526,6 +531,7 @@ public partial class GameController
         practice = theme;
         MiniGame.Easy = !practiceExperienced;
         miniGame = MiniGames.Create(theme, practiceProfessor, true, practiceExperienced);
+        if (miniGame is Lecture lecture) lecture.ConfigureAi(aiMode, Stories.All[practiceFaculty], 0);
         menu = Menu.None;
     }
     void EndPractice()
@@ -543,5 +549,16 @@ public partial class GameController
         DrawMiniGame();
         if (NovelUI.IconButton(new Rect(1228, 10, 44, 44), "IconSettings", null)) OpenMenu(Menu.Settings);
         if (NovelUI.IconButton(new Rect(1228, 62, 44, 44), "IconClose", null)) EndPractice();
+    }
+
+    bool PracticeGameTile(Rect rect, MiniGameTheme theme)
+    {
+        bool hover = NovelUI.Hover(rect);
+        Rect face = hover ? new Rect(rect.x, rect.y - 2, rect.width, rect.height) : rect;
+        NovelUI.Card(face, hover ? NovelUI.Blush : NovelUI.Cream, 22, NovelUI.Pink);
+        NovelUI.Heart(new Rect(face.x + 18, face.center.y - 15, 30, 30), NovelUI.Pink);
+        NovelUI.Label(new Rect(face.x + 62, face.y + 6, face.width - 84, 30), theme.Title, NovelUI.Round, 23, NovelUI.Berry, TextAnchor.MiddleLeft);
+        NovelUI.Label(new Rect(face.x + 62, face.y + 35, face.width - 84, 28), theme.Note, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 }
