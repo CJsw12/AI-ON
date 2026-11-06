@@ -529,8 +529,9 @@ public partial class GameController
                 Vector2 feature = iphoneSource.EyeFeature;
                 string transport = iphoneUseUsb ? "iPhone USB → VTube Studio API" : "iPhone Wi-Fi UDP";
                 NovelUI.Label(new Rect(80, 694, 1120, 32), $"{transport} · {iphoneSource.Sequence} samples · Eye {feature.x:F2}, {feature.y:F2}", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
-                if (NovelUI.Button(new Rect(120, 740, 250, 54), "시선 별잡기", true, 21)) StartStarGame();
-                if (NovelUI.Button(new Rect(390, 740, 250, 54), "눈빛 피하기", true, 21)) StartGazeDodge();
+                if (NovelUI.Button(new Rect(40, 740, 200, 54), "시선 별잡기", true, 20)) StartStarGame();
+                if (NovelUI.Button(new Rect(250, 740, 200, 54), "눈빛 피하기", true, 20)) StartGazeDodge();
+                if (NovelUI.Button(new Rect(460, 740, 190, 54), "눈빛 맞추기", true, 20)) StartGazeEyeMatch();
                 if (NovelUI.Button(new Rect(660, 740, 200, 54), "다시 보정", false, 19)) BeginIPhoneCalibration();
             }
 

@@ -68,6 +68,7 @@ public partial class GameController
         if (gazeTracker != null) gazeTracker.RemovePursuitTarget("star");
         starGameActive = starGameFinished = false;
         StopDodgeGame();   // every place that stops the gaze games (tracker stop, recalibration) also ends 눈빛 피하기
+        StopEyeMatchGame();   // ...and 눈빛 맞추기
     }
 
     void SpawnStar(Vector2 from)
