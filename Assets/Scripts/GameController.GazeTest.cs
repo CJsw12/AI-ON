@@ -148,6 +148,7 @@ public partial class GameController
         UpdateWebcamGaze();
         TickStarGame();
         TickDodgeGame();
+        TickEyeMatchGame();
         TraceIPhoneGaze();
         UpdateEyeContactTracking();
     }
@@ -209,6 +210,11 @@ public partial class GameController
         if (StarScreenOpen)
         {
             DrawStarGame();   // has its own buttons
+            return;
+        }
+        if (MatchScreenOpen)
+        {
+            DrawEyeMatchGame();   // has its own buttons
             return;
         }
         if (DodgeScreenOpen)
@@ -278,8 +284,9 @@ public partial class GameController
                     : fitPrompt, NovelUI.Soft, 16,
                     webcamFitted ? NovelUI.Mint : NovelUI.Plum, TextAnchor.MiddleCenter, webcamFitted ? FontStyle.Bold : FontStyle.Normal);
                 GUI.enabled = tracking && webcamFitted;
-                if (NovelUI.Button(new Rect(230, 380, 400, 58), "시선 별잡기", webcamFitted, 23)) StartStarGame();
-                if (NovelUI.Button(new Rect(650, 380, 400, 58), "눈빛 피하기", webcamFitted, 23)) StartGazeDodge();
+                if (NovelUI.Button(new Rect(140, 380, 320, 58), "시선 별잡기", webcamFitted, 23)) StartStarGame();
+                if (NovelUI.Button(new Rect(480, 380, 320, 58), "눈빛 피하기", webcamFitted, 23)) StartGazeDodge();
+                if (NovelUI.Button(new Rect(820, 380, 320, 58), "눈빛 맞추기", webcamFitted, 23)) StartGazeEyeMatch();
                 GUI.enabled = true;
 
                 string speed = webcamRate > 0 ? $"정밀 모델 · 초당 {webcamRate}번 측정 · 지연 {Mathf.RoundToInt(gazeTracker.MeasuredLatencySeconds * 1000f)}ms" : "측정 속도 확인 중";
