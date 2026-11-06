@@ -21,6 +21,7 @@ public sealed class Lecture : MiniGame
     string typedAnswer = "", questionText, solutionText, pickedValue, pickedDisplay, mistakeText;
     bool correct, questionFailed, questionWindowClosed, aiQuestionReady;
     Task<AiProfessor.Result> questionTask, explanationTask;
+    int voicedScreen = -1, voicedLine = -1;
 
     public Lecture(MiniGameTheme theme, int professor, bool experienced) : base(theme)
     {
@@ -39,6 +40,18 @@ public sealed class Lecture : MiniGame
 
     public override string[][] Replies => Theme.Replies ?? AiSwLectures.Replies;
     protected override bool ShowStars => false;
+
+    // Called by the host on Repaint; one line change starts voice once, never once per GUI event.
+    public void SpeakOnce(NovelAudio audio)
+    {
+        if (voicedScreen == (int)screen && voicedLine == lineIndex) return;
+        voicedScreen = (int)screen;
+        voicedLine = lineIndex;
+        string text = screen == Screen.Topics ? AiSwLectures.ChoicePrompt(professor)
+            : screen == Screen.Lecture && script[lineIndex].Speaker == "교수" ? script[lineIndex].Text
+            : screen == Screen.Result && correct ? AiSwLectures.Replies[professor][1] : null;
+        audio.Speak(ProfessorVoice.Clips(story.Professors[professor].Voice, text));
+    }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {

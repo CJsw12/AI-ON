@@ -174,4 +174,5 @@ AUDIO-CREDITS.md             사운드 출처
 - 폰트: [Jua](https://fonts.google.com/specimen/Jua), [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum) (Google Fonts, SIL Open Font License, 라이선스 파일 동봉)
 - UI 텍스처 · 아이콘: Modern UI Pack (Michsky, Unity Asset Store)
 - 사운드: [`AUDIO-CREDITS.md`](AUDIO-CREDITS.md) 참고
+- 이명희 교수 TTS: ElevenLabs — [elevenlabs.io](https://elevenlabs.io/) (Nieve / Eleven v4, 무료 플랜 비상업적 생성물)
 - 코드: [MIT License](LICENSE)

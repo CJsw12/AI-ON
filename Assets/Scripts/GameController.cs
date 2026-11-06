@@ -608,6 +608,7 @@ public partial class GameController : MonoBehaviour
         NovelUI.Card(new Rect(60, 40, 1160, 830), new Color(.22f, .09f, .16f, .95f), 36, NovelUI.Alpha(NovelUI.Pink, .8f));
         float x = 100 + NovelUI.Pill(100, 58, 44, "MINI GAME", NovelUI.Pink, Color.white, 20) + 12;
         NovelUI.Label(new Rect(x, 58, 700, 44), miniGame.Title, NovelUI.Round, 26, NovelUI.Cream, TextAnchor.MiddleLeft);
+        if (miniGame is Lecture lecture && NovelUI.Repaint) lecture.SpeakOnce(novelAudio);
         miniGame.Render(NovelUI.MiniTitle, NovelUI.MiniBody, NovelUI.MiniButton);
         if (!miniGame.Done || miniGame.Reviewing || !NovelUI.Button(new Rect(980, 790, 210, 50), practice != null ? "돌아가기" : "결과 보기", true, 20)) return;
         if (practice != null) EndPractice();

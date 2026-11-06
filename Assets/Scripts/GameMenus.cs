@@ -542,6 +542,7 @@ public partial class GameController
     }
     void EndPractice()
     {
+        novelAudio.StopVoice();
         practice = null;
         miniGame = null;
         OpenMenu(Menu.Practice);

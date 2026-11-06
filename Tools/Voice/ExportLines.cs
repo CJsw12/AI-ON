@@ -51,5 +51,12 @@ static class ExportLines
         if (s.Fond != null) lines.Add(s.Fond[p]);
         if (s.Wary != null) lines.Add(s.Wary[p]);
         if (!string.IsNullOrEmpty(s.Professors[p].LookAwayLine)) lines.Add(s.Professors[p].LookAwayLine);
+        if (s == AiSwStory.Data)
+        {
+            lines.Add(AiSwLectures.ChoicePrompt(p));
+            foreach (LectureTopic topic in Enum.GetValues(typeof(LectureTopic)))
+                foreach (AiSwLectureLine line in AiSwLectures.Script(p, topic))
+                    if (line.Speaker == "교수") lines.Add(line.Text);
+        }
     }
 }

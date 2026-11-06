@@ -1,5 +1,9 @@
 # Audio sources
 
+- **이명희 교수 고정 대사 80개**: ElevenLabs, **Nieve - Argentinian Grandmother / Eleven v4**, 2026-11-06 생성. https://elevenlabs.io/
+  - `Assets/Resources/Voice/LeeMyeonghee/`: 본편·선택지·퀴즈·미니게임·엔딩·호감도·시선 반응·주제별 강의. 원문과 파일 연결은 `lines.txt`.
+  - 무료 플랜 생성물: 비상업적 이용 및 ElevenLabs 출처 표기 조건. 상업용 라이선스가 포함된 에셋이 아님. https://elevenlabs.io/docs/help-center/legal/can-i-publish-the-content-i-generate-on-the-platform
+
 Imported from the signed-in Unity Asset Store My Assets library on 2026-10-18.
 
 - **Free - Casual & Relaxing Game Music Pack**, SLD Audio, version 1.0 (product 262740).
