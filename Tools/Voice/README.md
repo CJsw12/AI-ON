@@ -10,11 +10,11 @@
 
 ## 대사를 고친 뒤 음성 다시 만들기
 
-목소리 복제 환경은 `C:\Users\PC12\voice-clone`에 있습니다(CosyVoice3, 본인 녹음 참조 `voice\best.json`).
+목소리 복제 환경은 로컬 `voice-clone` 디렉토리에 구성합니다(CosyVoice3, 본인 녹음 참조 `voice/best.json`).
 
 ```powershell
 .\Tools\Voice\export_lines.ps1 -Voice ShimHanmoe
-C:\Users\PC12\voice-clone\cosyvoice\.venv\Scripts\python.exe Tools\Voice\generate.py Tools\Voice\ShimHanmoe.lines.txt Assets\Resources\Voice\ShimHanmoe
+<voice-clone-path>\cosyvoice\.venv\Scripts\python.exe Tools\Voice\generate.py Tools\Voice\ShimHanmoe.lines.txt Assets\Resources\Voice\ShimHanmoe
 ```
 
 1. `export_lines.ps1`이 스토리 코드에서 그 교수님의 대사(본문·후속 대사·선택지/문제/미니게임 반응·엔딩·Fond/Wary·시선 경고)를 모두 뽑습니다.

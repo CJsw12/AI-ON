@@ -126,3 +126,6 @@ InitTestScene*.unity*
 # Unity crash recovery scenes
 /[Aa]ssets/_Recovery/
 /[Aa]ssets/_Recovery.meta
+# Chat logs and personal communication transcripts (never commit)
+KakaoTalk*
+*KakaoTalk*

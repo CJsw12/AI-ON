@@ -18,6 +18,10 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Antigravity] 2026-11-06 퍼블릭 저장소 전환 대비 보안 및 개인정보 차단 조치**:
+  - [`.gitignore`](.gitignore): 카카오톡 대화 로그 원본(`KakaoTalk*.txt`)의 실수 커밋 방지를 위한 영구 제외 규칙 추가.
+  - [`Tools/Voice/README.md`](Tools/Voice/README.md): 특정 사용자 로컬 절대 경로(`C:\Users\PC12\...`)를 환경 독립적인 설명으로 정규화.
+  - 보안 감사 결과: 과거 커밋 히스토리에 API 키, 비밀번호, 카카오톡 로그 등의 유출 이력 없음(100% 안전) 최종 확인.
 - **[Antigravity] 2026-11-06 시선 추적 코드 정적 검토 및 수치/메모리 예외 방어 보강**:
   - [GazeMapper.cs](Assets/Scripts/GazeMapper.cs): Median() 호출 시 빈 리스트에 대한 ArgumentOutOfRangeException 방어 가드 추가, PredictUnclamped()에 특성 벡터 NaN/Infinity 가드 추가, GazeSmoother.Filter()에 유효하지 않은 좌표 입력 시 내부 필터 상태(alue, held) 영구 오염 방지 가드 적용.
   - [GameController.ClickCalibration.cs](Assets/Scripts/GameController.ClickCalibration.cs): 프레임 지연이나 시선 중단 시 무한정 리스트가 누적되지 않도록 clickGazeHistory 및 clickMouseHistory 큐에 최대 150개 상한 용량(MaxHistoryCapacity) 가드 추가.
