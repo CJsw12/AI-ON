@@ -72,6 +72,7 @@ class Check {
         }
         Require(Stories.All.Length == 16, "Expected 16 faculties");
         Require(Stories.All.SelectMany(s => s.Professors).Select(p => p.Name).Distinct().Count() == 32, "Professor names must be unique");
+        Require(Stories.All.SelectMany(s => s.Slots).Count(x => x.Game != null && x.Game.Kind == MiniGameKind.Lecture) == 1, "Only the computer-science pilot should expose a lecture minigame");
         foreach (var s in Stories.All) {
             Require(s.Professors.Length == 2 && s.Slots.Length == 12, s.Name + ": faculty shape");
             Require(s.Dialogue.Length == 7 && s.FollowUp.Length == 7, s.Name + ": chapter shape");
@@ -103,7 +104,10 @@ class Check {
                     }
                 }
             }
-            Require(s.Slots.Count(x => x.Game != null) == 3 && s.Slots.Count(x => x.Major != null && x.Minor != null) == 3, s.Name + ": game/quiz slots");
+            int expectedGames = s.Name == "컴퓨터공학과" ? 4 : 3;
+            int expectedQuizzes = s.Name == "컴퓨터공학과" ? 2 : 3;
+            Require(s.Slots.Count(x => x.Game != null) == expectedGames && s.Slots.Count(x => x.Major != null && x.Minor != null) == expectedQuizzes, s.Name + ": game/quiz slots");
+            if (s.Name == "컴퓨터공학과") Require(s.Slots[6].Game.Kind == MiniGameKind.Lecture && s.Slots[6].Stat == 'i' && s.Slots[5].Game != null && s.Slots[7].Game == null, "Computer Science slot 6 must be the interest-counting lecture game between, not beside, existing minigames");
             foreach (var x in s.Slots) {
                 if (x.Game != null) Replies(x.Game.Replies,3,s.Name + " game outcomes");
                 foreach (var q in new[] {x.Major,x.Minor}) if (q != null) {

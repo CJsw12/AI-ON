@@ -1,7 +1,7 @@
 using System;
 
 // One faculty's first semester. Every faculty shares the same frame: six chapters, two choice slots per
-// chapter (six choices, three quizzes, three minigames in any order) and eight endings.
+// chapter and eight endings; a faculty may replace a quiz with a minigame.
 // Dialogue lines are "speaker|text"; a professor line may hold both tones as "교수|strict|cheerful".
 // Follow-up lines that start with "교수님: " may do the same with "strict|cheerful".
 public class Story
