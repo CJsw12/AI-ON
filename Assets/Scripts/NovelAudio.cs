@@ -7,10 +7,10 @@ using UnityEngine;
 // Save, Load, Up, Down, Unlock, Chapter); replacing a file with the same name swaps the sound.
 public class NovelAudio : MonoBehaviour
 {
-    const float MusicLevel = .4f, EffectsLevel = .4f;
-    AudioSource music, effects;
+    const float MusicLevel = .4f, EffectsLevel = .4f, VoiceLevel = 1f;
+    AudioSource music, effects, voice;
     string current;
-    Coroutine transition;
+    Coroutine transition, speaking;
     float fade;   // 0..1 crossfade between moods, multiplied by the music volume setting.
     readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
 
@@ -18,13 +18,43 @@ public class NovelAudio : MonoBehaviour
     {
         music = gameObject.AddComponent<AudioSource>();
         effects = gameObject.AddComponent<AudioSource>();
-        music.playOnAwake = effects.playOnAwake = false;
+        voice = gameObject.AddComponent<AudioSource>();
+        music.playOnAwake = effects.playOnAwake = voice.playOnAwake = false;
         music.loop = true;
-        music.spatialBlend = effects.spatialBlend = 0;
+        music.spatialBlend = effects.spatialBlend = voice.spatialBlend = 0;
         music.volume = 0;
     }
 
-    void Update() => music.volume = fade * MusicLevel * GameSettings.Music;
+    void Update()
+    {
+        music.volume = fade * MusicLevel * GameSettings.Music;
+        voice.volume = VoiceLevel * GameSettings.Voice;
+    }
+
+    // A professor's spoken line: the clips play one after another, and a new line cuts the old one off.
+    public bool Speaking => speaking != null;
+    public void Speak(List<AudioClip> lines)
+    {
+        StopVoice();
+        if (lines != null && lines.Count > 0 && GameSettings.Voice > 0) speaking = StartCoroutine(SpeakAll(lines));
+    }
+    public void StopVoice()
+    {
+        if (speaking != null) StopCoroutine(speaking);
+        speaking = null;
+        voice.Stop();
+    }
+    IEnumerator SpeakAll(List<AudioClip> lines)
+    {
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (i > 0) yield return new WaitForSecondsRealtime(.15f);
+            voice.clip = lines[i];
+            voice.Play();
+            while (voice.isPlaying) yield return null;
+        }
+        speaking = null;
+    }
 
     public void SetMood(string mood)
     {

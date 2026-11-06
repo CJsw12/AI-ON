@@ -19,7 +19,7 @@ public partial class GameController : MonoBehaviour
     string typed = "";
 
     // Presentation state: typewriter, auto mode, portrait fade and the affection popup.
-    string lineKey;
+    string lineKey, voiceKey;   // voiceKey: the line the professor's voice last started on.
     float lineStartedAt, typedAt, portraitAlpha, affectionChangedAt = -10;
     int shownAffection, lastDelta;
     float introTime;   // Advances at most 50 ms per frame, so a loading hitch can't skip a line.
@@ -318,6 +318,7 @@ public partial class GameController : MonoBehaviour
         string key = scene + "/" + choiceStage + "/" + dialogueIndex + "/" + showResult;
         if (AiHintShown) { speaker = ProfessorName; text = aiHint; key += "/h" + aiHintsUsed; }
         if (key != lineKey) { lineKey = key; lineStartedAt = Time.unscaledTime; typedAt = -1; AddToBacklog(key, speaker, text); }
+        SpeakOnce(key, speaker == ProfessorName ? text : null);
         string position = showResult && resultKey == null ? null : faculty + "/" + professor + "/" + scene + "/" + choiceStage + "/" + (showResult ? resultKey : dialogueIndex.ToString()) + (experienced ? "/E" : "");
         readKey = ReadLog.ContentKey(position, text);
         string plain = Tags.Replace(text, "");
@@ -360,10 +361,17 @@ public partial class GameController : MonoBehaviour
             if (canAdvance && ReadLog.Seen(readKey)) { if (Time.unscaledTime - skippedAt > .06f) { skippedAt = Time.unscaledTime; Advance(false, true); } }
             else if (skip) { skip = false; ShowToast(canAdvance ? "처음 보는 대사에서 멈췄어요" : "선택지에서 멈췄어요"); }
         }
-        else if (GameSettings.Auto && menu == Menu.None && !typing && canAdvance && NovelUI.Repaint && Time.unscaledTime - typedAt > GameSettings.AutoWait(plain.Length))
+        else if (GameSettings.Auto && menu == Menu.None && !typing && canAdvance && NovelUI.Repaint && !novelAudio.Speaking && Time.unscaledTime - typedAt > GameSettings.AutoWait(plain.Length))
             Advance(false);
         // Scrolling up opens the backlog.
         if (Event.current.type == EventType.ScrollWheel && Event.current.delta.y < 0) { Event.current.Use(); OpenMenu(Menu.Backlog); }
+    }
+    // Plays the professor's recorded voice for text once per key; null text (someone else talking) stops it.
+    void SpeakOnce(string key, string text)
+    {
+        if (key == voiceKey) return;
+        voiceKey = key;
+        novelAudio.Speak(text == null || professor < 0 ? null : ProfessorVoice.Clips(S.Professors[professor].Voice, text));
     }
     Color SpeakerTag(string speaker) => speaker == ProfessorName ? NovelUI.DeepPink : speaker == "나" ? NovelUI.Sky : speaker == "동기" ? NovelUI.Mint : NovelUI.Lemon;
     Color SpeakerInk(string speaker) => speaker == ProfessorName || speaker == "나" ? Color.white : NovelUI.Berry;
@@ -809,6 +817,7 @@ public partial class GameController : MonoBehaviour
             endingNew = EndingBook.Unlock(faculty, professor, ending);
             if (endingNew) novelAudio.Play("Unlock");
         }
+        SpeakOnce("ending/" + ending, S.EndingLines[professor][ending]);
         Rect card = new Rect(150, 130, 980, 650);
         NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .97f), 40, NovelUI.Pink, 4);
         string badge = "ENDING " + (ending + 1) + " / 8";
@@ -856,7 +865,8 @@ public partial class GameController : MonoBehaviour
         ResetEyeContactRun();
         scene = affection = entryStep = dialogueIndex = choiceStage = questions = teamwork = interest = solo = 0;
         professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear(); wrongPick = -1;
-        shownAffection = lastDelta = 0; lineKey = null; miniGame = null;
+        shownAffection = lastDelta = 0; lineKey = voiceKey = null; miniGame = null;
+        novelAudio.StopVoice();
         endingRecorded = endingNew = false; chapterShown = 0; reactAt = -10; sparks.Clear();
         AiReset();
     }

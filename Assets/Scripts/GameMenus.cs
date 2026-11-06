@@ -139,6 +139,10 @@ public partial class GameController
         GameSettings.Sfx = NovelUI.Slider(new Rect(x, y, width - 76, 46), GameSettings.Sfx);
         NovelUI.Label(new Rect(x + width - 70, y, 70, 46), Mathf.RoundToInt(GameSettings.Sfx * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
         y += row;
+        RowLabel(card, y, "교수님 목소리");
+        GameSettings.Voice = NovelUI.Slider(new Rect(x, y, width - 76, 46), GameSettings.Voice);
+        NovelUI.Label(new Rect(x + width - 70, y, 70, 46), Mathf.RoundToInt(GameSettings.Voice * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
+        y += row;
 
         RowLabel(card, y, "화면 효과");
         GameSettings.Effects = Changed(NovelUI.Segmented(new Rect(x, y, width, 46), OffOn, GameSettings.Effects ? 1 : 0), GameSettings.Effects ? 1 : 0) == 1;

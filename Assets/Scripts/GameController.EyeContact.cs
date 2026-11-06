@@ -336,6 +336,7 @@ public partial class GameController
     {
         string line = S.Professors[professor].LookAwayLine;
         if (string.IsNullOrWhiteSpace(line)) line = "똑바로 봐!";
+        SpeakOnce("lookaway", line);
         Rect box = new Rect(70, 628, 1140, 244);
         NovelUI.Card(box, NovelUI.Alpha(NovelUI.Cream, .96f), 30, NovelUI.Pink);
         NovelUI.Pill(box.x + 34, box.y - 26, 52, ProfessorName, NovelUI.DeepPink, Color.white, 24);

@@ -10,7 +10,7 @@ public static class GameSettings
 
     public static int TextSpeed = 1, AutoSpeed = 1;
     public static bool Auto, Effects = true;
-    public static float Music = .8f, Sfx = .9f;
+    public static float Music = .8f, Sfx = .9f, Voice = 1f;
 
     public static float LettersPerSecond => Letters[Mathf.Clamp(TextSpeed, 0, Letters.Length - 1)];
     // How long a finished line stays up before auto mode moves on; longer lines get more time.
@@ -24,6 +24,7 @@ public static class GameSettings
         Effects = PlayerPrefs.GetInt("AION.Effects", 1) == 1;
         Music = Mathf.Clamp01(PlayerPrefs.GetFloat("AION.Music", .8f));
         Sfx = Mathf.Clamp01(PlayerPrefs.GetFloat("AION.Sfx", .9f));
+        Voice = Mathf.Clamp01(PlayerPrefs.GetFloat("AION.Voice", 1f));
     }
     public static void Save()
     {
@@ -33,6 +34,7 @@ public static class GameSettings
         PlayerPrefs.SetInt("AION.Effects", Effects ? 1 : 0);
         PlayerPrefs.SetFloat("AION.Music", Music);
         PlayerPrefs.SetFloat("AION.Sfx", Sfx);
+        PlayerPrefs.SetFloat("AION.Voice", Voice);
         PlayerPrefs.Save();
     }
 }
