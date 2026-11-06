@@ -84,6 +84,7 @@ public partial class GameController
         novelAudio.Play("Select");
         OpenGazeTest();
         dodgeAfterCalibration = true;
+        matchAfterCalibration = false;   // only the game chosen last starts after calibration
         if (gazeTracker == null && !requestingCamera) gazeCameraRequest = StartCoroutine(StartGazeCamera());
     }
 
@@ -97,7 +98,7 @@ public partial class GameController
     void StartDodgeGame()
     {
         StopStarGame();
-        dodgeAfterCalibration = false;   // started by hand: no second automatic start later
+        dodgeAfterCalibration = matchAfterCalibration = false;   // started by hand: no automatic start later
         if (dodgeBest < 0) dodgeBest = PlayerPrefs.GetInt(DodgeBestPref, 0);
         dodgeActive = true;
         dodgeFinished = dodgeNewBest = dodgeLost = dodgeHasGaze = dodgeFrowned = dodgeResultSounded = false;

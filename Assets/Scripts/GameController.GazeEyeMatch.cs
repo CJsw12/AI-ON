@@ -23,7 +23,11 @@ public partial class GameController
     static readonly Color MatchPink = new Color(1f, .3f, .58f), MatchBlue = new Color(.18f, .45f, 1f);
     static readonly string[] MatchSlipLines = { "어디 보세요?", "집중하세요.", "제 눈 보세요." };
 
-    Texture2D[] matchFrames;
+    // The clip's JPEG frames stay compressed (~9 MB); only the frame on screen is decoded, into one reused
+    // texture. Decoding all 207 up front froze the click frame and held ~350 MB of textures for the session.
+    byte[][] matchFrameBytes;
+    Texture2D matchFrameTexture;
+    int matchFrameShown = -1;
     Vector2[] matchTrack;
     bool matchActive, matchFinished, matchCleared, matchLost, matchHasGaze, matchShyThisStreak, matchResultSounded;
     float matchStartsAt, matchLastTick, matchPlayed, matchHit, matchStreak, matchBestStreak, matchOutFor, matchResultAt;
@@ -62,21 +66,20 @@ public partial class GameController
         novelAudio.Play("Select");
         OpenGazeTest();
         matchAfterCalibration = true;
+        dodgeAfterCalibration = false;   // only the game chosen last starts after calibration
         if (gazeTracker == null && !requestingCamera) gazeCameraRequest = StartCoroutine(StartGazeCamera());
     }
 
     bool LoadEyeMatchAssets()
     {
-        if (matchFrames != null && matchTrack != null) return true;
-        var frames = new List<Texture2D>();
+        if (matchFrameBytes != null && matchTrack != null) return true;
+        var frames = new List<byte[]>();
         for (int i = 0; ; i++)
         {
-            var bytes = Resources.Load<TextAsset>($"EyeMatch/ProfSimEye_{i:000}");
-            if (bytes == null) break;
-            var tex = new Texture2D(2, 2, TextureFormat.RGB24, false) { wrapMode = TextureWrapMode.Clamp };
-            tex.LoadImage(bytes.bytes, true);
-            frames.Add(tex);
-            Resources.UnloadAsset(bytes);
+            var asset = Resources.Load<TextAsset>($"EyeMatch/ProfSimEye_{i:000}");
+            if (asset == null) break;
+            frames.Add(asset.bytes);
+            Resources.UnloadAsset(asset);
         }
         var track = new List<Vector2>();
         var text = Resources.Load<TextAsset>("EyeMatch/ProfSimEyeTrack");
@@ -92,18 +95,18 @@ public partial class GameController
         if (frames.Count == 0 || track.Count == 0)
         {
             Debug.LogError($"[eye match] assets missing: frames={frames.Count} track={track.Count}");
-            foreach (var t in frames) Destroy(t);
+            matchAfterCalibration = false;   // otherwise the auto-start retries (and logs) every frame
             return false;
         }
-        matchFrames = frames.ToArray();
+        matchFrameBytes = frames.ToArray();
         matchTrack = track.ToArray();
         return true;
     }
 
     void StartEyeMatchGame()
     {
+        StopStarGame();   // also ends 눈빛 피하기 and any earlier 눈빛 맞추기 (and frees its frame texture)
         if (!LoadEyeMatchAssets()) return;
-        StopStarGame();   // also ends 눈빛 피하기 and any earlier 눈빛 맞추기
         matchAfterCalibration = false;
         if (matchBest < 0f) matchBest = PlayerPrefs.GetFloat(MatchBestPref, 0f);
         matchActive = true;
@@ -119,7 +122,22 @@ public partial class GameController
         SayMatch("제 눈을 잘 따라와 보세요.", MatchCountdown + 1f);
     }
 
-    void StopEyeMatchGame() => matchActive = matchFinished = false;
+    void StopEyeMatchGame()
+    {
+        matchActive = matchFinished = false;
+        if (matchFrameTexture != null) { Destroy(matchFrameTexture); matchFrameTexture = null; }
+        matchFrameShown = -1;
+    }
+
+    /// <summary>Video frame i (wraps), decoded into the shared texture only when it changes.</summary>
+    Texture2D MatchFrameAt(int i)
+    {
+        i = ((i % matchFrameBytes.Length) + matchFrameBytes.Length) % matchFrameBytes.Length;
+        if (matchFrameTexture == null)
+            matchFrameTexture = new Texture2D(2, 2, TextureFormat.RGB24, false) { wrapMode = TextureWrapMode.Clamp };
+        if (i != matchFrameShown) { matchFrameTexture.LoadImage(matchFrameBytes[i], false); matchFrameShown = i; }
+        return matchFrameTexture;
+    }
 
     void SayMatch(string line, float hold = 2.2f)
     {
@@ -137,7 +155,7 @@ public partial class GameController
         return new Vector2(MatchArea.center.x + v.x * MatchArea.width / 2f, MatchArea.center.y + v.y * MatchArea.height / 2f);
     }
 
-    Texture2D MatchFrame(float played) => matchFrames[Mathf.FloorToInt(played * MatchVideoFps) % matchFrames.Length];
+    Texture2D MatchFrame(float played) => MatchFrameAt(Mathf.FloorToInt(played * MatchVideoFps));
 
     void TickEyeMatchGame()
     {
@@ -374,7 +392,7 @@ public partial class GameController
         float t = (now - matchOutroAt) * MatchVideoFps;
         // The miss clip plays once and holds the looked-away frame; the clear clip ping-pongs so the gaze stays on you.
         int k = matchCleared ? Mathf.RoundToInt(Mathf.PingPong(t, length)) : Mathf.Min(Mathf.FloorToInt(t), length);
-        return matchFrames[Mathf.Clamp(from + k, 0, matchFrames.Length - 1)];
+        return MatchFrameAt(Mathf.Clamp(from + k, 0, matchFrameBytes.Length - 1));
     }
 
     void DrawEyeMatchGame()

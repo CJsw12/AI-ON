@@ -37,19 +37,66 @@ public partial class GameController
     /// <summary>Fits on targets[0..fitCount) plus optional extra points (e.g. smooth-pursuit segments) and
     /// scores the mapper on the remaining targets, which were never used for the fit.</summary>
     static bool FitAndCheck(GazeMapper mapper, Vector2[] targets, int fitCount, double[][] features, List<double[]>[] samples,
-        bool requireVerticalEye, List<double[]> extraFeatures, List<Vector2> extraTargets)
+        bool requireVerticalEye, List<double[]> extraFeatures, List<Vector2> extraTargets, int[] fixedX = null, int[] fixedY = null)
     {
         var fitTargets = new List<Vector2>(); var fitFeatures = new List<double[]>(); var fitSamples = new List<List<double[]>>();
         for (int i = 0; i < fitCount; i++) { fitTargets.Add(targets[i]); fitFeatures.Add(features[i]); fitSamples.Add(samples[i]); }
         if (extraFeatures != null)
             for (int i = 0; i < extraFeatures.Count; i++) { fitTargets.Add(extraTargets[i]); fitFeatures.Add(extraFeatures[i]); fitSamples.Add(null); }
-        if (!mapper.Fit(fitFeatures, fitTargets, fitSamples, requireVerticalEye: requireVerticalEye)) return false;
+        if (!mapper.Fit(fitFeatures, fitTargets, fitSamples, requireVerticalEye: requireVerticalEye, fixedX: fixedX, fixedY: fixedY)) return false;
         int checks = targets.Length - fitCount;
         var checkTargets = new Vector2[checks]; Array.Copy(targets, fitCount, checkTargets, 0, checks);
         var checkFeatures = new double[checks][]; Array.Copy(features, fitCount, checkFeatures, 0, checks);
         mapper.Check(checkFeatures, checkTargets);
         return true;
     }
+
+    // Editor and development builds: one Console line per fit point (target, prediction, miss in canvas px) and
+    // every raw sample to <persistentDataPath>/gaze-fits/, so a fit can be replayed offline against other models.
+    // fitPoints: how many of the targets trained the mapper (the rest are checks). Returns the mean miss in px.
+    static float LogGazeFit(string source, GazeMapper mapper, Vector2[] targets, double[][] features, List<double[]>[] samples, int fitPoints)
+    {
+        float total = 0; int counted = 0;
+        var log = new System.Text.StringBuilder();
+        log.Append($"[gaze fit] {source} model={mapper.ModelName} estimate={mapper.ErrorPixels:F0}px check={mapper.CheckPixels:F0}px\n");
+        var json = new System.Text.StringBuilder("{\"source\":\"" + source + "\",\"model\":\"" + mapper.ModelName + "\",\"fitPoints\":" + fitPoints + ",\"points\":[");
+        for (int i = 0; i < targets.Length && i < features.Length; i++)
+        {
+            Vector2 target = targets[i];
+            if (features[i] == null) continue;
+            Vector2 hit = mapper.PredictUnclamped(features[i]);
+            Vector2 miss = new Vector2((hit.x - target.x) * 1280f, (hit.y - target.y) * 900f);
+            total += miss.magnitude; counted++;
+            log.Append($"  {(i < fitPoints ? "fit  " : "check")} {i,2} target=({target.x:F2},{target.y:F2}) hit=({hit.x:F2},{hit.y:F2}) miss=({miss.x:F0},{miss.y:F0}) {miss.magnitude:F0}px n={samples[i]?.Count ?? 0}\n");
+            if (counted > 1) json.Append(',');
+            json.Append("{\"target\":[" + Num(target.x) + "," + Num(target.y) + "],\"samples\":[");
+            var list = samples[i] ?? new List<double[]> { features[i] };
+            for (int s = 0; s < list.Count; s++)
+            {
+                if (s > 0) json.Append(',');
+                json.Append('[');
+                for (int k = 0; k < list[s].Length; k++) { if (k > 0) json.Append(','); json.Append(Num(list[s][k])); }
+                json.Append(']');
+            }
+            json.Append("]}");
+        }
+        json.Append("]}");
+        float mean = counted == 0 ? -1 : total / counted;
+        log.Append($"  mean miss {mean:F0}px over {counted} points\n");
+        if (!Debug.isDebugBuild) return mean;
+        Debug.Log(log.ToString());
+        try
+        {
+            string folder = System.IO.Path.Combine(Application.persistentDataPath, "gaze-fits");
+            System.IO.Directory.CreateDirectory(folder);
+            string file = System.IO.Path.Combine(folder, source + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json");
+            System.IO.File.WriteAllText(file, json.ToString());
+            Debug.Log("[gaze fit] samples saved: " + file);
+        }
+        catch (Exception e) { Debug.LogWarning("[gaze fit] could not save samples: " + e.Message); }
+        return mean;
+    }
+    static string Num(double v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
 
     static string GazeAccuracyText(GazeMapper mapper, float good, float fair)
     {
@@ -355,7 +402,6 @@ public partial class GameController
             ? .35f + Mathf.Clamp01((Time.unscaledTime - measureAt) / (settleSeconds == WebcamSettleSeconds ? WebcamCaptureSeconds : IPhoneCalibrationCaptureSeconds)) * .65f
             : Mathf.Clamp01((Time.unscaledTime - shownAt) / settleSeconds) * .35f;
         float progress = (index + phaseProgress) / targets.Length;
-        if (targets == WebcamFitTargets) progress = WebcamFitProgress(index, phaseProgress);
         NovelUI.Fill(new Rect(240, 196, 800, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);
         NovelUI.Fill(new Rect(240, 196, 800 * progress, 8), NovelUI.DeepPink, 4);
 

@@ -50,7 +50,7 @@ public partial class GameController
 
     void StartStarGame()
     {
-        dodgeAfterCalibration = false;   // the player chose the star game instead of the title's 눈빛 피하기
+        dodgeAfterCalibration = matchAfterCalibration = false;   // the player chose the star game instead of the title's pick
         if (starBest < 0) starBest = PlayerPrefs.GetInt(StarBestPref, 0);
         starGameActive = true;
         starGameFinished = starInside = starNewBest = false;

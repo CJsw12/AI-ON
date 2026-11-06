@@ -77,6 +77,13 @@ public sealed class GazeMapper
 
     /// <summary>pos: head position (x = sideways, y = up/down); zero when the source doesn't send it, and then the
     /// position models are skipped because the input never moved.</summary>
+    // Webcam extras appended after Features() (GameController.WebcamFit): ResNet-34 gaze yaw/pitch (radians,
+    // running median of 3), head x/y/distance (metres, MediaPipe transform), iris offset in the eye (averaged
+    // over both eyes), eyeLook blendshapes, head yaw/pitch (radians) and the ResNet gaze ray's screen-plane point.
+    public const int WebResYaw = 13, WebResPitch = 14, WebHeadX = 15, WebHeadY = 16, WebDistance = 17, WebIrisX = 18,
+        WebIrisY = 19, WebShapeX = 20, WebShapeY = 21, WebHeadYaw = 22, WebHeadPitch = 23, WebPlaneX = 24, WebPlaneY = 25,
+        WebFeatureCount = 26;
+
     public static double[] Features(Vector2 eye, Vector2 head, Vector2 look = default, Vector2 pos = default) => new double[]
     {
         eye.x, eye.y, head.x, head.y, look.x, look.y,
@@ -163,14 +170,18 @@ public sealed class GazeMapper
 
     /// <param name="features">One median feature vector per calibration point.</param>
     /// <param name="samples">Optional single-frame samples per point; they make the error estimate and model choice reflect noise.</param>
-    public bool Fit(IList<double[]> features, IList<Vector2> targets, IList<List<double[]>> samples = null, bool requireVerticalEye = false)
+    /// <param name="fixedX">Use exactly this model for the horizontal axis instead of choosing one from the points
+    /// (the webcam does: it was chosen offline by how well it carries over to other postures, which a fit's own
+    /// points cannot tell). Same for <paramref name="fixedY"/>.</param>
+    public bool Fit(IList<double[]> features, IList<Vector2> targets, IList<List<double[]>> samples = null, bool requireVerticalEye = false,
+        int[] fixedX = null, int[] fixedY = null)
     {
         Reset();
         var tx = new double[targets.Count];
         var ty = new double[targets.Count];
         for (int i = 0; i < targets.Count; i++) { tx[i] = targets[i].x; ty[i] = targets[i].y; }
-        Axis x = FitAxis(ModelsX, features, tx, samples, 1280f);
-        Axis y = FitAxis(ModelsY, features, ty, samples, 900f, requireVerticalEye);
+        Axis x = FitAxis(fixedX != null ? new[] { fixedX } : ModelsX, features, tx, samples, 1280f);
+        Axis y = FitAxis(fixedY != null ? new[] { fixedY } : ModelsY, features, ty, samples, 900f, fixedY == null && requireVerticalEye);
         if (x == null || y == null) return false;
         axisX = x;
         axisY = y;
@@ -270,7 +281,9 @@ public sealed class GazeMapper
         var parts = new List<string>();
         foreach (int f in used)
         {
-            string name = f == EyeX || f == EyeY ? "눈" : f == HeadX || f == HeadY ? "고개" : f == LookX || f == LookY ? "눈모양" : f == PosX || f == PosY ? "머리위치" : "곡선";
+            string name = f == EyeX || f == EyeY ? "눈" : f == HeadX || f == HeadY || f == WebHeadYaw || f == WebHeadPitch ? "고개"
+                : f == LookX || f == LookY || f == WebShapeX || f == WebShapeY ? "눈모양" : f == PosX || f == PosY || f == WebHeadX || f == WebHeadY || f == WebDistance ? "머리위치"
+                : f == WebIrisX || f == WebIrisY ? "홍채" : f == WebResYaw || f == WebResPitch || f == WebPlaneX || f == WebPlaneY ? "얼굴방향" : "곡선";
             if (!parts.Contains(name)) parts.Add(name);
         }
         return string.Join("+", parts);
