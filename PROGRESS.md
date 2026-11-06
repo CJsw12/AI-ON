@@ -18,6 +18,10 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Codex] 2026-11-06 AI 모드 심한뫼 교수의 헛소리 응답 반응**: AI 채점에서 무례하지 않은 딴소리 또는 성의 낮음(4글자 미만 포함)이면 고정 대사 `헛소리 하지 마!`와 심한뫼 교수의 화난 표정·녹음 음성을 보여 준다. 다른 교수와 기본 모름 단독은 기존 AI 대답을 유지한다.
+  - **플레이 방법**: 타이틀 → 공학부 → 컴퓨터공학과 → 심한뫼 교수, AI 모드 켜고 자유 답변에 "오늘 점심 뭐 먹지" 또는 "ㅇㅇ"을 입력한다.
+  - 음성 크기는 설정 화면의 `교수님 목소리` 슬라이더로 조절한다.
+  - 검증: 회귀 테스트 5종 exit 0. 미검증: Unity 전체 컴파일, 실제 AI 응답, 실기기 음성 재생. `ProfessorPersonality`에서 기존 `AiProfessor.cs` CS0162 및 `CoffeeRecipeSO.cs` CS0649 경고가 출력됨.
 - **[Claude] 2026-11-06 심한뫼 교수 목소리 (TTS)**: 사용자 본인 녹음(9개, 약 3분)으로 복제한 목소리(CosyVoice3, 로컬 `voice-clone` 환경)로 심한뫼 교수 대사 72줄 전부를 음성으로 만들어 `Assets/Resources/Voice/ShimHanmoe/`(ogg, 2.4MB)에 넣고, 대사가 나올 때 재생한다.
   - 대상: 본문·후속 대사, 선택지/문제/미니게임 반응(Fond/Wary가 붙으면 조각을 이어 재생), 엔딩 대사, 시선 이탈 끼어들기. AI 모드 실시간 대사·힌트와 엔딩 도감은 목소리 없음.
   - 코드: [`ProfessorVoice.cs`](Assets/Scripts/ProfessorVoice.cs)(대사→음성), `NovelAudio.Speak`, `GameController.SpeakOnce`, `Professor.Voice`. 설정에 `교수님 목소리` 슬라이더 추가, 자동 진행은 목소리가 끝날 때까지 대기.

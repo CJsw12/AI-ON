@@ -210,6 +210,7 @@ public static class AiProfessor
     {
         public int Delta;
         public bool Valid;           // False when the reply lacks the label lines; the caller must not apply it.
+        public bool OffTopic, LowEffort;
         public char Stat = '-';
         public string Reply = "", Why = "";
     }
@@ -247,6 +248,8 @@ public static class AiProfessor
         bool lowEffort = effort == "낮음" || Regex.Replace(answer ?? "", @"\s", "").Length < 4;
 
         if (rude) { g.Delta = min; g.Why = "무례 → 최저점"; return g; }
+        g.OffTopic = offTopic;
+        g.LowEffort = lowEffort;
         if (offTopic || unprepared || lowEffort)
         {
             g.Delta = Math.Max(min, -1);

@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 public partial class GameController : MonoBehaviour
@@ -371,6 +372,12 @@ public partial class GameController : MonoBehaviour
     {
         if (key == voiceKey) return;
         voiceKey = key;
+        if (nonsenseResultActive && showResult && professor >= 0)
+        {
+            string voice = S.Professors[professor].NonsenseVoice;
+            AudioClip clip = string.IsNullOrEmpty(voice) ? null : Resources.Load<AudioClip>("Audio/" + voice);
+            if (clip != null) { novelAudio.Speak(new List<AudioClip> { clip }); return; }
+        }
         novelAudio.Speak(text == null || professor < 0 ? null : ProfessorVoice.Clips(S.Professors[professor].Voice, text));
     }
     Color SpeakerTag(string speaker) => speaker == ProfessorName ? NovelUI.DeepPink : speaker == "나" ? NovelUI.Sky : speaker == "동기" ? NovelUI.Mint : NovelUI.Lemon;
@@ -383,6 +390,7 @@ public partial class GameController : MonoBehaviour
         ReadLog.Mark(readKey);
         if (!showResult) { dialogueIndex++; return; }
         showResult = false;
+        nonsenseResultActive = false;
         if (choiceStage == 0) { choiceStage = 1; dialogueIndex = 0; }
         else { choiceStage = dialogueIndex = 0; scene++; ReadLog.Flush(); }
     }
@@ -867,6 +875,7 @@ public partial class GameController : MonoBehaviour
         professor = -1; showResult = false; resultLine = typed = ""; resultKey = null; skip = false; backlog.Clear(); wrongPick = -1;
         shownAffection = lastDelta = 0; lineKey = voiceKey = null; miniGame = null;
         novelAudio.StopVoice();
+        nonsenseResultActive = false;
         endingRecorded = endingNew = false; chapterShown = 0; reactAt = -10; sparks.Clear();
         AiReset();
     }

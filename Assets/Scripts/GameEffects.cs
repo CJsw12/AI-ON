@@ -9,6 +9,7 @@ public partial class GameController
     float reactAt = -10;
     int reactDelta;
     bool reactCorrect;
+    bool nonsenseResultActive;
     int chapterShown;
     float chapterAt = -10;
 
@@ -22,19 +23,20 @@ public partial class GameController
     {
         get
         {
-            if (lookAwayInterruptActive) return "Frown";
+            if (lookAwayInterruptActive || nonsenseResultActive) return "Frown";
             if (SinceReaction > 2.5f) return null;
             return reactDelta > 0 ? "Happy" : reactDelta < 0 ? "Frown" : null;
         }
     }
 
     // Reacts to a result: sound, face, motion and particles. `quiz` marks right/wrong answers and good minigames.
-    void React(int delta, bool correct, bool quiz = false)
+    void React(int delta, bool correct, bool quiz = false, bool silent = false)
     {
         reactAt = Time.unscaledTime;
         reactDelta = delta;
         reactCorrect = correct;
-        novelAudio.Play(quiz && correct ? "Bonus" : delta > 0 ? "Up" : delta < 0 || !correct ? "Down" : "Select");
+        string sound = quiz && correct ? "Bonus" : delta > 0 ? "Up" : delta < 0 || !correct ? "Down" : "Select";
+        if (!silent) novelAudio.Play(sound);
         if (!GameSettings.Effects) return;
         if (delta > 0)
             for (int i = 0; i < 16; i++)

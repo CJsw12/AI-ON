@@ -103,8 +103,11 @@ public partial class GameController
         int delta = grade.Delta;
         Raise(grade.Stat);
         affection += delta;
-        React(delta, true);
-        resultLine = grade.Reply + AffectionLine(delta);
+        Professor p = S.Professors[professor];
+        bool nonsense = (grade.OffTopic || grade.LowEffort) && !string.IsNullOrEmpty(p.NonsenseLine);
+        nonsenseResultActive = nonsense;
+        React(delta, true, false, nonsense);
+        resultLine = (nonsense ? p.NonsenseLine : grade.Reply) + AffectionLine(delta);
         resultKey = null;   // A generated reply is new text every time, so skip mode stops on it.
         showResult = true;
         aiTyped = "";
