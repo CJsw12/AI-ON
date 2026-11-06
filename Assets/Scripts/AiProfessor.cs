@@ -242,9 +242,8 @@ public static class AiProfessor
     static string Label(string text, string name)
     {
         // [ 	] instead of \s: an empty label must stay empty, not borrow the next line as its value.
-        Match m = Regex.Match(text, @"(?m)^\W*" + name + @"[ 	]*[:：][ 	]*([^
-]*?)[ 	]*
-?$");
+        // Escapes, not literal line breaks: a raw newline in the pattern changes meaning with the file's LF/CRLF endings.
+        Match m = Regex.Match(text, @"(?m)^\W*" + name + @"[ \t]*[:：][ \t]*([^\r\n]*?)[ \t]*\r?$");
         return m.Success ? m.Groups[1].Value : "";
     }
 
