@@ -130,6 +130,10 @@ public partial class GameController
         gazeTracker.maxBlinkHoldSeconds = BlinkMaxSeconds;
         lastGazeSequence = 0;
         lastGazeAt = -100;
+        // Sync readback stalls the main thread on the GPU every camera frame (ResNet34 + EyeMU), which shows as
+        // stutter. Async readback publishes one camera frame later but keeps the game smooth. Must be set before
+        // Start builds the provider.
+        typeof(HomulerGaze).GetField("_asyncGpuReadback", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(gazeTracker, true);
         gazeObject.SetActive(true);
         gazeStatus = "웹캠을 준비하고 있어요...";
         requestingCamera = false;
