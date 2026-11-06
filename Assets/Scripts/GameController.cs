@@ -324,6 +324,34 @@ public partial class GameController : MonoBehaviour
         readKey = ReadLog.ContentKey(position, text);
         string plain = Tags.Replace(text, "");
         int shown = Mathf.FloorToInt((Time.unscaledTime - lineStartedAt) * GameSettings.LettersPerSecond);
+        if (nonsenseResultActive && showResult && professor >= 0)
+        {
+            Professor p = S.Professors[professor];
+            string nonsenseLine = p.NonsenseLine;
+            float[] timing = p.NonsenseTiming;
+            if (!string.IsNullOrEmpty(nonsenseLine) && timing != null)
+            {
+                int letters = 0;
+                for (int i = 0; i < nonsenseLine.Length; i++) if (!char.IsWhiteSpace(nonsenseLine[i])) letters++;
+                if (letters == timing.Length)
+                {
+                    float elapsed = Time.unscaledTime - lineStartedAt;
+                    int lineShown = 0, index = 0, letter = 0;
+                    while (index < nonsenseLine.Length && letter < timing.Length)
+                    {
+                        // Keep spaces attached to the following recorded syllable.
+                        while (index < nonsenseLine.Length && char.IsWhiteSpace(nonsenseLine[index])) index++;
+                        if (index >= nonsenseLine.Length || timing[letter] > elapsed) break;
+                        lineShown = index + 1;
+                        index++;
+                        letter++;
+                    }
+                    shown = lineShown;
+                    if (letter == timing.Length)
+                        shown += Mathf.FloorToInt(Mathf.Max(0, elapsed - timing[timing.Length - 1]) * GameSettings.LettersPerSecond);
+                }
+            }
+        }
         bool typing = shown < plain.Length;
         if (!typing && typedAt < 0) typedAt = Time.unscaledTime;
 

@@ -90,6 +90,7 @@ public class Professor
     // Folder under Resources/Voice with this professor's spoken lines (ProfessorVoice); empty = no voice.
     public string Voice;
     public string NonsenseLine, NonsenseVoice;
+    public float[] NonsenseTiming;
 
     public static string Picture(Professor info, int who, string mood = "") =>
         (string.IsNullOrEmpty(info.Image) ? (who == 0 ? "ProfessorKim" : "ProfessorLee") : info.Image) + mood + "Transparent";
