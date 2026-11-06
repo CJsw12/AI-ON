@@ -55,6 +55,7 @@ public partial class GameController : MonoBehaviour
     void Update()
     {
         UpdateGazeTest();
+        TickClickCalibration();
         UpdatePhotoCapture();
         novelAudio.SetMood(DodgeScreenOpen ? "Darkness" : S.Mood(scene, choiceStage));   // tense music for the gaze-dodge game
         AiImeUpdate();

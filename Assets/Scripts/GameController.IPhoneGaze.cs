@@ -31,15 +31,22 @@ public partial class GameController
     string IPhoneMapperPref => iphoneUseUsb ? "Gaze.IPhoneMapper.Usb" : "Gaze.IPhoneMapper.WiFi";
 
     /// <summary>Fits on the first 13 points and scores the mapper on the remaining check points.</summary>
-    static bool FitAndCheck(GazeMapper mapper, double[][] features, List<double[]>[] samples, bool requireVerticalEye)
+    static bool FitAndCheck(GazeMapper mapper, double[][] features, List<double[]>[] samples, bool requireVerticalEye) =>
+        FitAndCheck(mapper, IPhoneCalibrationTargets, GazeFitPoints, features, samples, requireVerticalEye, null, null);
+
+    /// <summary>Fits on targets[0..fitCount) plus optional extra points (e.g. smooth-pursuit segments) and
+    /// scores the mapper on the remaining targets, which were never used for the fit.</summary>
+    static bool FitAndCheck(GazeMapper mapper, Vector2[] targets, int fitCount, double[][] features, List<double[]>[] samples,
+        bool requireVerticalEye, List<double[]> extraFeatures, List<Vector2> extraTargets)
     {
-        var fitTargets = new Vector2[GazeFitPoints]; Array.Copy(IPhoneCalibrationTargets, fitTargets, GazeFitPoints);
-        var fitFeatures = new double[GazeFitPoints][]; Array.Copy(features, fitFeatures, GazeFitPoints);
-        var fitSamples = new List<double[]>[GazeFitPoints]; Array.Copy(samples, fitSamples, GazeFitPoints);
+        var fitTargets = new List<Vector2>(); var fitFeatures = new List<double[]>(); var fitSamples = new List<List<double[]>>();
+        for (int i = 0; i < fitCount; i++) { fitTargets.Add(targets[i]); fitFeatures.Add(features[i]); fitSamples.Add(samples[i]); }
+        if (extraFeatures != null)
+            for (int i = 0; i < extraFeatures.Count; i++) { fitTargets.Add(extraTargets[i]); fitFeatures.Add(extraFeatures[i]); fitSamples.Add(null); }
         if (!mapper.Fit(fitFeatures, fitTargets, fitSamples, requireVerticalEye: requireVerticalEye)) return false;
-        int checks = IPhoneCalibrationTargets.Length - GazeFitPoints;
-        var checkTargets = new Vector2[checks]; Array.Copy(IPhoneCalibrationTargets, GazeFitPoints, checkTargets, 0, checks);
-        var checkFeatures = new double[checks][]; Array.Copy(features, GazeFitPoints, checkFeatures, 0, checks);
+        int checks = targets.Length - fitCount;
+        var checkTargets = new Vector2[checks]; Array.Copy(targets, fitCount, checkTargets, 0, checks);
+        var checkFeatures = new double[checks][]; Array.Copy(features, fitCount, checkFeatures, 0, checks);
         mapper.Check(checkFeatures, checkTargets);
         return true;
     }
@@ -49,7 +56,9 @@ public partial class GameController
         float error = mapper.CheckPixels >= 0 ? mapper.CheckPixels : mapper.ErrorPixels;
         string kind = mapper.CheckPixels >= 0 ? "검증점 실측 오차" : "추정 오차";
         string grade = error < good ? "좋음" : error < fair ? "보통" : "낮음 · 다시 보정 권장";
-        return $"{mapper.ModelName} · {kind} 약 {Mathf.RoundToInt(error)}px · {grade}";
+        string p95 = mapper.CheckP95 >= 0 ? $" · 최악 5% {Mathf.RoundToInt(mapper.CheckP95)}px" : "";
+        string clicks = mapper.ClickCount > 0 || mapper.ClicksRejectedByGuard > 0 ? $" · 클릭 학습 {mapper.ClickCount}개(거절 {mapper.ClicksRejectedByGuard})" : "";
+        return $"{mapper.ModelName} · {kind} 약 {Mathf.RoundToInt(error)}px{p95} · {grade}{clicks}";
     }
 
     void TryLoadIPhoneCalibration()
@@ -155,6 +164,7 @@ public partial class GameController
             return;
         }
         Vector2 projected = iphoneMapper.Predict(features);
+        RecordClickGaze(features, new Vector2(projected.x * 1280f, projected.y * 900f));
         if (!iphoneMarkerValid) iphoneSmoother.Reset();
         iphoneCanvasGaze = iphoneSmoother.Filter(new Vector2(projected.x * 1280f, projected.y * 900f), Time.unscaledTime);
         iphoneMarkerValid = true;
@@ -345,6 +355,7 @@ public partial class GameController
             ? .35f + Mathf.Clamp01((Time.unscaledTime - measureAt) / (settleSeconds == WebcamSettleSeconds ? WebcamCaptureSeconds : IPhoneCalibrationCaptureSeconds)) * .65f
             : Mathf.Clamp01((Time.unscaledTime - shownAt) / settleSeconds) * .35f;
         float progress = (index + phaseProgress) / targets.Length;
+        if (targets == WebcamFitTargets) progress = WebcamFitProgress(index, phaseProgress);
         NovelUI.Fill(new Rect(240, 196, 800, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);
         NovelUI.Fill(new Rect(240, 196, 800 * progress, 8), NovelUI.DeepPink, 4);
 

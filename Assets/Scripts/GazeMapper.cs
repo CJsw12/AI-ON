@@ -84,15 +84,27 @@ public sealed class GazeMapper
         pos.x, pos.y,
     };
 
-    public void Reset() { axisX = axisY = null; ErrorPixels = 0; ModelName = ""; Drift = Vector2.zero; CheckPixels = -1; }
+    public void Reset()
+    {
+        axisX = axisY = null; ErrorPixels = 0; ModelName = ""; Drift = Vector2.zero; CheckPixels = -1;
+        fitFeatures.Clear(); fitTargets.Clear(); clickFeatures.Clear(); clickTargets.Clear(); checkFeatures.Clear(); checkTargets.Clear(); CheckP95 = -1; ClicksRejectedByGuard = 0; AnchorClicks = 0;
+    }
 
     /// <summary>Mean error in canvas pixels on check points that were not used for the fit; -1 until measured.
     /// Unlike ErrorPixels this is a real measurement, not an estimate from the calibration points.</summary>
     public float CheckPixels { get; private set; } = -1;
+    /// <summary>95th-percentile miss over the independent check points only (px); -1 before a check.</summary>
+    public float CheckP95 { get; private set; } = -1;
+    public int ClicksRejectedByGuard { get; private set; }
+    readonly List<double[]> checkFeatures = new List<double[]>();
+    readonly List<Vector2> checkTargets = new List<Vector2>();
 
     public float Check(IList<double[]> features, IList<Vector2> targets)
     {
         if (!Ready) return CheckPixels = -1;
+        checkFeatures.Clear(); checkTargets.Clear();
+        for (int i = 0; i < features.Count; i++) if (features[i] != null) { checkFeatures.Add(features[i]); checkTargets.Add(targets[i]); }
+        CheckP95 = Percentile95(Sub(HeldOutMisses(), checkFeatures.Count));
         float sum = 0; int n = 0;
         for (int i = 0; i < features.Count; i++)
         {
@@ -128,6 +140,7 @@ public sealed class GazeMapper
             // Feature layout changed since the save: drop it rather than predict nonsense.
             foreach (int u in x.Used) if (u >= Features(Vector2.zero, Vector2.zero).Length) return false;
             foreach (int u in y.Used) if (u >= Features(Vector2.zero, Vector2.zero).Length) return false;
+            fitFeatures.Clear(); fitTargets.Clear(); clickFeatures.Clear(); clickTargets.Clear(); checkFeatures.Clear(); checkTargets.Clear(); CheckP95 = -1; ClicksRejectedByGuard = 0; AnchorClicks = 0;
             axisX = x; axisY = y; Drift = Vector2.zero;
             ErrorPixels = Mathf.Sqrt(x.Error * x.Error + y.Error * y.Error);
             ModelName = $"가로 {Describe(x.Used)} · 세로 {Describe(y.Used)}";
@@ -163,6 +176,92 @@ public sealed class GazeMapper
         axisY = y;
         ErrorPixels = Mathf.Sqrt(x.Error * x.Error + y.Error * y.Error);
         ModelName = $"가로 {Describe(x.Used)} · 세로 {Describe(y.Used)}";
+        for (int i = 0; i < features.Count; i++)
+            if (features[i] != null) { fitFeatures.Add(features[i]); fitTargets.Add(targets[i]); }
+        return true;
+    }
+
+    // ---- Learning from clicks (WebGazer / Tri-Cam idea) ----------------------------------------------
+    // A player looks at what they click. Each accepted click becomes an extra, lightly weighted calibration
+    // point and the chosen model is re-solved; the pointer itself is never moved toward the cursor.
+    const int MaxClicks = 30;            // oldest clicks drop out, so a posture change is followed
+    const double ClickWeight = .35;      // a click counts about a third of a calibration point
+    const float MaxClickMissPixels = 250f;
+    readonly List<double[]> fitFeatures = new List<double[]>();
+    readonly List<Vector2> fitTargets = new List<Vector2>();
+    readonly List<double[]> clickFeatures = new List<double[]>();
+    readonly List<Vector2> clickTargets = new List<Vector2>();
+    public int ClickCount => clickFeatures.Count + AnchorClicks;
+    int AnchorClicks;
+    const float MaxAnchorStepPixels = 120f;
+
+    // Misses on the labelled points a click refit must not damage: check points first, then the fixed
+    // calibration points. Used to refuse a click that makes the mapping worse.
+    List<float> HeldOutMisses()
+    {
+        var misses = new List<float>();
+        for (int i = 0; i < checkFeatures.Count; i++) misses.Add(Miss(checkFeatures[i], checkTargets[i]));
+        for (int i = 0; i < fitFeatures.Count; i++) misses.Add(Miss(fitFeatures[i], fitTargets[i]));
+        return misses;
+    }
+    float Miss(double[] f, Vector2 t) { Vector2 m = PredictUnclamped(f) - t; return new Vector2(m.x * 1280f, m.y * 900f).magnitude; }
+    static List<float> Sub(List<float> v, int n) => v.GetRange(0, Mathf.Min(n, v.Count));
+    static float Mean(List<float> v) { float s = 0; foreach (float x in v) s += x; return v.Count == 0 ? 0 : s / v.Count; }
+    static float Percentile95(List<float> v)
+    {
+        if (v.Count == 0) return -1;
+        var c = new List<float>(v); c.Sort();
+        return c[Mathf.Clamp(Mathf.CeilToInt(.95f * c.Count) - 1, 0, c.Count - 1)];
+    }
+
+    /// <summary>Adds a click (normalized target) seen with these features; false when it was rejected.</summary>
+    public bool AddClick(double[] features, Vector2 target)
+    {
+        if (!Ready || features == null) return false;
+        foreach (double f in features) if (double.IsNaN(f) || double.IsInfinity(f)) return false;
+        Vector2 miss = PredictUnclamped(features) - target;
+        if (new Vector2(miss.x * 1280f, miss.y * 900f).magnitude > MaxClickMissPixels) { ClicksRejectedByGuard++; return false; }   // probably not looking there
+        if (fitFeatures.Count == 0)
+        {
+            // Loaded calibration: no labelled points to refit or to guard with, so only nudge the offset,
+            // and refuse a click that alone would move it more than MaxAnchorStepPixels.
+            if (new Vector2(miss.x * 1280f, miss.y * 900f).magnitude > MaxAnchorStepPixels) { ClicksRejectedByGuard++; return false; }
+            AddAnchor(-miss); AnchorClicks++; return true;
+        }
+        clickFeatures.Add(features); clickTargets.Add(target);
+        double[] droppedFeatures = null; Vector2 droppedTarget = default;
+        if (clickFeatures.Count > MaxClicks) { droppedFeatures = clickFeatures[0]; droppedTarget = clickTargets[0]; clickFeatures.RemoveAt(0); clickTargets.RemoveAt(0); }
+        void Undo()
+        {
+            clickFeatures.RemoveAt(clickFeatures.Count - 1); clickTargets.RemoveAt(clickTargets.Count - 1);
+            if (droppedFeatures != null) { clickFeatures.Insert(0, droppedFeatures); clickTargets.Insert(0, droppedTarget); }
+        }
+
+        var all = new List<double[]>(fitFeatures); all.AddRange(clickFeatures);
+        int n = all.Count;
+        var tx = new double[n]; var ty = new double[n]; var w = new double[n];
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 t = i < fitTargets.Count ? fitTargets[i] : clickTargets[i - fitTargets.Count];
+            tx[i] = t.x; ty[i] = t.y; w[i] = i < fitTargets.Count ? 1 : ClickWeight;
+        }
+        Axis x = Solve(axisX.Used, all, tx, -1, w), y = Solve(axisY.Used, all, ty, -1, w);
+        if (x == null || y == null) { Undo(); return false; }
+        x.Error = axisX.Error; y.Error = axisY.Error;
+        float before = Mean(HeldOutMisses());
+        Axis oldX = axisX, oldY = axisY; Vector2 oldDrift = Drift;
+        axisX = x; axisY = y; Drift = Vector2.zero;   // the refit now carries the offset the drift used to patch
+        // Rollback guard: a click must not make the held-out points clearly worse. The slack (20% / 8px) is wide on
+        // purpose: those points were recorded in the calibration posture, so a real posture drift that clicks are
+        // correcting will cost them a little.
+        if (Mean(HeldOutMisses()) > Mathf.Max(before * 1.2f, before + 8f))
+        {
+            axisX = oldX; axisY = oldY; Drift = oldDrift;
+            Undo();
+            ClicksRejectedByGuard++;
+            return false;
+        }
+        if (checkFeatures.Count > 0) { CheckPixels = Mean(Sub(HeldOutMisses(), checkFeatures.Count)); CheckP95 = Percentile95(Sub(HeldOutMisses(), checkFeatures.Count)); }
         return true;
     }
 
@@ -247,23 +346,26 @@ public sealed class GazeMapper
     }
 
     // Ridge least squares on standardized features; the bias term is not penalized. skip = -1 uses every point.
-    static Axis Solve(int[] model, IList<double[]> features, double[] targets, int skip)
+    static Axis Solve(int[] model, IList<double[]> features, double[] targets, int skip, double[] weights = null)
     {
-        int k = model.Length, n = 0;
+        int k = model.Length, count = 0;
+        double n = 0;
         var mean = new double[k];
         var spread = new double[k];
         for (int p = 0; p < features.Count; p++)
         {
             if (p == skip) continue;
-            n++;
-            for (int i = 0; i < k; i++) mean[i] += features[p][model[i]];
+            double wp = weights == null ? 1 : weights[p];
+            count++; n += wp;
+            for (int i = 0; i < k; i++) mean[i] += wp * features[p][model[i]];
         }
-        if (n < k + 3) return null;
+        if (count < k + 3) return null;
         for (int i = 0; i < k; i++) mean[i] /= n;
         for (int p = 0; p < features.Count; p++)
         {
             if (p == skip) continue;
-            for (int i = 0; i < k; i++) { double d = features[p][model[i]] - mean[i]; spread[i] += d * d; }
+            double wp = weights == null ? 1 : weights[p];
+            for (int i = 0; i < k; i++) { double d = features[p][model[i]] - mean[i]; spread[i] += wp * d * d; }
         }
         for (int i = 0; i < k; i++)
         {
@@ -278,12 +380,13 @@ public sealed class GazeMapper
         for (int p = 0; p < features.Count; p++)
         {
             if (p == skip) continue;
+            double wp = weights == null ? 1 : weights[p];
             for (int i = 0; i < k; i++) row[i] = (features[p][model[i]] - mean[i]) / spread[i];
             row[k] = 1;
             for (int r = 0; r < size; r++)
             {
-                for (int c = 0; c < size; c++) normal[r, c] += row[r] * row[c];
-                right[r] += row[r] * targets[p];
+                for (int c = 0; c < size; c++) normal[r, c] += wp * row[r] * row[c];
+                right[r] += wp * row[r] * targets[p];
             }
         }
         for (int i = 0; i < k; i++) normal[i, i] += Ridge * n;

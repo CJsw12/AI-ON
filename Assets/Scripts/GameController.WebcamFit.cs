@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnitEye;
 using UnityEngine;
 
@@ -13,11 +13,101 @@ public partial class GameController
 
     readonly GazeMapper webcamMapper = new GazeMapper();
     // UnitEye already smooths its output, so this filter is lighter than the iPhone one.
-    readonly GazeSmoother webcamSmoother = new GazeSmoother(.8f, .006f, 1f, 30f);   // webcam frames scatter more: stronger smoothing and a wider hold
+    readonly GazeSmoother webcamSmoother = new GazeSmoother(.8f, .006f, 1f, 12f);   // UnitEye already filters; keep only a small fixation hold
     readonly float[] webcamShapes = new float[10];
     readonly List<double[]> webcamCapture = new List<double[]>();
-    readonly double[][] webcamMeasured = new double[IPhoneCalibrationTargets.Length][];
-    readonly List<double[]>[] webcamMeasuredSamples = new List<double[]>[IPhoneCalibrationTargets.Length];
+    // Hybrid screen fit (Saxena et al., ETRA 2022: fixation + smooth pursuit together calibrated webcams best):
+    // a 3x3 grid of fixations, a 12 s pursuit along a figure-eight, then 3 held-out check points. ~30 s total.
+    static readonly Vector2[] WebcamFitTargets =
+    {
+        new Vector2(.08f, .12f), new Vector2(.50f, .12f), new Vector2(.92f, .12f),
+        new Vector2(.08f, .50f), new Vector2(.50f, .50f), new Vector2(.92f, .50f),
+        new Vector2(.08f, .88f), new Vector2(.50f, .88f), new Vector2(.92f, .88f),
+        new Vector2(.29f, .31f), new Vector2(.71f, .69f), new Vector2(.71f, .31f)
+    };
+    const int WebcamFitFixations = 9;
+    const float PursuitLeadIn = 1f, PursuitSeconds = 12f;
+    const float PursuitLag = .05f;          // eye-only lag behind a smooth, predictable target (pipeline latency comes from CaptureTimestamp)
+    const float PursuitSegment = .5f;       // pursuit frames are pooled into half-second points for the fit
+    readonly double[][] webcamMeasured = new double[WebcamFitTargets.Length][];
+    readonly List<double[]>[] webcamMeasuredSamples = new List<double[]>[WebcamFitTargets.Length];
+    bool webcamPursuit;
+    float webcamPursuitStart;
+    readonly List<(float time, double[] features)> webcamPursuitFrames = new List<(float, double[])>();
+    readonly List<double[]> webcamPursuitFeatures = new List<double[]>();
+    readonly List<Vector2> webcamPursuitTargets = new List<Vector2>();
+
+    // Figure-eight over most of the screen; t is seconds since the dot started moving.
+    static Vector2 PursuitTarget(float t)
+    {
+        float phase = 2f * Mathf.PI * Mathf.Clamp(t, 0f, PursuitSeconds) / PursuitSeconds;
+        return new Vector2(.5f + .38f * Mathf.Sin(phase), .5f + .34f * Mathf.Sin(2f * phase));
+    }
+
+    static float WebcamFitTotalSeconds => WebcamFitTargets.Length * (WebcamSettleSeconds + WebcamCaptureSeconds) + PursuitLeadIn + PursuitSeconds;
+
+    static float WebcamFitProgress(int index, float phaseProgress)
+    {
+        float done = (index + phaseProgress) * (WebcamSettleSeconds + WebcamCaptureSeconds) + (index >= WebcamFitFixations ? PursuitLeadIn + PursuitSeconds : 0f);
+        return Mathf.Clamp01(done / WebcamFitTotalSeconds);
+    }
+
+    // When the camera frame behind this sample was captured. Labels must use this, not the arrival time,
+    // or the processing delay (often 100-200ms) turns into a systematic offset along the pursuit path.
+    float WebcamFrameTime()
+    {
+        float now = Time.unscaledTime;
+        double captured = gazeTracker != null ? gazeTracker.CaptureTimestamp : 0;
+        if (captured > 0 && captured <= now && now - captured < 1.0) return (float)captured;
+        return now - .12f;   // no usable timestamp: assume a typical pipeline delay
+    }
+
+    void FinishWebcamPursuit()
+    {
+        webcamPursuit = false;
+        webcamPursuitFeatures.Clear(); webcamPursuitTargets.Clear();
+        for (float from = PursuitLeadIn + PursuitLag; from < PursuitLeadIn + PursuitSeconds; from += PursuitSegment)
+        {
+            var chunk = new List<double[]>(); Vector2 target = Vector2.zero;
+            foreach (var f in webcamPursuitFrames)
+            {
+                float t = f.time - webcamPursuitStart;
+                if (t < from || t >= from + PursuitSegment) continue;
+                chunk.Add(f.features); target += PursuitTarget(t - PursuitLeadIn - PursuitLag);
+            }
+            if (chunk.Count < 3) continue;
+            webcamPursuitFeatures.Add(GazeMapper.Median(chunk));
+            webcamPursuitTargets.Add(target / chunk.Count);
+        }
+        webcamPursuitFrames.Clear();
+        webcamTargetShownAt = Time.unscaledTime;
+        webcamFitStatus = $"좋아요. 확인용 점 {WebcamFitTargets.Length - WebcamFitFixations}개만 더 봐 주세요.";
+    }
+
+    void DrawWebcamPursuitScreen()
+    {
+        GUI.matrix = Canvas;
+        NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
+        NovelUI.Label(new Rect(0, 20, 1280, 48), "시선 보정", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        float t = Time.unscaledTime - webcamPursuitStart;
+        float before = WebcamFitFixations * (WebcamSettleSeconds + WebcamCaptureSeconds);
+        float progress = (before + Mathf.Min(t, PursuitLeadIn + PursuitSeconds)) / WebcamFitTotalSeconds;
+        NovelUI.Fill(new Rect(240, 196, 800, 8), NovelUI.Alpha(NovelUI.Plum, .16f), 4);
+        NovelUI.Fill(new Rect(240, 196, 800 * Mathf.Clamp01(progress), 8), NovelUI.DeepPink, 4);
+        Vector2 target = PursuitTarget(t - PursuitLeadIn);
+        Vector2 point = new Vector2(target.x * 1280f, target.y * 900f);
+        NovelUI.Fill(new Rect(point.x - 22, point.y - 22, 44, 44), NovelUI.DeepPink, 22);
+        NovelUI.Fill(new Rect(point.x - 15, point.y - 15, 30, 30), NovelUI.Cream, 15);
+        NovelUI.Fill(new Rect(point.x - 5, point.y - 5, 10, 10), NovelUI.DeepPink, 5);
+        NovelUI.Label(new Rect(150, 156, 980, 34), t < PursuitLeadIn ? "점이 곧 움직여요 · 고개는 그대로, 눈으로만 따라가 주세요" : "움직이는 점을 눈으로 따라가 주세요",
+            NovelUI.Soft, 20, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
+        if (NovelUI.Button(new Rect(1040, 24, 190, 46), "보정 취소", false, 18))
+        {
+            CancelWebcamFit();
+            webcamFitStatus = "화면 맞춤을 취소했어요.";
+            if (eyeContactPreparationMode) CancelEyeContactPreparation();
+        }
+    }
     bool webcamFitting, webcamFitMeasuring, webcamFitted, webcamFitOnlySession, webcamMarkerValid, webcamBlinking, webcamLidsDown;
     int webcamFitPoint;
     float webcamTargetShownAt, webcamMeasureAt, webcamBlinkSince = -1f;
@@ -34,7 +124,8 @@ public partial class GameController
     }
 
     // gazeLocation is already GUI space (y down): HomulerGaze draws its own dot at it with GUI.DrawTexture.
-    Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(gazeTracker.gazeLocation);
+    // Unfiltered: UnitEye's One-Euro lag would otherwise pair a delayed gaze with the pursuit target at capture time.
+    Vector2 WebcamRawCanvasGaze => Canvas.inverse.MultiplyPoint3x4(gazeTracker.UnfilteredGazeLocation);
 
     static bool IsFiniteWebcamPoint(Vector2 point) =>
         !float.IsNaN(point.x) && !float.IsInfinity(point.x) &&
@@ -87,11 +178,14 @@ public partial class GameController
         if (webcamFitMeasuring && usableForFit && Time.unscaledTime <= webcamMeasureAt + WebcamCaptureSeconds &&
             (!WebcamFitOnlyGaze || rawGazeFinite))
             webcamCapture.Add(features);
+        if (webcamPursuit && usableForFit && !webcamBlinking && (!WebcamFitOnlyGaze || rawGazeFinite))
+            webcamPursuitFrames.Add((WebcamFrameTime(), features));
 
         if (!webcamFitted) return;
         if (WebcamFitOnlyGaze && !rawGazeFinite) { webcamMarkerValid = false; return; }
         if (webcamBlinking && webcamMarkerValid) return;   // hold the pointer through a real blink
         Vector2 p = webcamMapper.Predict(features);
+        RecordClickGaze(features, new Vector2(p.x * 1280f, p.y * 900f));
         if (!webcamMarkerValid) webcamSmoother.Reset();
         webcamCanvasGaze = webcamSmoother.Filter(new Vector2(p.x * 1280f, p.y * 900f), Time.unscaledTime);
         webcamMarkerValid = true;
@@ -116,6 +210,11 @@ public partial class GameController
     void TickWebcamFit()
     {
         if (!webcamFitting) return;
+        if (webcamPursuit)
+        {
+            if (Time.unscaledTime - webcamPursuitStart >= PursuitLeadIn + PursuitSeconds) FinishWebcamPursuit();
+            return;
+        }
         if (!webcamFitMeasuring && Time.unscaledTime >= webcamTargetShownAt + WebcamSettleSeconds)
         {
             webcamCapture.Clear();
@@ -136,6 +235,8 @@ public partial class GameController
         webcamFitting = true;
         webcamFitMeasuring = webcamFitted = webcamMarkerValid = false;
         webcamFitPoint = 0;
+        webcamPursuit = false;
+        webcamPursuitFrames.Clear(); webcamPursuitFeatures.Clear(); webcamPursuitTargets.Clear();
         webcamTargetShownAt = Time.unscaledTime;
         webcamFitStatus = eyeContactPreparationMode
             ? "화면의 점을 차례로 바라봐 주세요. 각 점은 자동으로 측정돼요."
@@ -159,14 +260,23 @@ public partial class GameController
         webcamMeasuredSamples[webcamFitPoint] = chosen;
         webcamFitPoint++;
         NovelUI.Sound?.Invoke("Select");
-        if (webcamFitPoint < IPhoneCalibrationTargets.Length)
+        if (webcamFitPoint == WebcamFitFixations)
+        {
+            webcamPursuit = true;
+            webcamPursuitStart = Time.unscaledTime;
+            webcamPursuitFrames.Clear();
+            webcamFitStatus = "움직이는 점을 눈으로 따라가 주세요.";
+            return;
+        }
+        if (webcamFitPoint < WebcamFitTargets.Length)
         {
             webcamTargetShownAt = Time.unscaledTime;
-            webcamFitStatus = $"다음 점을 바라봐 주세요. ({webcamFitPoint + 1}/{IPhoneCalibrationTargets.Length})";
+            webcamFitStatus = $"다음 점을 바라봐 주세요. ({webcamFitPoint + 1}/{WebcamFitTargets.Length})";
             return;
         }
         webcamFitting = false;
-        if (!FitAndCheck(webcamMapper, webcamMeasured, webcamMeasuredSamples, requireVerticalEye: false))
+        if (!FitAndCheck(webcamMapper, WebcamFitTargets, WebcamFitFixations, webcamMeasured, webcamMeasuredSamples, false,
+                webcamPursuitFeatures, webcamPursuitTargets))
         {
             CancelWebcamFit();
             webcamFitStatus = eyeContactPreparationMode
@@ -183,6 +293,7 @@ public partial class GameController
     void CancelWebcamFit()
     {
         webcamFitting = webcamFitMeasuring = webcamFitted = webcamMarkerValid = false;
+        webcamPursuit = false;
         webcamFitOnlySession = false;
         if (gazeTracker != null) gazeTracker.onlineDriftCorrection = true;
     }
@@ -191,7 +302,8 @@ public partial class GameController
 
     void DrawWebcamFitScreen()
     {
-        if (DrawGazeTargetScreen(IPhoneCalibrationTargets, webcamFitPoint, webcamFitMeasuring, webcamTargetShownAt, webcamMeasureAt,
+        if (webcamPursuit) { DrawWebcamPursuitScreen(); return; }
+        if (DrawGazeTargetScreen(WebcamFitTargets, webcamFitPoint, webcamFitMeasuring, webcamTargetShownAt, webcamMeasureAt,
                 WebcamSettleSeconds, webcamFitStatus, "분홍 점을 바라봐 주세요 · 노트북 화면 아래쪽 점도 눈으로 끝까지 봐 주세요."))
         {
             CancelWebcamFit();

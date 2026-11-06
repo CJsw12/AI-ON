@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 // Cute, youthful look for the IMGUI screens: rounded panels, pill buttons, a heart gauge and soft Korean fonts.
@@ -140,6 +140,28 @@ public static class NovelUI
         if (hover && Repaint) hovered = rect;
         return hover;
     }
+    // Click learning reads which control actually fired. GUI.Button respects group/scroll clipping, so a hidden
+    // part of a control never counts.
+    /// <summary>Screen rect (GUI space, y down) of the last control that fired, and the frame it fired on.</summary>
+    public static Rect LastPressed { get; private set; }
+    public static int LastPressedFrame { get; private set; } = -1;
+    static bool Clickable(Rect rect)
+    {
+        bool pressed = GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        if (pressed)
+        {
+            // Measure from the pointer so groups and scroll views (local GUI offsets) and any editor window
+            // offset cancel out: screen = mouse screen + (GUI-to-screen of rect) - (GUI-to-screen of mouse).
+            Vector2 mouseScreen = new Vector2(UnityEngine.Input.mousePosition.x, Screen.height - UnityEngine.Input.mousePosition.y);
+            Vector2 mouseGui = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+            Vector2 a = mouseScreen + GUIUtility.GUIToScreenPoint(rect.min) - mouseGui;
+            Vector2 b = mouseScreen + GUIUtility.GUIToScreenPoint(rect.max) - mouseGui;
+            LastPressed = Rect.MinMaxRect(a.x, a.y, b.x, b.y);
+            LastPressedFrame = Time.frameCount;
+        }
+        return pressed;
+    }
+
     // Call once at the end of OnGUI: plays the hover sound when the pointer moves onto a new control.
     public static void EndFrame()
     {
@@ -175,7 +197,7 @@ public static class NovelUI
             float width = Width(tip, Round, 16) + 28 * .9f;
             Pill(Mathf.Min(rect.center.x - width / 2, 1272 - width), rect.yMax + 6, 28, tip, Alpha(Berry, .92f), Color.white, 16);
         }
-        return GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        return Clickable(rect);
     }
 
     // A row of pill options; returns the selected index.
@@ -191,7 +213,7 @@ public static class NovelUI
             if (i == value) Card(inner, DeepPink, inner.height / 2);
             else if (hover) Fill(inner, Alpha(Pink, .35f), inner.height / 2);
             Label(cell, options[i], Round, size, i == value ? Color.white : GUI.enabled ? Berry : Alpha(Plum, .6f), TextAnchor.MiddleCenter);
-            if (GUI.Button(cell, GUIContent.none, GUIStyle.none)) value = i;
+            if (Clickable(cell)) value = i;
         }
         return value;
     }
@@ -254,7 +276,7 @@ public static class NovelUI
             Fill(face, new Color(.93f, .89f, .9f, .9f), radius);
             Label(face, content, font ?? Round, size, Alpha(Plum, .6f), TextAnchor.MiddleCenter);
         }
-        return GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        return Clickable(rect);
     }
 
     // A wide answer button with a round number badge on the left.
@@ -268,7 +290,7 @@ public static class NovelUI
         Fill(badge, hover ? Color.white : Pink, 20);
         Label(badge, number.ToString(), Round, 22, hover ? DeepPink : Color.white, TextAnchor.MiddleCenter);
         Label(new Rect(face.x + 68, face.y, face.width - 96, face.height), content, Soft, 22, hover ? Color.white : Berry, TextAnchor.MiddleLeft, FontStyle.Bold);
-        return GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        return Clickable(rect);
     }
 
     // Heart icon with a pill-shaped gauge; pulse (0..1) makes the heart pop after a change.
@@ -313,3 +335,5 @@ public static class NovelUI
         return texture;
     }
 }
+
+    // Click learning reads which control actually fired (GUI.Button respects clipping, so hidden parts never count).

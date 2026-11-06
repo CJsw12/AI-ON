@@ -272,13 +272,13 @@ public partial class GameController
                     ? new Rect(440, 238, 400, 58)
                     : new Rect(650, 238, 350, 58);
                 string fitButtonLabel = eyeContactPreparationMode
-                    ? webcamFitted ? "화면 맞춤 다시" : "화면 맞춤 (16점)"
-                    : webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (16점)";
+                    ? webcamFitted ? "화면 맞춤 다시" : "화면 맞춤 (약 30초)"
+                    : webcamFitted ? "2. 화면 맞춤 다시" : "2. 화면 맞춤 (약 30초)";
                 bool canBeginFit = !webcamFitted && (eyeContactPreparationMode || webcamBaseDone);
                 if (NovelUI.Button(fitButtonRect, fitButtonLabel, canBeginFit, 22)) BeginWebcamFit();
                 GUI.enabled = tracking;
                 string fitPrompt = eyeContactPreparationMode
-                    ? "16점 화면 맞춤을 마치면 시선 추적 준비가 끝나요."
+                    ? "화면 맞춤(점 보기 + 따라보기)을 마치면 시선 추적 준비가 끝나요."
                     : webcamBaseDone ? "2번 화면 맞춤을 하면 시선 게임을 할 수 있어요." : "1번 보정부터 해 주세요. 끝나면 2번이 열려요.";
                 NovelUI.Label(new Rect(140, 304, 1000, 54), webcamFitted || webcamFitStatus.Length > 0 ? webcamFitStatus
                     : fitPrompt, NovelUI.Soft, 16,

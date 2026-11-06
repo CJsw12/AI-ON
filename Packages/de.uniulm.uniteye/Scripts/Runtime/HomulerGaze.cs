@@ -142,6 +142,8 @@ namespace UnitEye
         public long LastGazeLocationTimeUnix { get; private set; }
         /// <summary>Increments once for every fresh provider gaze sample consumed by this component.</summary>
         public long GazeSampleSequence { get; private set; }
+        /// <summary>Gaze location (screen px, GUI space) before the smoothing filter; matches CaptureTimestamp without filter lag.</summary>
+        public Vector2 UnfilteredGazeLocation { get; private set; }
         /// <summary>Capture time (Time.unscaledTimeAsDouble) of the camera frame behind the current gaze.</summary>
         public double CaptureTimestamp => _captureTimestamp;
         /// <summary>Measured pipeline latency of the current sample (consume-time to now), seconds. A
@@ -714,6 +716,7 @@ namespace UnitEye
 
                 //Apply filtering
                 unfilteredGaze = gazeLocation;
+                UnfilteredGazeLocation = unfilteredGaze;
                 gazeLocation = SmoothGazeLocation(gazeLocation, _filtering);
             }
 
