@@ -10,7 +10,9 @@
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uild/
-/[Bb]uilds/
+/Builds/*
+!/Builds/AI-ON/
+!/Builds/AI-ON/**
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 *.log
