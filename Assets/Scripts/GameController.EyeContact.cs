@@ -231,8 +231,10 @@ public partial class GameController
             return;
         }
 
-        float nx = (eyeContactGaze.x - eyeContactFaceCenter.x) / eyeContactFaceRadiusX;
-        float ny = (eyeContactGaze.y - eyeContactFaceCenter.y) / eyeContactFaceRadiusY;
+        float radX = Mathf.Max(eyeContactFaceRadiusX, 1f);
+        float radY = Mathf.Max(eyeContactFaceRadiusY, 1f);
+        float nx = (eyeContactGaze.x - eyeContactFaceCenter.x) / radX;
+        float ny = (eyeContactGaze.y - eyeContactFaceCenter.y) / radY;
         bool inside = nx * nx + ny * ny <= 1f;
         float leaveX = nx / EyeContactLeaveRadiusFactor;
         float leaveY = ny / EyeContactLeaveRadiusFactor;
@@ -424,7 +426,7 @@ public partial class GameController
             Vector2 next = new Vector2(center.x + Mathf.Cos(angle) * radiusX, center.y + Mathf.Sin(angle) * radiusY);
             Vector2 delta = next - previous;
             Matrix4x4 saved = GUI.matrix;
-            GUIUtility.RotateAroundPivot(Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg, previous);
+            NovelUI.RotateAround(Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg, previous);
             NovelUI.Fill(new Rect(previous.x, previous.y - thickness / 2, delta.magnitude + 1, thickness), color, 0);
             GUI.matrix = saved;
             previous = next;

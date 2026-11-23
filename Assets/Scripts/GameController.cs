@@ -715,7 +715,7 @@ public partial class GameController : MonoBehaviour
             Rect window = NovelUI.Window;
             float x = window.x + (i * 151 + t * speed * .5f) % (window.width + 60) - 30 + Mathf.Sin(t * 1.3f + i) * 20;
             Matrix4x4 before = GUI.matrix;
-            GUIUtility.RotateAroundPivot(t * (30 + i % 3 * 25) + i * 40, new Vector2(x, y));
+            NovelUI.RotateAround(t * (30 + i % 3 * 25) + i * 40, new Vector2(x, y));
             NovelUI.Fill(new Rect(x - size / 2, y - size * .3f, size, size * .6f), NovelUI.Alpha(i % 3 == 0 ? Color.white : i % 3 == 1 ? NovelUI.Pink : NovelUI.Blush, .85f), size * .3f);
             GUI.matrix = before;
         }

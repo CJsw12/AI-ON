@@ -8,6 +8,7 @@ public partial class GameController
 {
     const float ClickLookFrom = .45f, ClickLookTo = .05f;   // eyes land on a target just before the click
     const int ClickMinSamples = 3;
+    const int MaxHistoryCapacity = 150;                      // hard cap on both click histories, whatever the timestamps say
     const float ClickMaxScatter = 60f;                       // canvas px: gaze must be resting, not sweeping
 
     readonly List<(float time, double[] features, Vector2 point)> clickGazeHistory = new List<(float, double[], Vector2)>();
@@ -33,7 +34,8 @@ public partial class GameController
         foreach (double f in features) if (double.IsNaN(f) || double.IsInfinity(f)) return;   // never let NaN reach the refit
         float seen = gazeUseIphone ? now : WebcamFrameTime();
         clickGazeHistory.Add((seen, features, point));
-        while (clickGazeHistory.Count > 0 && clickGazeHistory[0].time < now - ClickLookFrom - ClickReleaseTimeout - 1f) clickGazeHistory.RemoveAt(0);
+        while (clickGazeHistory.Count > MaxHistoryCapacity || (clickGazeHistory.Count > 0 && clickGazeHistory[0].time < now - ClickLookFrom - ClickReleaseTimeout - 1f))
+            clickGazeHistory.RemoveAt(0);
     }
 
     void TickClickCalibration()
@@ -41,7 +43,8 @@ public partial class GameController
         float now = Time.unscaledTime;
         Vector2 mouseNow = Input.mousePosition;
         clickMouseHistory.Add((now, mouseNow));
-        while (clickMouseHistory.Count > 0 && clickMouseHistory[0].time < now - ClickAimSeconds) clickMouseHistory.RemoveAt(0);
+        while (clickMouseHistory.Count > MaxHistoryCapacity || (clickMouseHistory.Count > 0 && clickMouseHistory[0].time < now - ClickAimSeconds))
+            clickMouseHistory.RemoveAt(0);
         // Resolve the previous press first, so a fast second press cannot overwrite a click that already fired.
         if (clickPending && NovelUI.LastPressedFrame >= clickPendingFrame) { clickPending = false; LearnPendingClick(); }
         else if (clickPending && now - clickPendingAt > ClickReleaseTimeout) clickPending = false;

@@ -24,6 +24,25 @@
   - Codex 리뷰 2회 반영: 열린 에디터에서 컴파일 검사가 건너뛰어지던 원본 결함, 미푸시 커밋이 선점 커밋과 함께 공개되던 문제, 작업 폴더와 푸시 커밋이 다를 때 검사가 엇나가던 문제, 한글 경로 우회, 공유 hooksPath 덮어쓰기 등을 고쳤다. 같은 폴더 동시 세션 경합과 autostash 부분 스테이징은 남겼고, Unity/PowerShell을 못 찾으면 경고만 하고 통과하는 것은 의도한 설계다.
   - **플레이 방법(설치)**: 이 브랜치를 받아 `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/setup-git-unity.ps1 -AgentId <이름>-<도구>-<모델>` → `bash Tools/agent-sync.sh status`.
   - 검증: `bash Tools/test_agent_sync.sh` 23항목 통과(PC 두 대 모의, 차단 사유까지 확인), 설치 스크립트를 PowerShell 5.1·7에서 임시 저장소에 실행해 훅·설정 확인, 실제 프로젝트에서 푸시 훅의 테스트 7종·배치 컴파일 통과. 팀원 PC 설치와 열린 에디터에 Unity CLI로 묻는 경로, Claude 편집 차단 훅의 실제 동작은 미검증.
+- **[Claude] 2026-11-24 교수 사진 떨림 + 캔버스 회전 중심 수정**:
+  - [`GameEffects.cs`](Assets/Scripts/GameEffects.cs): `Drift`·`PortraitRect`가 위치와 크기를 따로 정수 반올림해 숨쉬기 확대가 1px 계단으로 끊기며 교수 사진이 "바들바들" 떨렸다. 효과가 켜진 경로는 반올림하지 않는다(효과 끔 경로는 그대로).
+  - [`NovelUI.RotateAround`](Assets/Scripts/NovelUI.cs): `GUIUtility.RotateAroundPivot`은 pivot을 화면 픽셀로 읽어 Canvas 행렬 아래에서는 1280×900 창에서만 맞았다. 반응 하트·별, 타이틀 꽃잎, 눈빛 맞추기 꽃잎, F8 눈맞춤 타원 4곳을 새 헬퍼로 바꿨다(눈빛 피하기는 이미 같은 방식).
+  - **플레이 방법**: 학과·교수 선택 후 스토리 대사 화면에서 교수 사진과 배경이 부드럽게 움직이는지 본다. 창 크기를 바꾼 뒤 선택지를 고르면 하트·별이 교수 주변 제자리에서 돈다.
+  - 검증: Unity 6000.3.23f1 배치 컴파일 exit 0(기존 `AiProfessor.cs` CS0162만), `Tests/*.ps1` 7종 exit 0, `git diff --check` 통과. 실제 화면의 떨림 해소와 비 1280×900 창 파티클 위치는 미검증.
+- **[Claude] 2026-11-24 클릭 보정 컴파일 오류 수정 + 유료 UI 팩 추적 제외**:
+  - `5df3cd8`이 `MaxHistoryCapacity`를 `RecordClickGaze` 지역 상수로 선언하고 `TickClickCalibration`에서도 써서 Unity 컴파일이 깨져 있었다(CS0103). 클래스 상수로 옮겼다.
+  - Modern UI Pack(`Assets/Resources/UI/`)은 Git 추적에서 빼고 `.gitignore`에 추가했다. 파일이 없으면 `NovelUI`가 하트·아이콘을 도형·글자로 대신 그리고 빛 효과는 생략한다. 팀원은 비공개로 받은 파일을 같은 경로에 두면 된다. 과거 히스토리와 `main`의 `Builds/AI-ON` 안에는 여전히 남아 있으므로 저장소 공개 여부는 팀 결정이 필요하다.
+  - **플레이 방법**: 이 브랜치를 받아 Unity에서 그대로 Play. UI 이미지가 없는 PC에서는 설정·닫기 버튼이 `⚙`·`×` 글자로 보인다.
+  - 검증: Unity 6000.3.23f1 배치 컴파일 exit 0(기존 `AiProfessor.cs` CS0162만), `Tests/*.ps1` 7종 exit 0, `git diff --check` 통과. UI 이미지가 없는 상태의 실제 화면은 미검증. `main`과 병합 시 `PROGRESS.md`만 충돌하며 양쪽 기록을 보존해 풀면 된다.
+- **[Antigravity] 2026-11-06 퍼블릭 저장소 전환 대비 보안 및 개인정보 차단 조치**:
+  - [`.gitignore`](.gitignore): 카카오톡 대화 로그 원본(`KakaoTalk*.txt`)의 실수 커밋 방지를 위한 영구 제외 규칙 추가.
+  - [`Tools/Voice/README.md`](Tools/Voice/README.md): 특정 사용자 로컬 절대 경로(`C:\Users\PC12\...`)를 환경 독립적인 설명으로 정규화.
+  - 보안 감사 결과: 과거 커밋 히스토리에 API 키, 비밀번호, 카카오톡 로그 등의 유출 이력 없음(100% 안전) 최종 확인.
+- **[Antigravity] 2026-11-06 시선 추적 코드 정적 검토 및 수치/메모리 예외 방어 보강**:
+  - [GazeMapper.cs](Assets/Scripts/GazeMapper.cs): Median() 호출 시 빈 리스트에 대한 ArgumentOutOfRangeException 방어 가드 추가, PredictUnclamped()에 특성 벡터 NaN/Infinity 가드 추가, GazeSmoother.Filter()에 유효하지 않은 좌표 입력 시 내부 필터 상태(alue, held) 영구 오염 방지 가드 적용.
+  - [GameController.ClickCalibration.cs](Assets/Scripts/GameController.ClickCalibration.cs): 프레임 지연이나 시선 중단 시 무한정 리스트가 누적되지 않도록 clickGazeHistory 및 clickMouseHistory 큐에 최대 150개 상한 용량(MaxHistoryCapacity) 가드 추가.
+  - [GameController.EyeContact.cs](Assets/Scripts/GameController.EyeContact.cs): 교수 얼굴 타원 정규화 계산 시 반지름이 0에 수렴할 경우 발생할 수 있는 0 나눔/Infinity 예외 방어(Mathf.Max(..., 1f) 적용).
+  - 검증: 기존 및 신규 포함 Tests/*.ps1 7종 단위 테스트 전수 PASS (Exit 0), git diff --check 공백 오류 0.
 - **[Codex] 2026-11-06 눈빛 피하기 선택 교수 이미지 main 반영**: 선택한 교수의 웃는 표정과 이미지별 양쪽 눈 발사점을 고정 적용하고, 스토리 소개도 해당 교수와 일치시켰다. 원본 이미지 37장의 눈 좌표와 변경 감지용 해시를 포함했다.
   - **플레이 방법**: 학과·교수 선택 후 스토리 눈빛 피하기 이벤트에서 확인한다. Editor에서는 `Tools → Eye Dodge → Preview Selected Professor`로 바로 확인할 수 있다. 교수 미선택 상태에서는 현재 학과 첫 교수를 사용한다.
   - 검증: 푸시 전 원격 최신 상태 확인, PowerShell 테스트 7종 exit 0, Unity 컴파일 오류 0건, 교수 32명 이미지·좌표 검사 통과, diff 검사 통과. 실제 기기 플레이는 미검증이며 기존 AiProfessor/CoffeeRecipeSO 경고는 남아 있다. 별도로 진행 중인 Windows 기본 AI 음성 실험과 PC별 설정은 포함하지 않는다.

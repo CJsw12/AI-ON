@@ -31,6 +31,10 @@ public static class NovelUI
     public static Matrix4x4 Canvas => Matrix4x4.TRS(new Vector3((Screen.width - 1280 * Scale) / 2, (Screen.height - 900 * Scale) / 2, 0), Quaternion.identity, new Vector3(Scale, Scale, 1));
     // The whole window in canvas coordinates (wider or taller than the canvas when letterboxed).
     public static Rect Window => new Rect(-(Screen.width - 1280 * Scale) / 2 / Scale, -(Screen.height - 900 * Scale) / 2 / Scale, Screen.width / Scale, Screen.height / Scale);
+    // Rotates what follows by angle degrees around pivot, given in the current GUI coordinates (canvas included).
+    // GUIUtility.RotateAroundPivot reads the pivot as screen pixels, so under Canvas it only matches a 1280x900 window.
+    public static void RotateAround(float angle, Vector2 pivot) =>
+        GUI.matrix = GUI.matrix * Matrix4x4.TRS(pivot, Quaternion.Euler(0, 0, angle), Vector3.one) * Matrix4x4.TRS(-pivot, Quaternion.identity, Vector3.one);
     public static void Tint(Color color) { GUI.color = color; GUI.DrawTexture(Window, Texture2D.whiteTexture); GUI.color = Color.white; }
 
     static Color Hex(int rgb) => new Color((rgb >> 16 & 255) / 255f, (rgb >> 8 & 255) / 255f, (rgb & 255) / 255f);
@@ -85,11 +89,18 @@ public static class NovelUI
     public static void Heart(Rect rect, Color color, bool filled = true)
     {
         if (!Repaint) return;
-        GUI.color = color; GUI.DrawTexture(rect, filled ? heart : heartOutline, ScaleMode.ScaleToFit); GUI.color = Color.white;
+        Texture2D tex = filled ? heart : heartOutline;
+        if (tex == null)
+        {
+            if (filled) Fill(rect, color, rect.height / 2);
+            else Ring(rect, color, rect.height / 2, 2);
+            return;
+        }
+        GUI.color = color; GUI.DrawTexture(rect, tex, ScaleMode.ScaleToFit); GUI.color = Color.white;
     }
     public static void Glow(Rect rect, Color color)
     {
-        if (!Repaint) return;
+        if (!Repaint || glow == null) return;
         GUI.color = color; GUI.DrawTexture(rect, glow, ScaleMode.StretchToFill); GUI.color = Color.white;
     }
 
@@ -179,8 +190,24 @@ public static class NovelUI
     }
     public static void DrawIcon(Rect rect, string name, Color color)
     {
+        if (!Repaint) return;
         Texture2D icon = Icon(name);
-        if (icon == null || !Repaint) return;
+        if (icon == null)
+        {
+            string glyph = name switch
+            {
+                "IconSettings" => "⚙",
+                "IconClose" => "×",
+                "IconAuto" => "▶",
+                "IconSave" => "S",
+                "IconBook" => "B",
+                "IconLock" => "L",
+                "IconStar" => "★",
+                _ => "•"
+            };
+            Label(rect, glyph, Round, Mathf.Max(12, Mathf.RoundToInt(rect.height * .75f)), color, TextAnchor.MiddleCenter);
+            return;
+        }
         GUI.color = color; GUI.DrawTexture(rect, icon, ScaleMode.ScaleToFit); GUI.color = Color.white;
     }
 

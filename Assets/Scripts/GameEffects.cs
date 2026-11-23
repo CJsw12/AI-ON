@@ -81,7 +81,7 @@ public partial class GameController
             float alpha = 1 - age * age, size = s.Size * (s.Star ? 1 - age * .5f : .7f + .3f * Mathf.Clamp01(age * 6));
             Rect rect = new Rect(s.Position.x - size / 2, s.Position.y - size / 2, size, size);
             Matrix4x4 before = GUI.matrix;
-            GUIUtility.RotateAroundPivot(s.Spin * age + (s.Outline ? Mathf.Sin(age * 12) * 20 : 0), s.Position);
+            NovelUI.RotateAround(s.Spin * age + (s.Outline ? Mathf.Sin(age * 12) * 20 : 0), s.Position);
             if (s.Star) NovelUI.DrawIcon(rect, "IconStar", NovelUI.Alpha(s.Color, alpha));
             else NovelUI.Heart(rect, NovelUI.Alpha(s.Color, alpha * (s.Outline ? .8f : 1)), !s.Outline);
             GUI.matrix = before;
@@ -96,7 +96,8 @@ public partial class GameController
         float w = full.width * (1 + grow), h = full.height * (1 + grow);
         float x = full.x - (w - full.width) / 2 + Mathf.Sin(t * .07f) * (w - full.width) * .45f;
         float y = full.y - (h - full.height) / 2 + Mathf.Cos(t * .05f) * (h - full.height) * .45f;
-        return new Rect(Mathf.Round(x), Mathf.Round(y), Mathf.Round(w), Mathf.Round(h));
+        // Not rounded: whole-pixel steps turn the slow pan into a visible judder.
+        return new Rect(x, y, w, h);
     }
 
     // Where the professor's picture goes: breathing, a slide up as they appear, a hop or a shake after a reaction.
@@ -114,8 +115,9 @@ public partial class GameController
         if (reactDelta > 0 && k < .5f) y -= Mathf.Sin(k / .5f * Mathf.PI) * 30 * unit;
         if ((reactDelta < 0 || !reactCorrect) && k < .55f) x += Mathf.Sin(k * 46) * 14 * unit * (1 - k / .55f);
         float w = full.width * scale, h = full.height * scale;
-        // Scale around the bottom centre so the feet stay put.
-        return new Rect(Mathf.Round(full.x + x + (full.width - w) / 2), Mathf.Round(full.y + y + full.height - h), Mathf.Round(w), Mathf.Round(h));
+        // Scale around the bottom centre so the feet stay put. Not rounded: rounding position and size separately
+        // made the breathing scale step a pixel at a time and the centre wobble, so the professor trembled.
+        return new Rect(full.x + x + (full.width - w) / 2, full.y + y + full.height - h, w, h);
     }
 
     // "CHAPTER n" banner that slides in when a chapter starts (or a save is loaded).
