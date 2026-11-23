@@ -18,6 +18,11 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-24 클릭 보정 컴파일 오류 수정 + 유료 UI 팩 추적 제외**:
+  - `5df3cd8`이 `MaxHistoryCapacity`를 `RecordClickGaze` 지역 상수로 선언하고 `TickClickCalibration`에서도 써서 Unity 컴파일이 깨져 있었다(CS0103). 클래스 상수로 옮겼다.
+  - Modern UI Pack(`Assets/Resources/UI/`)은 Git 추적에서 빼고 `.gitignore`에 추가했다. 파일이 없으면 `NovelUI`가 하트·아이콘을 도형·글자로 대신 그리고 빛 효과는 생략한다. 팀원은 비공개로 받은 파일을 같은 경로에 두면 된다. 과거 히스토리와 `main`의 `Builds/AI-ON` 안에는 여전히 남아 있으므로 저장소 공개 여부는 팀 결정이 필요하다.
+  - **플레이 방법**: 이 브랜치를 받아 Unity에서 그대로 Play. UI 이미지가 없는 PC에서는 설정·닫기 버튼이 `⚙`·`×` 글자로 보인다.
+  - 검증: Unity 6000.3.23f1 배치 컴파일 exit 0(기존 `AiProfessor.cs` CS0162만), `Tests/*.ps1` 7종 exit 0, `git diff --check` 통과. UI 이미지가 없는 상태의 실제 화면은 미검증. `main`과 병합 시 `PROGRESS.md`만 충돌하며 양쪽 기록을 보존해 풀면 된다.
 - **[Antigravity] 2026-11-06 퍼블릭 저장소 전환 대비 보안 및 개인정보 차단 조치**:
   - [`.gitignore`](.gitignore): 카카오톡 대화 로그 원본(`KakaoTalk*.txt`)의 실수 커밋 방지를 위한 영구 제외 규칙 추가.
   - [`Tools/Voice/README.md`](Tools/Voice/README.md): 특정 사용자 로컬 절대 경로(`C:\Users\PC12\...`)를 환경 독립적인 설명으로 정규화.
