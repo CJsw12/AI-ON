@@ -18,6 +18,11 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-24 교수 사진 떨림 + 캔버스 회전 중심 수정**:
+  - [`GameEffects.cs`](Assets/Scripts/GameEffects.cs): `Drift`·`PortraitRect`가 위치와 크기를 따로 정수 반올림해 숨쉬기 확대가 1px 계단으로 끊기며 교수 사진이 "바들바들" 떨렸다. 효과가 켜진 경로는 반올림하지 않는다(효과 끔 경로는 그대로).
+  - [`NovelUI.RotateAround`](Assets/Scripts/NovelUI.cs): `GUIUtility.RotateAroundPivot`은 pivot을 화면 픽셀로 읽어 Canvas 행렬 아래에서는 1280×900 창에서만 맞았다. 반응 하트·별, 타이틀 꽃잎, 눈빛 맞추기 꽃잎, F8 눈맞춤 타원 4곳을 새 헬퍼로 바꿨다(눈빛 피하기는 이미 같은 방식).
+  - **플레이 방법**: 학과·교수 선택 후 스토리 대사 화면에서 교수 사진과 배경이 부드럽게 움직이는지 본다. 창 크기를 바꾼 뒤 선택지를 고르면 하트·별이 교수 주변 제자리에서 돈다.
+  - 검증: Unity 6000.3.23f1 배치 컴파일 exit 0(기존 `AiProfessor.cs` CS0162만), `Tests/*.ps1` 7종 exit 0, `git diff --check` 통과. 실제 화면의 떨림 해소와 비 1280×900 창 파티클 위치는 미검증.
 - **[Claude] 2026-11-24 클릭 보정 컴파일 오류 수정 + 유료 UI 팩 추적 제외**:
   - `5df3cd8`이 `MaxHistoryCapacity`를 `RecordClickGaze` 지역 상수로 선언하고 `TickClickCalibration`에서도 써서 Unity 컴파일이 깨져 있었다(CS0103). 클래스 상수로 옮겼다.
   - Modern UI Pack(`Assets/Resources/UI/`)은 Git 추적에서 빼고 `.gitignore`에 추가했다. 파일이 없으면 `NovelUI`가 하트·아이콘을 도형·글자로 대신 그리고 빛 효과는 생략한다. 팀원은 비공개로 받은 파일을 같은 경로에 두면 된다. 과거 히스토리와 `main`의 `Builds/AI-ON` 안에는 여전히 남아 있으므로 저장소 공개 여부는 팀 결정이 필요하다.
