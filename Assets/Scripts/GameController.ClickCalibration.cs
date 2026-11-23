@@ -8,6 +8,7 @@ public partial class GameController
 {
     const float ClickLookFrom = .45f, ClickLookTo = .05f;   // eyes land on a target just before the click
     const int ClickMinSamples = 3;
+    const int MaxHistoryCapacity = 150;                      // hard cap on both click histories, whatever the timestamps say
     const float ClickMaxScatter = 60f;                       // canvas px: gaze must be resting, not sweeping
 
     readonly List<(float time, double[] features, Vector2 point)> clickGazeHistory = new List<(float, double[], Vector2)>();
@@ -32,7 +33,6 @@ public partial class GameController
         if (!Finite(point)) return;
         foreach (double f in features) if (double.IsNaN(f) || double.IsInfinity(f)) return;   // never let NaN reach the refit
         float seen = gazeUseIphone ? now : WebcamFrameTime();
-        const int MaxHistoryCapacity = 150;
         clickGazeHistory.Add((seen, features, point));
         while (clickGazeHistory.Count > MaxHistoryCapacity || (clickGazeHistory.Count > 0 && clickGazeHistory[0].time < now - ClickLookFrom - ClickReleaseTimeout - 1f))
             clickGazeHistory.RemoveAt(0);
