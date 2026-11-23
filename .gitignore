@@ -128,3 +128,10 @@ InitTestScene*.unity*
 # Unity crash recovery scenes
 /[Aa]ssets/_Recovery/
 /[Aa]ssets/_Recovery.meta
+# Chat logs and personal communication transcripts (never commit)
+KakaoTalk*
+*KakaoTalk*
+
+# Paid Unity Asset Store UI pack (Modern UI Pack) - kept local only, never commit to public repo
+/[Aa]ssets/[Rr]esources/UI/
+/[Aa]ssets/[Rr]esources/UI.meta

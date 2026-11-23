@@ -231,8 +231,10 @@ public partial class GameController
             return;
         }
 
-        float nx = (eyeContactGaze.x - eyeContactFaceCenter.x) / eyeContactFaceRadiusX;
-        float ny = (eyeContactGaze.y - eyeContactFaceCenter.y) / eyeContactFaceRadiusY;
+        float radX = Mathf.Max(eyeContactFaceRadiusX, 1f);
+        float radY = Mathf.Max(eyeContactFaceRadiusY, 1f);
+        float nx = (eyeContactGaze.x - eyeContactFaceCenter.x) / radX;
+        float ny = (eyeContactGaze.y - eyeContactFaceCenter.y) / radY;
         bool inside = nx * nx + ny * ny <= 1f;
         float leaveX = nx / EyeContactLeaveRadiusFactor;
         float leaveY = ny / EyeContactLeaveRadiusFactor;

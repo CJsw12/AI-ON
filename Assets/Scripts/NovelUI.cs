@@ -85,11 +85,18 @@ public static class NovelUI
     public static void Heart(Rect rect, Color color, bool filled = true)
     {
         if (!Repaint) return;
-        GUI.color = color; GUI.DrawTexture(rect, filled ? heart : heartOutline, ScaleMode.ScaleToFit); GUI.color = Color.white;
+        Texture2D tex = filled ? heart : heartOutline;
+        if (tex == null)
+        {
+            if (filled) Fill(rect, color, rect.height / 2);
+            else Ring(rect, color, rect.height / 2, 2);
+            return;
+        }
+        GUI.color = color; GUI.DrawTexture(rect, tex, ScaleMode.ScaleToFit); GUI.color = Color.white;
     }
     public static void Glow(Rect rect, Color color)
     {
-        if (!Repaint) return;
+        if (!Repaint || glow == null) return;
         GUI.color = color; GUI.DrawTexture(rect, glow, ScaleMode.StretchToFill); GUI.color = Color.white;
     }
 
@@ -179,8 +186,24 @@ public static class NovelUI
     }
     public static void DrawIcon(Rect rect, string name, Color color)
     {
+        if (!Repaint) return;
         Texture2D icon = Icon(name);
-        if (icon == null || !Repaint) return;
+        if (icon == null)
+        {
+            string glyph = name switch
+            {
+                "IconSettings" => "⚙",
+                "IconClose" => "×",
+                "IconAuto" => "▶",
+                "IconSave" => "S",
+                "IconBook" => "B",
+                "IconLock" => "L",
+                "IconStar" => "★",
+                _ => "•"
+            };
+            Label(rect, glyph, Round, Mathf.Max(12, Mathf.RoundToInt(rect.height * .75f)), color, TextAnchor.MiddleCenter);
+            return;
+        }
         GUI.color = color; GUI.DrawTexture(rect, icon, ScaleMode.ScaleToFit); GUI.color = Color.white;
     }
 

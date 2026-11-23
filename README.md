@@ -172,7 +172,7 @@ AUDIO-CREDITS.md             사운드 출처
 ## 크레딧
 
 - 폰트: [Jua](https://fonts.google.com/specimen/Jua), [Gowun Dodum](https://fonts.google.com/specimen/Gowun+Dodum) (Google Fonts, SIL Open Font License, 라이선스 파일 동봉)
-- UI 텍스처 · 아이콘: Modern UI Pack (Michsky, Unity Asset Store)
+- UI 텍스처 · 아이콘: Modern UI Pack (Michsky, Unity Asset Store) — 유료 에셋이므로 퍼블릭 저장소에서는 제외되며(`.gitignore`), 팀원은 비공개로 공유된 패키지를 `Assets/Resources/UI/`에 배치해 사용합니다(미배치 시 기본 도형 fallback으로 실행).
 - 사운드: [`AUDIO-CREDITS.md`](AUDIO-CREDITS.md) 참고
 - 이명희 교수 TTS: ElevenLabs — [elevenlabs.io](https://elevenlabs.io/) (Nieve / Eleven v4, 무료 플랜 비상업적 생성물)
 - 코드: [MIT License](LICENSE)

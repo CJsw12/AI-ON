@@ -284,8 +284,12 @@ public sealed class GazeMapper
     }
 
     // Diagnostics need the value before screen clamping to distinguish saturation from missing input.
-    public Vector2 PredictUnclamped(double[] features) => !Ready ? new Vector2(.5f, .5f) :
-        new Vector2((float)axisX.Predict(features), (float)axisY.Predict(features)) + Drift;
+    public Vector2 PredictUnclamped(double[] features)
+    {
+        if (!Ready || features == null) return new Vector2(.5f, .5f);
+        foreach (double f in features) if (double.IsNaN(f) || double.IsInfinity(f)) return new Vector2(.5f, .5f);
+        return new Vector2((float)axisX.Predict(features), (float)axisY.Predict(features)) + Drift;
+    }
 
     static Axis FitAxis(int[][] models, IList<double[]> features, double[] targets, IList<List<double[]>> samples, float pixels, bool requireEye = false)
     {
@@ -430,6 +434,7 @@ public sealed class GazeMapper
 
     public static double[] Median(List<double[]> samples)
     {
+        if (samples == null || samples.Count == 0 || samples[0] == null) return null;
         int count = samples[0].Length;
         var result = new double[count];
         var column = new double[samples.Count];
@@ -469,6 +474,8 @@ public sealed class GazeSmoother
 
     public Vector2 Filter(Vector2 point, float time)
     {
+        if (float.IsNaN(point.x) || float.IsNaN(point.y) || float.IsInfinity(point.x) || float.IsInfinity(point.y))
+            return started ? held : Vector2.zero;
         if (!started || time - lastTime > .5f)
         {
             started = true;
