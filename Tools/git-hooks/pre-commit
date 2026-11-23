@@ -1,0 +1,92 @@
+#!/bin/sh
+# AI-ON pre-commit guard. Installed into .git/hooks by Tools/setup-git-unity.ps1.
+# Blocks the most common multi-PC mistakes before they reach main:
+#   1. Private files that must never reach the public repo (paid UI pack, chat logs).
+#   2. Assets/ files staged without their .meta pair (or orphan .meta).
+#   3. Large binaries that bypass Git LFS.
+#   4. Paths another agent has actively claimed (Tools/agent-sync.sh).
+# Bypass a single check only when you really mean it:
+#   ALLOW_PRIVATE_FILES=1 / ALLOW_MISSING_META=1 / ALLOW_LARGE_NON_LFS=1 / ALLOW_FOREIGN_PATHS=1 git commit ...
+
+fail=0
+max_bytes=${AION_MAX_NON_LFS_BYTES:-10485760}
+# Print non-ASCII (Korean) paths as-is; git quotes them by default and the path checks would miss them.
+n=${GIT_CONFIG_COUNT:-0}
+case "$n" in ''|*[!0-9]*) n=0 ;; esac
+eval "GIT_CONFIG_KEY_$n=core.quotePath GIT_CONFIG_VALUE_$n=false; export GIT_CONFIG_KEY_$n GIT_CONFIG_VALUE_$n"
+GIT_CONFIG_COUNT=$((n + 1)); export GIT_CONFIG_COUNT
+
+staged_all=$(git diff --cached --name-only --diff-filter=ACMR)
+staged_any=$(git diff --cached --name-only --diff-filter=ACMRD)
+[ -z "$staged_any" ] && exit 0
+
+# 1. Private files (.gitignore already excludes them; this catches `git add -f`)
+if [ "$ALLOW_PRIVATE_FILES" != "1" ]; then
+  private=$(printf '%s\n' "$staged_all" | grep -Ei '^Assets/Resources/UI/|^Assets/Resources/UI\.meta$|kakaotalk')
+  if [ -n "$private" ]; then
+    echo "pre-commit: private files must not be committed (paid Modern UI Pack / chat logs):" >&2
+    printf '%s\n' "$private" | sed 's/^/  /' >&2
+    echo "  Unstage them: git restore --staged <path>" >&2
+    fail=1
+  fi
+fi
+
+has_path() { # $1 = path; true if it exists in the index after this commit
+  git ls-files --cached --error-unmatch -- "$1" >/dev/null 2>&1
+}
+
+# 2. .meta pairs (only top-level Assets/ content; Packages/ handled by UPM)
+if [ "$ALLOW_MISSING_META" != "1" ]; then
+  missing=$(git diff --cached --name-only --no-renames --diff-filter=ACR -- 'Assets/*' | while IFS= read -r f; do
+    case "$f" in
+      *.meta) base=${f%.meta}
+              # A folder .meta is fine when the folder has tracked children.
+              if ! has_path "$base" && [ -z "$(git ls-files --cached -- "$base/" | head -n 1)" ]; then
+                echo "orphan meta (no asset): $f"
+              fi ;;
+      *)      has_path "$f.meta" || echo "missing meta: $f.meta" ;;
+    esac
+  done)
+  deleted=$(git diff --cached --name-only --no-renames --diff-filter=D -- 'Assets/*' | while IFS= read -r f; do
+    case "$f" in
+      # Unity would mint a new GUID for the kept asset and break scene/prefab references to it.
+      *.meta) base=${f%.meta}
+              if has_path "$base" || [ -n "$(git ls-files --cached -- "$base/" | head -n 1)" ]; then
+                echo "meta deleted but asset kept: $f"
+              fi ;;
+      *) has_path "$f.meta" && echo "asset deleted but meta kept: $f.meta" ;;
+    esac
+  done)
+  if [ -n "$missing$deleted" ]; then
+    echo "pre-commit: Unity .meta pairs are inconsistent:"
+    printf '%s\n%s\n' "$missing" "$deleted" | sed '/^$/d; s/^/  /'
+    fail=1
+  fi
+fi
+
+# 3. Large files that are not LFS pointers
+if [ "$ALLOW_LARGE_NON_LFS" != "1" ]; then
+  big=$(printf '%s\n' "$staged_all" | while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    size=$(git cat-file -s ":$f" 2>/dev/null) || continue
+    [ "$size" -le "$max_bytes" ] && continue
+    if git cat-file -p ":$f" 2>/dev/null | head -c 64 | grep -q '^version https://git-lfs'; then
+      continue
+    fi
+    echo "$f ($size bytes)"
+  done)
+  if [ -n "$big" ]; then
+    echo "pre-commit: files over $max_bytes bytes are not stored in Git LFS:"
+    echo "$big" | sed 's/^/  /'
+    echo "  Add an LFS rule (coordinate .gitattributes changes) or set ALLOW_LARGE_NON_LFS=1 if intended."
+    fail=1
+  fi
+fi
+
+# 4. Paths actively claimed by another agent (Tools/agent-sync.sh)
+root=$(git rev-parse --show-toplevel)
+if [ -f "$root/Tools/agent-sync.sh" ]; then
+  bash "$root/Tools/agent-sync.sh" check-staged || fail=1
+fi
+
+exit $fail

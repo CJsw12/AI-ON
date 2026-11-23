@@ -18,6 +18,12 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-24 여러 PC·에이전트 협업 도구(agent-sync) 도입 준비** (팀 동의 후 main 병합 예정):
+  - surviving-game의 협업 도구를 AI-ON에 맞게 옮겼다. 내용은 경로 선점(`claim`/`finish`), 커밋 훅(다른 사람 선점 경로, 유료 UI 팩·카톡 로그, `.meta` 짝, LFS 밖 대용량), 푸시 훅(`Tests/*.ps1` 전부, Unity 컴파일: 열린 에디터 또는 배치 모드), Claude 편집 차단 훅이다. 상세는 [`docs/COLLABORATION.md`](docs/COLLABORATION.md).
+  - 이 PC의 surviving-game용 `SG_AGENT_ID`와 섞이지 않게 변수는 `AION_*`, git 설정은 `aion.agentId`를 쓴다. 저장소에 이미 있는 대문자 `Tools/`에 맞췄고, 셸 스크립트는 `.gitattributes`로 LF 고정.
+  - Codex 리뷰 2회 반영: 열린 에디터에서 컴파일 검사가 건너뛰어지던 원본 결함, 미푸시 커밋이 선점 커밋과 함께 공개되던 문제, 작업 폴더와 푸시 커밋이 다를 때 검사가 엇나가던 문제, 한글 경로 우회, 공유 hooksPath 덮어쓰기 등을 고쳤다. 같은 폴더 동시 세션 경합과 autostash 부분 스테이징은 남겼고, Unity/PowerShell을 못 찾으면 경고만 하고 통과하는 것은 의도한 설계다.
+  - **플레이 방법(설치)**: 이 브랜치를 받아 `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/setup-git-unity.ps1 -AgentId <이름>-<도구>-<모델>` → `bash Tools/agent-sync.sh status`.
+  - 검증: `bash Tools/test_agent_sync.sh` 23항목 통과(PC 두 대 모의, 차단 사유까지 확인), 설치 스크립트를 PowerShell 5.1·7에서 임시 저장소에 실행해 훅·설정 확인, 실제 프로젝트에서 푸시 훅의 테스트 7종·배치 컴파일 통과. 팀원 PC 설치와 열린 에디터에 Unity CLI로 묻는 경로, Claude 편집 차단 훅의 실제 동작은 미검증.
 - **[Codex] 2026-11-06 눈빛 피하기 선택 교수 이미지 main 반영**: 선택한 교수의 웃는 표정과 이미지별 양쪽 눈 발사점을 고정 적용하고, 스토리 소개도 해당 교수와 일치시켰다. 원본 이미지 37장의 눈 좌표와 변경 감지용 해시를 포함했다.
   - **플레이 방법**: 학과·교수 선택 후 스토리 눈빛 피하기 이벤트에서 확인한다. Editor에서는 `Tools → Eye Dodge → Preview Selected Professor`로 바로 확인할 수 있다. 교수 미선택 상태에서는 현재 학과 첫 교수를 사용한다.
   - 검증: 푸시 전 원격 최신 상태 확인, PowerShell 테스트 7종 exit 0, Unity 컴파일 오류 0건, 교수 32명 이미지·좌표 검사 통과, diff 검사 통과. 실제 기기 플레이는 미검증이며 기존 AiProfessor/CoffeeRecipeSO 경고는 남아 있다. 별도로 진행 중인 Windows 기본 AI 음성 실험과 PC별 설정은 포함하지 않는다.

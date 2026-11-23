@@ -37,6 +37,11 @@
 - AI/네트워크 실패 시 스토리 진행이 막히지 않도록 오프라인 선택지 fallback을 유지한다.
 - Unity 에셋을 추가하면 `.meta` 파일도 함께 포함되는지 확인한다.
 
+## 협업 도구 (agent-sync, 상세는 `docs/COLLABORATION.md`)
+- 작업 시작 전에 `pwsh -NoProfile -File Tools/agent-sync.ps1 status`로 새 커밋과 다른 사람의 선점을 확인한다. `NOT SET UP` 경고가 보이면 사용자에게 `Tools/setup-git-unity.ps1` 실행을 요청한다.
+- 다른 사람이 선점한 경로는 고치지 않는다. 사용자가 커밋·푸시를 요청한 `main` 작업은 `claim` → 작업 → `finish`로 마무리한다. Orca 워커로 실행될 때는 커밋·푸시·선점을 하지 않는다.
+- pre-push 훅이 `Tests/*.ps1`과 Unity 컴파일을 검사한다. 우회 변수(`AION_SKIP_*`, `ALLOW_*`)는 사용자가 지시한 경우에만 쓴다.
+
 ## 환경 주의
 - 방화벽 규칙, 네트워크 설정 같은 PC 설정은 Git에 포함되지 않는다. 다른 PC에 그대로 적용된다고 가정하지 않는다.
 - 학교/관리 PC의 보안 정책을 임의로 우회하지 않는다.

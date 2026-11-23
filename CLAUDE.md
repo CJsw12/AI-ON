@@ -57,6 +57,11 @@ Claude는 요구 분석, 설계, 작업 명세 작성, 결과 검토, 사용자 
 - stash와 다른 사람의 미커밋 변경은 자동으로 적용하거나 버리지 않는다.
 - Unity 에셋을 추가하면 `.meta` 파일도 함께 포함되는지 확인한다.
 
+## 협업 도구 (agent-sync, 상세는 `docs/COLLABORATION.md`)
+- 세션 시작 때 SessionStart 훅이 `bash Tools/agent-sync.sh status`를 실행한다. 새 커밋과 다른 사람의 선점을 확인하고, `NOT SET UP` 경고가 보이면 사용자에게 `Tools/setup-git-unity.ps1` 실행을 요청한다.
+- 다른 사람이 선점한 경로는 고치지 않는다. 사용자가 커밋·푸시를 요청한 `main` 작업은 `claim` → 작업 → `finish`로 마무리한다.
+- pre-push 훅이 `Tests/*.ps1`과 Unity 컴파일을 검사한다. 우회 변수(`AION_SKIP_*`, `ALLOW_*`)는 사용자가 지시한 경우에만 쓴다.
+
 ## 환경 주의
 - 방화벽 규칙, 네트워크 설정 같은 PC 설정은 Git에 포함되지 않는다. 다른 PC에 그대로 적용된다고 가정하지 않는다.
 - 학교/관리 PC의 보안 정책을 임의로 우회하지 않는다.

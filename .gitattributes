@@ -1,1 +1,6 @@
 Builds/AI-ON/** filter=lfs diff=lfs merge=lfs -text
+
+# Shell scripts and git hooks run under Git Bash and break with CRLF (Tools/agent-sync.sh).
+*.sh text eol=lf
+Tools/git-hooks/* text eol=lf
+.agents/** text eol=lf
