@@ -286,7 +286,7 @@ public partial class GameController
             if (p.Petal)
             {
                 Matrix4x4 keep = GUI.matrix;
-                GUIUtility.RotateAroundPivot(p.Angle, p.Pos);
+                NovelUI.RotateAround(p.Angle, p.Pos);
                 NovelUI.Fill(new Rect(p.Pos.x - p.Size / 2f, p.Pos.y - p.Size * .3f, p.Size, p.Size * .6f), NovelUI.Alpha(p.Color, alpha), p.Size * .3f);
                 GUI.matrix = keep;
             }
