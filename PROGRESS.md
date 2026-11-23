@@ -18,6 +18,11 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-24 교수 사진 떨림 + 캔버스 회전 중심 수정**:
+  - [`GameEffects.cs`](Assets/Scripts/GameEffects.cs): `Drift`·`PortraitRect`가 위치와 크기를 따로 정수 반올림해 숨쉬기 확대가 1px 계단으로 끊기며 교수 사진이 "바들바들" 떨렸다. 효과가 켜진 경로는 반올림하지 않는다(효과 끔 경로는 그대로).
+  - [`NovelUI.RotateAround`](Assets/Scripts/NovelUI.cs): `GUIUtility.RotateAroundPivot`은 pivot을 화면 픽셀로 읽어 Canvas 행렬 아래에서는 1280×900 창에서만 맞았다. 반응 하트·별, 타이틀 꽃잎, 눈빛 맞추기 꽃잎, F8 눈맞춤 타원 4곳을 새 헬퍼로 바꿨다(눈빛 피하기는 이미 같은 방식).
+  - **플레이 방법**: 학과·교수 선택 후 스토리 대사 화면에서 교수 사진과 배경이 부드럽게 움직이는지 본다. 창 크기를 바꾼 뒤 선택지를 고르면 하트·별이 교수 주변 제자리에서 돈다.
+  - 검증: Unity 6000.3.23f1 배치 컴파일 exit 0(기존 `AiProfessor.cs` CS0162만), `Tests/*.ps1` 7종 exit 0, `git diff --check` 통과. 실제 화면의 떨림 해소와 비 1280×900 창 파티클 위치는 미검증.
 - **[Codex] 2026-11-06 눈빛 피하기 선택 교수 이미지 main 반영**: 선택한 교수의 웃는 표정과 이미지별 양쪽 눈 발사점을 고정 적용하고, 스토리 소개도 해당 교수와 일치시켰다. 원본 이미지 37장의 눈 좌표와 변경 감지용 해시를 포함했다.
   - **플레이 방법**: 학과·교수 선택 후 스토리 눈빛 피하기 이벤트에서 확인한다. Editor에서는 `Tools → Eye Dodge → Preview Selected Professor`로 바로 확인할 수 있다. 교수 미선택 상태에서는 현재 학과 첫 교수를 사용한다.
   - 검증: 푸시 전 원격 최신 상태 확인, PowerShell 테스트 7종 exit 0, Unity 컴파일 오류 0건, 교수 32명 이미지·좌표 검사 통과, diff 검사 통과. 실제 기기 플레이는 미검증이며 기존 AiProfessor/CoffeeRecipeSO 경고는 남아 있다. 별도로 진행 중인 Windows 기본 AI 음성 실험과 PC별 설정은 포함하지 않는다.
