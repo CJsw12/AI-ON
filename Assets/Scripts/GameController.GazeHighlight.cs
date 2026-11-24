@@ -57,6 +57,7 @@ public partial class GameController
     // Called after a slot's result is dismissed (Advance).
     void QueueStoryGazeEvents(bool lastSlot)
     {
+        if (!eyeContactSessionActive) return;
         if (lastSlot && !dodgeEventDone && affection >= DodgeEventAffection) { dodgeEventDone = true; dodgePending = true; }
         if (!matchEventDone && affection >= MatchEventAffection) { matchEventDone = true; storyGazeEvent = GazeGame.Match; return; }
         if (dodgePending) { dodgePending = false; storyGazeEvent = GazeGame.Dodge; }

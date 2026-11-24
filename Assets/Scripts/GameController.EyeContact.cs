@@ -68,6 +68,16 @@ public partial class GameController
             CompleteEyeContactPreparation();
     }
 
+    void ContinueWithoutEyeTracking()
+    {
+        if (!eyeContactPreparationMode) return;
+        eyeContactPreparationMode = false;
+        eyeContactPreparationFromLoad = false;
+        CloseGazeTest();
+        eyeContactTrackingEnabled = false;
+        ResetEyeContactProgress();
+    }
+
     void CancelEyeContactPreparation()
     {
         if (!eyeContactPreparationMode) return;

@@ -25,7 +25,7 @@ public partial class GameController
     // The screen fit's ray-to-screen feature needs ResNet-34's angles, so the gaze test always runs this model.
     const GazeBackbone WebcamModel = GazeBackbone.EyeMUPlusResNet34;
 
-    // The regular gaze test keeps its two-step flow; mandatory preparation uses only the screen fit.
+    // The regular gaze test keeps its two-step flow; story preparation uses only the screen fit.
     bool webcamBaseDone, webcamBaseRunning, webcamBaseSeenActive;
 
     void TickWebcamBaseCalibration()
@@ -228,7 +228,7 @@ public partial class GameController
             DrawDodgeGame();   // has its own buttons
             return;
         }
-        NovelUI.Label(new Rect(0, 18, 1280, 55), eyeContactPreparationMode ? "시선 추적 준비" : "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(0, 18, 1280, 55), eyeContactPreparationMode ? "시선 추적 준비 (선택)" : "시선 추적 테스트", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
         if (!eyeContactPreparationMode && NovelUI.Button(new Rect(1010, 26, 230, 42), "움직이는 공 · 로그", false, 18)) OpenGazeLab();
         bool chooseIphone = gazeUseIphone;
         if (NovelUI.Button(new Rect(390, 91, 230, 48), "노트북 웹캠", !gazeUseIphone, 19)) chooseIphone = false;
@@ -313,6 +313,15 @@ public partial class GameController
         {
             NovelUI.Card(new Rect(250, 836, 590, 44), NovelUI.Alpha(Color.white, .92f), 22, NovelUI.Alpha(NovelUI.DeepPink, .4f));
             NovelUI.Label(new Rect(250, 836, 590, 44), gazeUseIphone ? "화면 보정이 끝나면 눈빛 피하기가 바로 시작돼요" : "1·2번 보정이 끝나면 눈빛 피하기가 바로 시작돼요", NovelUI.Round, 19, NovelUI.DeepPink, TextAnchor.MiddleCenter);
+        }
+        if (eyeContactPreparationMode)
+        {
+            NovelUI.Label(new Rect(390, 777, 500, 34), "카메라 없이도 스토리와 전공 미니게임을 즐길 수 있어요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+            if (NovelUI.Button(new Rect(440, 820, 400, 52), "시선 추적 없이 계속", true, 22))
+            {
+                ContinueWithoutEyeTracking();
+                return;
+            }
         }
         if (NovelUI.Button(new Rect(40, 820, 180, 52), eyeContactPreparationMode ? "준비 취소" : "돌아가기", false, 21))
         {
