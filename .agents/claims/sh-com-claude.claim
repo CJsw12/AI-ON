@@ -1,8 +1,15 @@
 agent: sh-com-claude
-task: 정도윤 교수 TTS 음성
+task: 전 학과 교수 TTS 음성 (컴공 제외)
 host: DESKTOP-GCC8QCI
 started: 2026-11-26T16:33:49+0900
-updated: 2026-11-26T16:33:49+0900
+updated: 2026-11-26T18:01:27+0900
 paths:
 - Assets/Resources/Voice/JungDoyun
 - Assets/Scripts/Stories/Natural/ChemistryStory.cs
+- Assets/Resources/Voice
+- Assets/Scripts/Stories/ArtsSports
+- Assets/Scripts/Stories/Engineering/ArchitectureStory.cs
+- Assets/Scripts/Stories/Engineering/MechanicalStory.cs
+- Assets/Scripts/Stories/Engineering/SmartSystemsStory.cs
+- Assets/Scripts/Stories/HumanSocial
+- Assets/Scripts/Stories/Natural
