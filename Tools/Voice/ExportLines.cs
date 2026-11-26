@@ -22,7 +22,7 @@ static class ExportLines
         return 0;
     }
 
-    static void Collect(Story s, int p, List<string> lines)
+    internal static void Collect(Story s, int p, List<string> lines)
     {
         foreach (bool experienced in new[] { false, true })
             for (int chapter = 1; chapter < s.Dialogue.Length; chapter++)

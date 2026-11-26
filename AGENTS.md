@@ -20,7 +20,7 @@
 - `PROGRESS.md`는 작업을 마치거나 푸시하기 직전에 한 번 갱신하고, 기능을 추가했으면 `플레이 방법` 한 줄을 적는다.
 
 ## 4. 검증
-- `Tests/*.ps1` 전부(현재 10종)를 `powershell -NoProfile -ExecutionPolicy Bypass -File <파일>`로 실행해 모두 exit 0, 그리고 `git diff --check` 통과.
+- `Tests/*.ps1` 전부(현재 15종)를 `powershell -NoProfile -ExecutionPolicy Bypass -File <파일>`로 실행해 모두 exit 0, 그리고 `git diff --check` 통과.
 - `.cs`를 바꿨고 에디터가 열려 있으면 `Invoke-UnityRecompile`(7절)로 컴파일 오류 0을 확인한다. AiProfessor/CoffeeRecipeSO 경고는 기존 경고다.
 - PS 테스트 통과는 Unity 컴파일·실기기 동작을 보장하지 않는다. 확인하지 않은 것은 "미검증"으로 적고, 실패한 검사를 약하게 바꾸지 않는다.
 - 시선 추적 오차(px)는 자세·표본이 다르면 전후 개선율로 해석하지 않는다.
