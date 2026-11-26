@@ -135,3 +135,4 @@ KakaoTalk*
 # Paid Unity Asset Store UI pack (Modern UI Pack) - kept local only, never commit to public repo
 /[Aa]ssets/[Rr]esources/UI/
 /[Aa]ssets/[Rr]esources/UI.meta
+Tools/SignData/raw/

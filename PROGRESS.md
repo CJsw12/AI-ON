@@ -19,6 +19,11 @@
 
 ## 2. 완료 및 검증 (Done)
 - **2026-11-26 Qwen3-TTS 로컬 설치 안내**: docs/AI/Qwen3-TTS-Local-Setup.md에 Intel XPU 실험 경로, CPU 대체 경로, 박태준 70대 음색 설계와 참조 음성 기반 대본 합성 방법을 기록했다. 바탕화면에도 동일 문서를 복사했다. 사용 방법: 문서 1절부터 실행한다. Python 예제 2개 구문 검사·PS 회귀 7종·diff 검사 통과. 실제 설치 및 추론은 미검증이다.
+- **[Claude+Codex+Antigravity] 2026-11-26 수어 지문자 미니게임 1차 구현 (2026-11-26 main 병합)**:
+  - 웹캠 → MediaPipe 손 관절 21개 → 좌표 정규화 → k-NN(거리·투표 마진 거절, "그 외" 처리) → 0.6초 유지 확정 → 하이라이트 미니게임(소개·연습·도전·결과·다시 하기). 에디터 전용 녹화 도구(`Tools → Sign → Recorder`)는 관절 좌표만 CSV로 저장한다.
+  - Claude가 설계·명세·리뷰·통합, Codex가 핵심 로직·게임 화면, Antigravity가 녹화 도구를 구현했고 서로 교차 리뷰해 27건을 고쳤다. 계획서 v1.0(`docs/AI/Sign-Fingerspelling-Plan.md`), 사용법(`docs/AI/Sign-Fingerspelling-Usage.md`).
+  - **플레이 방법**: Play → `Tools → Sign → Recorder`에서 임시 손 모양(예: `주먹,보자기,검지,_other`)을 손 모양마다 3회 이상 녹화 → `Tools/SignData/raw/<사람>/<세션>.csv`를 `Assets/StreamingAssets/SignData/`로 복사 → 미니게임 → 하이라이트 → 수어 지문자 → 연습 시작. 자세한 순서는 사용법 문서 1절.
+  - 검증: Unity 6000.3.23f1 배치 컴파일 오류 0(기존 `AiProfessor.cs` CS0162만), `Tests/*.ps1` 10종 exit 0. **실제 웹캠 실기, 녹화 도구 동작, 학교 PC 성능, Python 전처리 일치 테스트는 미검증.** 정식 글자 5개(P0)와 녹화 데이터 없음.
 - **시선 추적 선택 적용**: 새 스토리와 이어하기에서 시선 추적 없이 진행할 수 있다. 시선 추적을 사용하지 않는 플레이에는 눈맞춤 기록과 스토리의 시선 전용 이벤트가 적용되지 않는다.
   - **플레이 방법**: 교수 선택 또는 세이브 불러오기 후 `시선 추적 없이 계속`을 누른다. 시선 추적을 사용하려면 같은 화면에서 `웹캠 시작` 또는 `iPhone 추적`을 선택해 보정한다.
   - **검증**: Windows 빌드 성공. 카메라를 시작하지 않은 상태에서 새 게임과 저장 슬롯 불러오기로 스토리에 진입했다. 두 장치 설정 화면과 PowerShell 회귀 테스트 7종을 확인했다. 실제 장치 연결 및 보정은 재검증하지 않았다.
@@ -149,7 +154,8 @@
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
-- **수어 지문자 인식 미니게임**: 계획서 [`docs/AI/Sign-Fingerspelling-Plan.md`](docs/AI/Sign-Fingerspelling-Plan.md) v1.0 (Codex 검토 2회 반영, 코드 없음). 우선순위는 게임 + k-NN 완성 → 관절 MLP → 그래픽카드 선택 실험(이미지 CNN·지식 증류·증강 탐색). 다음은 P0 글자 5개 확정(한국수어사전 영상 확인)과 P0.5 빌드에서 손 관절 출력 확인(학교 PC 측정 포함). 10절 결정 사항 8개를 팀이 정해야 한다.
+- **수어 지문자 인식 미니게임**: 계획서 [`docs/AI/Sign-Fingerspelling-Plan.md`](docs/AI/Sign-Fingerspelling-Plan.md) v1.0. 1차 구현은 브랜치 `feature/sign-fingerspelling`에 있다(Done 참고). 다음은 실기 확인(관절 정렬·왼손/오른손 거울 기준), P0 글자 5개 확정(한국수어사전 영상 확인), P2 녹화·정확도 측정, 학교 PC 성능 측정, main 병합 여부 결정. 10절 결정 사항 8개를 팀이 정해야 한다.
+- **Claude Max 활용 기획**: [`docs/AI/Claude-Max-Usage-Plan.md`](docs/AI/Claude-Max-Usage-Plan.md) 초안. 대회 규정의 AI 사용 고지 방식과 지원 계정 사용 규칙을 먼저 확인한다.
 - iPhone 수정 보정으로 같은 자세에서 독립 검증 오차와 실제 목표 응시 오차를 측정한다. 채팅 방향 측정은 센서 방향 구분 확인용이며 게임 화면 보정 정확도를 보장하지 않는다.
 - 눈맞춤 카운터: iPhone 경로·엔딩 표시·이어하기 실기 확인. 판정 상수(`GameController.EyeContact.cs`)는 F8로 보며 조정. 호감도 반영 여부는 추후 결정.
 - 눈빛 피하기: 실제 웹캠/iPhone으로 난이도(속도·판정 반경)와 소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`도 같은 `RotateAroundPivot` 문제 여부 확인.
