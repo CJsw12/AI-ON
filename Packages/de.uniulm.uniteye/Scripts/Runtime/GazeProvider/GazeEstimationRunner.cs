@@ -287,7 +287,7 @@ namespace UnitEye
             if (!_enabled)
                 return false;
 
-            var tex = (WebCamTexture)webcam.GetCurrentTexture();
+            var tex = webcam.GetCurrentTexture();   // a WebCamTexture, or the MJPG source's Texture2D
             if (!webcam.isPrepared || tex == null)
                 return false;
 

@@ -212,7 +212,7 @@ namespace UnitEye
         /// <returns>true if execution completed, false if not</returns>
         public bool PerformInference(WebCamSource webcam)
         {
-            var webcamTexture = (WebCamTexture)webcam.GetCurrentTexture();
+            var webcamTexture = webcam.GetCurrentTexture();   // a WebCamTexture, or the MJPG source's Texture2D
 
             if (!webcam.isPrepared || webcamTexture == null)
                 return false;
@@ -333,7 +333,7 @@ namespace UnitEye
         /// </summary>
         /// <param name="texture">webcam texture</param>
         /// <returns>true if landmarks were available, false if not</returns>
-        private bool ComputeEyes(WebCamTexture texture)
+        private bool ComputeEyes(Texture texture)
         {
             var landmarks = _faceMesh.FaceLandmarks;
 
