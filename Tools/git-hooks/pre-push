@@ -1,0 +1,26 @@
+#!/bin/sh
+# AI-ON pre-push guard. Installed into .git/hooks by Tools/setup-git-unity.ps1.
+# 1. Blocks pushes that change paths another agent actively claims (Tools/agent-sync.sh).
+# 2. When C# files changed, runs Tests/*.ps1 and checks that Unity compiles the scripts
+#    (asks the open Editor via the Unity CLI, else a headless batch compile when no Editor is open).
+# 3. Runs the Git LFS pre-push step this hook replaces.
+# Overrides: ALLOW_FOREIGN_PATHS=1, AION_SKIP_TESTS=1, AION_SKIP_COMPILE_CHECK=1.
+
+input=$(cat)
+root=$(git rev-parse --show-toplevel)
+
+if [ -f "$root/Tools/agent-sync.sh" ]; then
+  if [ -n "$input" ]; then
+    printf '%s\n' "$input" | bash "$root/Tools/agent-sync.sh" check-push "$@" || exit 1
+  fi
+fi
+
+command -v git-lfs >/dev/null 2>&1 || {
+  printf >&2 "\n%s\n\n" "This repository is configured for Git LFS but 'git-lfs' was not found on your path."
+  exit 2
+}
+if [ -n "$input" ]; then
+  printf '%s\n' "$input" | git lfs pre-push "$@"
+else
+  git lfs pre-push "$@" < /dev/null
+fi
