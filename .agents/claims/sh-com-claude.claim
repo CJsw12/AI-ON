@@ -1,0 +1,8 @@
+agent: sh-com-claude
+task: 정도윤 교수 TTS 음성
+host: DESKTOP-GCC8QCI
+started: 2026-11-26T16:33:49+0900
+updated: 2026-11-26T16:33:49+0900
+paths:
+- Assets/Resources/Voice/JungDoyun
+- Assets/Scripts/Stories/Natural/ChemistryStory.cs
