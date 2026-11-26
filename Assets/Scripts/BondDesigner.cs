@@ -35,6 +35,15 @@ public sealed class BondDesigner : MiniGame
     public void ConfigureAi(bool enabled, Story context, int currentAffection) { aiMode = enabled; story = context; affection = currentAffection; }
     public override string[][] Replies => BondTexts.Replies;
     protected override bool ShowStars => false;
+    protected override void OnSkip()
+    {
+        if (commentToken != null) puzzle?.CancelRequest(commentToken);
+        commentTask = null;
+        commentToken = null;
+        comment = "";
+        puzzle?.End();
+        screen = Screen.Completed;
+    }
 
     public override void Draw(GUIStyle title, GUIStyle body, GUIStyle button)
     {

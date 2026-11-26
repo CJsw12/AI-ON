@@ -29,6 +29,20 @@ public sealed class SignGameSession
         if (challenge.Count > 5) challenge.RemoveRange(5, challenge.Count - 5);
     }
     public void BeginPractice() { if (CurrentStage == Stage.Intro) { CurrentStage = Stage.Practice; index = 0; armed = true; } }
+    public void SkipAsCorrect()
+    {
+        if (CurrentStage == Stage.Result) return;
+        if (CurrentStage != Stage.Challenge) { CurrentStage = Stage.Challenge; index = 0; }
+        while (index < challenge.Count)
+        {
+            answers.Add(new Answer { Label = challenge[index], Correct = true, ElapsedMs = 0, WrongAttempts = 0 });
+            CorrectCount++;
+            index++;
+        }
+        WrongAttempts = 0;
+        LastWrongLabel = null;
+        CurrentStage = Stage.Result;
+    }
     public void Update(long time, string confirmedLabel)
     {
         if (CurrentStage != Stage.Practice && CurrentStage != Stage.Challenge) return;

@@ -99,66 +99,70 @@ public partial class GameController
         CloseMenu();
         return false;
     }
-    static void RowLabel(Rect card, float y, string text) =>
-        NovelUI.Label(new Rect(card.x + 48, y, 150, 46), text, NovelUI.Round, 22, NovelUI.Berry, TextAnchor.MiddleLeft);
+    static void RowLabel(Rect card, float y, string text, int size = 21) =>
+        NovelUI.Label(new Rect(card.x + 44, y, 192, 44), text, NovelUI.Round, size, NovelUI.Berry, TextAnchor.MiddleLeft);
 
     // ---- Settings -----------------------------------------------------------------------------
 
     void Settings()
     {
-        Rect card = new Rect(300, 40, 680, 820);
+        Rect card = new Rect(270, 18, 740, 864);
         if (!Panel(card, "IconSettings", "설정")) return;
-        float x = card.x + 200, width = card.width - 248, y = card.y + 98;
-        const float row = 64;
+        float x = card.x + 242, width = card.width - 286, y = card.y + 88;
+        const float row = 56;
 
         RowLabel(card, y, "글자 속도");
-        GameSettings.TextSpeed = Changed(NovelUI.Segmented(new Rect(x, y, width, 46), GameSettings.SpeedNames, GameSettings.TextSpeed), GameSettings.TextSpeed);
+        GameSettings.TextSpeed = Changed(NovelUI.Segmented(new Rect(x, y, width, 44), GameSettings.SpeedNames, GameSettings.TextSpeed), GameSettings.TextSpeed);
         y += row;
         // Preview line typed at the chosen speed, on a loop.
-        Rect sample = new Rect(x, y - 4, width, 50);
+        Rect sample = new Rect(x, y - 4, width, 48);
         NovelUI.Fill(sample, NovelUI.Blush, 16);
         float period = Preview.Length / GameSettings.LettersPerSecond + 1.4f;
         int shown = Mathf.Min(Preview.Length, Mathf.FloorToInt((Time.unscaledTime - menuAt) % period * GameSettings.LettersPerSecond));
         NovelUI.Label(new Rect(sample.x + 18, sample.y, sample.width - 30, sample.height), Preview.Substring(0, shown), NovelUI.Soft, 17, NovelUI.Berry, TextAnchor.MiddleLeft, FontStyle.Bold);
-        NovelUI.Label(new Rect(card.x + 48, y - 4, 150, 50), "미리보기", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        NovelUI.Label(new Rect(card.x + 44, y - 4, 192, 48), "미리보기", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
         y += row;
 
         RowLabel(card, y, "자동 진행");
-        GameSettings.Auto = Changed(NovelUI.Segmented(new Rect(x, y, width, 46), OffOn, GameSettings.Auto ? 1 : 0), GameSettings.Auto ? 1 : 0) == 1;
+        GameSettings.Auto = Changed(NovelUI.Segmented(new Rect(x, y, width, 44), OffOn, GameSettings.Auto ? 1 : 0), GameSettings.Auto ? 1 : 0) == 1;
         y += row;
         RowLabel(card, y, "자동 속도");
         GUI.enabled = GameSettings.Auto;
-        GameSettings.AutoSpeed = Changed(NovelUI.Segmented(new Rect(x, y, width, 46), GameSettings.AutoNames, GameSettings.AutoSpeed), GameSettings.AutoSpeed);
+        GameSettings.AutoSpeed = Changed(NovelUI.Segmented(new Rect(x, y, width, 44), GameSettings.AutoNames, GameSettings.AutoSpeed), GameSettings.AutoSpeed);
         GUI.enabled = true;
         y += row;
 
         RowLabel(card, y, "배경음");
-        GameSettings.Music = NovelUI.Slider(new Rect(x, y, width - 76, 46), GameSettings.Music);
-        NovelUI.Label(new Rect(x + width - 70, y, 70, 46), Mathf.RoundToInt(GameSettings.Music * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
+        GameSettings.Music = NovelUI.Slider(new Rect(x, y, width - 76, 44), GameSettings.Music);
+        NovelUI.Label(new Rect(x + width - 70, y, 70, 44), Mathf.RoundToInt(GameSettings.Music * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
         y += row;
         RowLabel(card, y, "효과음");
-        GameSettings.Sfx = NovelUI.Slider(new Rect(x, y, width - 76, 46), GameSettings.Sfx);
-        NovelUI.Label(new Rect(x + width - 70, y, 70, 46), Mathf.RoundToInt(GameSettings.Sfx * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
+        GameSettings.Sfx = NovelUI.Slider(new Rect(x, y, width - 76, 44), GameSettings.Sfx);
+        NovelUI.Label(new Rect(x + width - 70, y, 70, 44), Mathf.RoundToInt(GameSettings.Sfx * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
         y += row;
         RowLabel(card, y, "교수님 목소리");
-        GameSettings.Voice = NovelUI.Slider(new Rect(x, y, width - 76, 46), GameSettings.Voice);
-        NovelUI.Label(new Rect(x + width - 70, y, 70, 46), Mathf.RoundToInt(GameSettings.Voice * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
+        GameSettings.Voice = NovelUI.Slider(new Rect(x, y, width - 76, 44), GameSettings.Voice);
+        NovelUI.Label(new Rect(x + width - 70, y, 70, 44), Mathf.RoundToInt(GameSettings.Voice * 100) + "%", NovelUI.Round, 20, NovelUI.DeepPink, TextAnchor.MiddleRight);
         y += row;
 
         RowLabel(card, y, "화면 효과");
-        GameSettings.Effects = Changed(NovelUI.Segmented(new Rect(x, y, width, 46), OffOn, GameSettings.Effects ? 1 : 0), GameSettings.Effects ? 1 : 0) == 1;
+        GameSettings.Effects = Changed(NovelUI.Segmented(new Rect(x, y, width, 44), OffOn, GameSettings.Effects ? 1 : 0), GameSettings.Effects ? 1 : 0) == 1;
         y += row;
         RowLabel(card, y, "화면 모드");
         int full = Screen.fullScreen ? 1 : 0;
-        if (Changed(NovelUI.Segmented(new Rect(x, y, width, 46), new[] { "창 모드", "전체 화면" }, full), full) != full) SetFullScreen(full == 0);
+        if (Changed(NovelUI.Segmented(new Rect(x, y, width, 44), new[] { "창 모드", "전체 화면" }, full), full) != full) SetFullScreen(full == 0);
         y += row;
+        RowLabel(card, y, "미니게임 스킵 버튼", 20);
+        GameSettings.MiniGameSkip = Changed(NovelUI.Segmented(new Rect(x, y, width, 44), OffOn, GameSettings.MiniGameSkip ? 1 : 0), GameSettings.MiniGameSkip ? 1 : 0) == 1;
+        NovelUI.Label(new Rect(x, y + 46, width, 24), "시연·테스트용: 누르면 정답 처리", NovelUI.Soft, 15, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        y += 78;
         RowLabel(card, y, "AI API 키");
         AiKeyRow(x, y, width);
 
-        Rect close = new Rect(card.xMax - 230, card.yMax - 82, 190, 54);
+        Rect close = new Rect(card.xMax - 230, card.yMax - 74, 190, 54);
         if (InGame)
         {
-            Rect title = new Rect(card.x + 40, card.yMax - 82, 220, 54);
+            Rect title = new Rect(card.x + 40, card.yMax - 74, 220, 54);
             if (NovelUI.Button(title, confirmTitle ? "정말 나갈까요?" : "타이틀로", false, 21))
             {
                 if (!confirmTitle) { confirmTitle = true; novelAudio.Play("Select"); ShowToast("저장하지 않은 진행은 사라져요"); }

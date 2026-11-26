@@ -48,6 +48,7 @@ public partial class GameController
     const float DodgeLineHold = 2.2f;      // a finished line stays this long
     const string DodgeBestPref = "GazeTest.EyeDodgeBestScore";
     static readonly Color DodgeRed = new Color(1f, .16f, .2f), DodgeBlue = new Color(.18f, .45f, 1f);
+    static readonly Rect DodgeSkipRect = new Rect(1160f, 18f, 86f, 36f);
 
     bool dodgeActive, dodgeFinished, dodgeNewBest, dodgeLost, dodgeFrowned, dodgeResultSounded;
     float dodgeStartsAt, dodgeLastTick, dodgeAlive, dodgeSafeUntil, dodgeHitAt = -100f, dodgeMoodFrom, dodgeResultAt;
@@ -282,19 +283,38 @@ public partial class GameController
         }
     }
 
-    void FinishDodgeGame()
+    void FinishDodgeGame(bool recordBest = true)
     {
         dodgeActive = false;
         dodgeFinished = true;
         // The result card and its buttons wait until the last line has been typed out and read.
         dodgeResultAt = Time.unscaledTime + DodgeLastLineSeconds + .6f;
         int score = DodgeScore;
-        dodgeNewBest = score > dodgeBest;
+        dodgeNewBest = recordBest && score > dodgeBest;
         if (dodgeNewBest)
         {
             dodgeBest = score;
             PlayerPrefs.SetInt(dodgeManual ? DodgeBestPref + ".Keyboard" : DodgeBestPref, dodgeBest);
             PlayerPrefs.Save();
+        }
+    }
+
+    void SkipDodgeAsSuccess()
+    {
+        dodgeAlive = Mathf.Max(dodgeAlive, DodgeGreatSeconds);
+        FinishDodgeGame(false);
+        if (gazeSession == GazeGame.Dodge)
+        {
+            bool story = gazeSessionStory;
+            TickGazeGameSession();
+            LeaveDodgeGame();
+            TickGazeGameSession();
+            if (!story) ShowToast("스킵 (정답 처리)");
+        }
+        else
+        {
+            LeaveDodgeGame();
+            ShowToast("스킵 (정답 처리)");
         }
     }
 
@@ -305,6 +325,11 @@ public partial class GameController
         GUI.matrix = unshaken * Matrix4x4.Translate(DodgeShake(now));
         DrawDodgeScreen(now);
         GUI.matrix = unshaken;
+        if (GameSettings.MiniGameSkip && dodgeActive && DrawSkipButton(DodgeSkipRect))
+        {
+            Event.current.Use();
+            SkipDodgeAsSuccess();
+        }
     }
 
     void DrawDodgeScreen(float now)

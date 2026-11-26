@@ -175,11 +175,27 @@ public partial class GameController
             signFeedback = string.Format(signLines[2], signSession.LastWrongLabel); signFeedbackUntil = now + 1500;
         }
     }
+    static readonly Rect SignSkipRect = new Rect(1090, 67, 86, 36);
+    void SkipHandProbeAsSuccess()
+    {
+        signSession?.SkipAsCorrect();
+        ResetSignVote();
+        CloseHandProbe();
+        practiceHighlight = true;
+        OpenMenu(Menu.Practice);
+        ShowToast("스킵 (정답 처리)");
+    }
     void DrawHandProbe()
     {
         GUI.matrix = Canvas;
         NovelUI.Card(new Rect(80, 40, 1120, 820), NovelUI.Cream, 30, NovelUI.Pink);
         NovelUI.Label(new Rect(100, 60, 1080, 50), "수어 지문자", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (GameSettings.MiniGameSkip && (signSession == null || signSession.CurrentStage != SignGameSession.Stage.Result) && DrawSkipButton(SignSkipRect))
+        {
+            Event.current.Use();
+            SkipHandProbeAsSuccess();
+            return;
+        }
         Rect view = new Rect(120, 130, 500, 375);
         if (handProbe != null && handProbe.CameraTexture != null && handProbe.FrameWidth > 32)
         {

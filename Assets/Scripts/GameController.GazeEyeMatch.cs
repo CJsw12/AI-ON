@@ -20,6 +20,7 @@ public partial class GameController
     const string MatchBestPref = "GazeTest.EyeMatchBestSeconds";
     static readonly Rect MatchVideoRect = new Rect(40f, 96f, 1200f, 400f);   // the eyes, life-size and feathered into the background
     static readonly Rect MatchArea = new Rect(140f, 540f, 1000f, 240f);   // where the pink dot moves
+    static readonly Rect EyeMatchSkipRect = new Rect(1160f, 18f, 86f, 36f);
     static readonly Color MatchPink = new Color(1f, .3f, .58f), MatchBlue = new Color(.18f, .45f, 1f);
     static readonly string[] MatchSlipLines = { "어디 보세요?", "집중하세요.", "제 눈 보세요." };
 
@@ -102,7 +103,7 @@ public partial class GameController
         }
         else
         {
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && !(GameSettings.MiniGameSkip && EyeMatchSkipRect.Contains(pointer)))
             {
                 if (Mathf.Abs(matchPlayed - RhythmDue) <= RhythmWindow &&
                     Vector2.Distance(pointer, RhythmTarget) <= RhythmRadius)
@@ -381,7 +382,7 @@ public partial class GameController
         if (matchHit >= MatchGoal || matchPlayed >= MatchDuration) FinishEyeMatchGame();
     }
 
-    void FinishEyeMatchGame()
+    void FinishEyeMatchGame(bool recordBest = true)
     {
         matchActive = false;
         matchFinished = true;
@@ -394,13 +395,34 @@ public partial class GameController
         matchResultBurst = false;
         if (matchCleared) matchShyAt = matchOutroAt + .3f;   // blush over the straight-ahead clip
         SayMatch(matchCleared ? (matchShyCount > 0 ? "...이번만 봐 드리는 겁니다." : "나쁘지 않네요.") : "...하아. 다음엔 더 집중하세요.", 99f);
-        if (matchHit > matchBest)
+        if (recordBest && matchHit > matchBest)
         {
             matchBest = matchHit;
             PlayerPrefs.SetFloat(matchManual ? MatchBestPref + ".Mouse" : MatchBestPref, matchBest);
             PlayerPrefs.Save();
         }
         Debug.Log($"[eye match] cleared={matchCleared} matched={matchHit:F1}s played={matchPlayed:F1}s bestStreak={matchBestStreak:F1}s shy={matchShyCount} affection+{matchAffectionGain}");
+    }
+
+    void SkipEyeMatchAsSuccess()
+    {
+        rhythmDragging = false;
+        matchHit = Mathf.Max(matchHit, MatchGoal);
+        matchShyCount = Mathf.Max(matchShyCount, 1);
+        FinishEyeMatchGame(false);
+        if (gazeSession == GazeGame.Match)
+        {
+            bool story = gazeSessionStory;
+            TickGazeGameSession();
+            StopEyeMatchGame();
+            TickGazeGameSession();
+            if (!story) ShowToast("스킵 (정답 처리)");
+        }
+        else
+        {
+            StopEyeMatchGame();
+            ShowToast("스킵 (정답 처리)");
+        }
     }
 
     // ---- Effects ------------------------------------------------------------------------------------
@@ -555,6 +577,12 @@ public partial class GameController
         float now = Time.unscaledTime;
         NovelUI.Fill(new Rect(-40, -40, 1360, 980), NovelUI.Cream, 0);
         NovelUI.Label(new Rect(0, 12, 1280, 48), "눈빛 맞추기 · 심한뫼 교수님", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (GameSettings.MiniGameSkip && matchActive && DrawSkipButton(EyeMatchSkipRect))
+        {
+            Event.current.Use();
+            SkipEyeMatchAsSuccess();
+            return;
+        }
 
         if (matchManual && !matchFinished)
         {

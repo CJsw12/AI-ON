@@ -50,6 +50,11 @@ public class CoffeeOrder : MiniGame
         return string.Join(",", counts);
     }
     public override bool CountsForStat => professorCorrect;
+    protected override void OnSkip()
+    {
+        professorCorrect = true;
+        showingResult = false;
+    }
     public override string[][] Replies => Theme.Replies ?? new[] {
         new[] { "주문을 다시 확인해 보세요. 요구 사항을 확인하는 과정이 중요합니다.", "잘한 부분이 있습니다. 다음에는 순서도 확인하세요.", "주문을 꼼꼼히 확인했군요. 요구 사항을 지키는 것도 실력입니다." },
         new[] { "괜찮아요! 다음에는 주문을 같이 확인해 봐요.", "한 잔은 잘 만들었네요. 다음에도 함께 해봐요!", "완벽한 바리스타네요! 덕분에 힘이 나요." }

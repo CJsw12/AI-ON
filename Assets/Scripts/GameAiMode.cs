@@ -329,7 +329,7 @@ public partial class GameController
         string note = AiProfessor.HasOwnKey ? "내 키로 바로 연결해서 응답이 더 빨라요. 지우면 AI 서버로 작동해요."
             : "키가 없어도 AI 모드는 작동해요. 내 Gemini 키를 넣으면 응답이 더 빨라져요.";
         // Starts under the row label so the sentence fits on one line.
-        NovelUI.Label(new Rect(x - 152, y + 54, width + 152, 28), note, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        NovelUI.Label(new Rect(x - 198, y + 54, width + 198, 28), note, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
         if (AiProfessor.HasOwnKey)
         {
             float pill = NovelUI.Pill(x, y + 5, 36, AiProfessor.Connection + " 저장됨", NovelUI.Mint, NovelUI.Berry, 17);

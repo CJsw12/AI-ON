@@ -16,6 +16,7 @@ public partial class GameController
     const float StarMoveAfter = 10f;        // stars start drifting after this many seconds
     const string StarBestPref = "GazeTest.StarBestScore";
     static readonly Rect StarArea = new Rect(200f, 290f, 880f, 400f);
+    static readonly Rect StarSkipRect = new Rect(1160f, 52f, 86f, 36f);
 
     bool starGameActive, starGameFinished, starInside, starNewBest;
     float starStartedAt, starDwell, starLastTick, starSpawnedAt, starPopAt = -100f;
@@ -165,12 +166,12 @@ public partial class GameController
         SpawnStar(starTarget);
     }
 
-    void FinishStarGame()
+    void FinishStarGame(bool recordBest = true)
     {
         starGameActive = false;
         starGameFinished = true;
         if (gazeTracker != null) gazeTracker.RemovePursuitTarget("star");
-        starNewBest = starScore > starBest;
+        starNewBest = recordBest && starScore > starBest;
         if (starNewBest)
         {
             starBest = starScore;
@@ -180,10 +181,25 @@ public partial class GameController
         NovelUI.Sound?.Invoke(starNewBest ? "Unlock" : "Chapter");
     }
 
+    void SkipStarAsSuccess()
+    {
+        starCaught = Mathf.Max(starCaught, 10);
+        starScore = Mathf.Max(starScore, 15);
+        FinishStarGame(false);
+        StopStarGame();
+        ShowToast("스킵 (정답 처리)");
+    }
+
     void DrawStarGame()
     {
         NovelUI.Fill(new Rect(0, 0, 1280, 900), NovelUI.Cream, 0);
         NovelUI.Label(new Rect(0, 42, 1280, 56), "시선 별잡기", NovelUI.Round, 34, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (GameSettings.MiniGameSkip && starGameActive && DrawSkipButton(StarSkipRect))
+        {
+            Event.current.Use();
+            SkipStarAsSuccess();
+            return;
+        }
         if (starGameFinished)
         {
             NovelUI.Card(new Rect(340, 220, 600, 350), NovelUI.Alpha(Color.white, .9f), 28, NovelUI.Alpha(NovelUI.DeepPink, .35f));

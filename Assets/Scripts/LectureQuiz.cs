@@ -40,6 +40,14 @@ public sealed class Lecture : MiniGame
 
     public override string[][] Replies => Theme.Replies ?? AiSwLectures.Replies;
     protected override bool ShowStars => false;
+    protected override void OnSkip()
+    {
+        questionWindowClosed = true;
+        questionTask = null;
+        explanationTask = null;
+        correct = true;
+        screen = Screen.Result;
+    }
 
     // Called by the host on Repaint; one line change starts voice once, never once per GUI event.
     public void SpeakOnce(NovelAudio audio)

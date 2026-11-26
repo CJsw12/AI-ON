@@ -34,6 +34,18 @@ public abstract class MiniGame
     public abstract string[][] Replies { get; }   // [professor][Delta]; use Theme.Replies when the faculty sets it.
     // Whether the result counts toward the chapter's ending stat.
     public virtual bool CountsForStat => Delta > 0;
+    // Subclasses with async tasks, timers, or custom stat flags override this to clean up on skip.
+    protected virtual void OnSkip() { }
+    public void SkipAsCorrect()
+    {
+        OnSkip();
+        CloseReview();
+        sparks?.Clear();
+        floaters?.Clear();
+        Delta = 2;
+        Summary = "스킵 (정답 처리)";
+        Done = true;
+    }
     public abstract void Draw(GUIStyle title, GUIStyle body, GUIStyle button);
 
     // Minigame clock in seconds. It stands still while a menu (settings) is open, so use it instead of Time.unscaledTime.
