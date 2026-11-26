@@ -1,21 +1,11 @@
-# AI-ON 프로젝트 진행도 및 작업 맥락 (PROGRESS.md)
+# AI-ON 진행 상황 (PROGRESS.md)
 
-이 문서는 프로젝트 세션 진행도, 팀 협업 가이드, 그리고 개발 맥락을 일원화하여 관리하는 단일 문서입니다.
-
-> ### 📌 팀원 공통 세션 및 협업 3원칙
-> 1. **작업 시작 전**: git pull 후 본 문서를 가장 먼저 확인하여 다른 팀원의 최신 작업 현황(Done)과 할 일(Next Steps)을 확인합니다.
-> 2. **작업 종료 시 1회만 갱신**: 자잘한 커밋마다 수정하면 병합 충돌이 발생하므로, 작업 세션이 일단락되어 푸시하기 직전에만 1. 완료된 작업 (Done)과 5. 다음 진행 작업 (Next Steps)을 간결한 불릿 포인트로 갱신합니다.
-> 3. **핵심 맥락 일원화 유지**: 불필요한 장황한 설명을 배제하고 형상, 완료 및 검증, 결정 사항, 결함/부채, 다음 진행 작업 5대 핵심 항목을 명확하게 유지합니다.
-
----
+현재 상태만 적는다. 작성 규칙은 `AGENTS.md` 3·5절(푸시 직전 1회 갱신, 덧붙이기, 항목 5줄·줄당 200자 안쪽, `플레이 방법` 한 줄).
+2026-11-06 이전 Done 기록은 `git log -p -- PROGRESS.md`로 본다.
 
 ## 1. 형상 (Baseline)
-- **프로젝트 루트**: `AI-ON` (Repository Root)
-- **Git 브랜치**: `main`
-- **병합 기준**: 원격 main `5f967d0`, 시선 진단 `a8b0bd8`, 로컬 카드게임 병합 기록 `a5b3a49` 통합 점검 (2026-11-05)
-- **주요 변경 대상**: `GameController.GazeTest.cs`, `GameController.IPhoneGaze.cs`, `GazeMapper.cs`, 시선 추적 인수인계 문서
-
----
+- 브랜치 `main` 하나에서 agent-sync 선점으로 협업한다(2026-11-26 원격 브랜치 전부 병합).
+- 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
 - **[Claude] 2026-11-26 원격 브랜치 전체 main 병합 + 협업 규칙 적용**: `feature/agent-sync`, `feature/sign-fingerspelling`, `voice-tts`, `wip/mjpg-camera`, `wip/posture-fit`를 병합했다(`fix/*` 2개는 이미 반영). posture-fit 충돌은 `WebcamFeatures()` 구조를 따르고 Gaze Lab 기록 값을 그 결과로 채웠다.
@@ -142,33 +132,52 @@
   - `Tests/ProfessorPersonality.Tests.ps1`: 통과 (Exit 0, 16 faculties, 32 personalities, 3524 dialogue calls)
 
 ---
+- **병합 검증**: Unity 배치 컴파일 exit 0, 회귀 10종 exit 0, origin/main 대비 변경 diff 검사 통과. 기존 AiProfessor 및 팀원 UnitEyeSmokeTests의 CS0162 경고를 확인했다. 실기기·게임 화면은 미검증. 사용자가 이번 병합에 한해 ALLOW_FOREIGN_PATHS=1을 승인했다. 원격의 sh-com-claude 선점 기록은 수정하지 않고 유지한다.
+- **하이라이트 입력 모드 추가**: 팀원 눈맞춤 프레임 최적화·지문자 메뉴를 유지하고 수동 게임을 통합했다. 플레이 방법: 미니게임 → 하이라이트 → 눈빛 맞추기/피하기 → 시선 모드 또는 웹캠 없는 모드 선택. 수동 맞추기는 하트 클릭·곡선 슬라이더, 피하기는 방향키와 가속 추적이다. 이미지 없는 하트 대체도 지원한다. 실기기·실플레이 미검증.
+- **[Claude] 2026-11-26 개발 도구·코드모드 도입**: Unity CLI 코드모드 모듈(`Tools/codemode/Unity.psm1`), 도구 자동 설치(`Tools/setup-dev.ps1`, setup-git-unity가 호출), Serena 시범(`.mcp.json`), `com.unity.ide.visualstudio` 추가.
+  - 근거·남은 검증은 `docs/plans/Dev-Tooling.md`. `AGENTS.md`는 중복을 걷어 압축했다(21KB → 약 15KB).
+  - **플레이 방법(설치)**: `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/setup-dev.ps1`(UAC 창 허용) → Unity를 연 상태에서 PowerShell에 `Import-Module ./Tools/codemode/Unity.psm1; Get-UnityCompileState`.
+  - 검증: 모듈·eval·패키지 추가·csproj 생성을 열린 에디터에서 확인. PC11에서 `setup-dev` 설치 exit 0. Serena는 공유 `.serena/project.yml`(읽기 전용, gitignore 미적용)로 `GazeMapper` 참조 46개 조회 성공. 테스트 10종 exit 0.
+- **[Claude] 2026-11-26 문서 정리**: 마크다운 48개 → 21개. 규칙·도구 사용법은 `AGENTS.md`로 합치고 `CLAUDE.md`는 `@AGENTS.md` + 코디네이터 규칙만 남겼다.
+  - 진행 중 계획 5개는 `docs/plans/`로 옮겼고, 완료된 기획·리뷰·사용법 문서와 `CHANGELOG.md`는 지웠다(git 기록에 남음).
+  - **플레이 방법**: 규칙·도구가 궁금하면 `AGENTS.md`의 목차(1 문서 정책 ~ 8 환경 주의)를 본다. 미니게임·스토리 제작 규칙은 6.2·6.3절.
+  - 검증: `Tests/*.ps1` 10종 exit 0, `git diff --check` 통과. 문서만 바뀌어 Unity 동작 변화 없음.
+- **[Claude] 2026-11-26 원격 브랜치 전체 main 병합 + 협업 규칙 적용**: agent-sync, 수어 지문자, voice-tts, wip/mjpg-camera, wip/posture-fit 병합.
+  - posture-fit 충돌은 `WebcamFeatures()` 구조를 따르고 Gaze Lab 기록 값을 그 결과로 채웠다.
+  - **플레이 방법(설치)**: pull 후 `Tools/setup-git-unity.ps1 -AgentId <이름>-<도구>-<모델>` → `bash Tools/agent-sync.sh status`(`AGENTS.md` 5절).
+  - 검증: 테스트 10종 exit 0, `test_agent_sync.sh` 23항목 통과. **Unity 컴파일·웹캠 실기 미검증.** `VoiceTTS/` WAV 30MB+가 LFS 밖.
+- **2026-11-26 Qwen3-TTS 로컬 설치 안내**: `docs/plans/TTS-Local-Setup.md`(Intel XPU·CPU 경로, 박태준 70대 음색 설계, VoiceTTS 설치 부록). 실제 설치·추론 미검증.
+- **[Claude+Codex+Antigravity] 2026-11-26 수어 지문자 미니게임 1차 구현**: MediaPipe 손 관절 21개 → k-NN → 0.6초 유지 확정 → 하이라이트 미니게임.
+  - 계획 `docs/plans/Sign-Fingerspelling-Plan.md`, 사용법 `AGENTS.md` 7절. 세 AI 교차 리뷰로 27건 수정.
+  - **플레이 방법**: Play → `Tools → Sign → Recorder`로 임시 손 모양 녹화 → CSV를 `Assets/StreamingAssets/SignData/`로 복사 → 미니게임 → 하이라이트 → 수어 지문자.
+  - 검증: 배치 컴파일 오류 0, 테스트 10종 exit 0. **웹캠 실기·녹화 도구·학교 PC 성능 미검증.** 정식 글자 5개와 녹화 데이터 없음.
+- **시선 추적 선택 적용**: 새 스토리·이어하기를 시선 추적 없이 진행할 수 있고, 이때 눈맞춤 기록과 시선 전용 이벤트는 빠진다.
+  - **플레이 방법**: 교수 선택 또는 세이브 불러오기 후 `시선 추적 없이 계속`. 쓰려면 같은 화면에서 `웹캠 시작`/`iPhone 추적` → 보정.
+  - 검증: Windows 빌드 성공, 카메라 없이 새 게임·불러오기 진입 확인. 실제 장치 보정은 재검증하지 않음.
+- **[Claude] 2026-11-24 agent-sync 협업 도구 도입**: 경로 선점, 커밋·푸시 훅, Claude 편집 차단 훅(`AION_*` 변수, `aion.agentId`). Codex 리뷰 2회 반영.
+  - 검증: `test_agent_sync.sh` 23항목, PowerShell 5.1·7 설치 확인. 팀원 PC 설치와 열린 에디터 CLI 경로는 미검증.
+- **[Claude] 2026-11-24 교수 사진 떨림 + 캔버스 회전 중심 수정**: `GameEffects` 효과 경로 정수 반올림 제거, `NovelUI.RotateAround` 헬퍼로 4곳 교체.
+  - **플레이 방법**: 스토리 대사 화면에서 사진이 부드럽게 움직이는지, 창 크기를 바꾼 뒤 선택지 하트·별이 교수 주변에서 도는지 본다.
+- **[Claude] 2026-11-24 클릭 보정 컴파일 오류(CS0103) 수정 + 유료 UI 팩 추적 제외**: UI 팩이 없으면 도형·글자로 대신 그린다.
+  - 과거 히스토리와 `Builds/AI-ON`에는 UI 팩이 남아 있어 저장소 공개 여부는 팀 결정이 필요하다.
 
 ## 3. 핵심 결정 사항 (Decisions)
-1. **OnGUI 성능 안정성 확보**:
-   - `OnGUI` 생명주기 특성상 매 프레임 실행되므로, 스타일 객체 동적 생성을 지양하고 정적 필드 캐싱 패턴을 일관되게 적용합니다.
-2. **AI 네트워크 결함 격리 (Graceful Fallback)**:
-   - 외부 LLM API나 Cloudflare 릴레이 서버가 타임아웃(504)되거나 오프라인 상태일 때도, 스토리 진행이 중단되지 않고 단 한 번의 클릭으로 로컬 정적 선택지 모드로 자연스럽게 전환될 수 있도록 보장합니다.
-3. **공동 작업 안전성 유지**:
-   - 팀원들의 취침 시간대 완료 작업(`feature/player-photo-avatar`)을 `main`에 패스트 포워드로 안전하게 병합하고, 충돌 없는 청정 히스토리를 유지합니다.
-
----
+- `OnGUI` 정적 스타일 캐싱, AI 실패 시 오프라인 선택지 fallback(`AGENTS.md` 6.1절).
+- 기능 브랜치 대신 `main` + agent-sync 선점. `PROGRESS.md`는 `merge=union`.
+- 마크다운은 `AGENTS.md`·`PROGRESS.md`·`docs/plans/`만(2026-11-26).
 
 ## 4. 결함 및 부채 (Blockers)
-- **iPhone 머리 위치 영향 미해결**: 같은 지점을 볼 때 머리 위치에 따라 포인터가 이동한다는 사용자 보고. 눈 신호를 포함하는 후보 제한은 임시 대응이며 정확도 개선을 보장하지 않음. 진단 자체는 보정 계수를 바꾸지 않는다. 보정 추정 오차 294→157→269px는 자세·표본이 달라 개선율로 해석할 수 없음. 최종 30초 추적 및 Unity 전체 컴파일/실기기 검증 필요.
-- **웹캠 실기 촬영 검증**: 단위 테스트 및 스크립트 빌드는 모두 검증되었으나, 실제 물리 웹캠 디바이스를 통한 얼굴 자동 크롭 및 텍스처 합성은 Unity Editor 플레이 모드에서 확인이 필요합니다.
-- **외부 패키지 의존 스크립트**: UnitEye 및 외부 하드웨어 브리지 스크립트는 독자 CLI 빌드 시 제외되어 있으므로, Editor 환경에서 최종 패키징 시 의존성을 점검해야 합니다.
-
----
+- **iPhone 머리 위치 영향 미해결**: 같은 지점을 봐도 머리 위치에 따라 포인터가 움직인다. 후보 제한은 임시 대응. 보정 오차 294→157→269px는 자세·표본이 달라 비교 불가.
+- **웹캠 실기 검증**: 얼굴 자동 크롭·텍스처 합성, 2026-11-26 병합한 MJPG 읽기·자세 기반 보정은 Unity Play에서 확인해야 한다.
+- **외부 패키지 의존 스크립트**: UnitEye와 하드웨어 브리지는 CLI 빌드에서 제외되어 있어 최종 패키징 때 의존성을 점검해야 한다.
 
 ## 5. 다음 진행 작업 (Next Steps)
-- **병합분 Unity 확인**: 2026-11-26 병합한 `wip/mjpg-camera`(MJPG 웹캠 읽기)·`wip/posture-fit`(자세 기반 보정)을 Unity에서 컴파일하고 웹캠 보정·Gaze Lab 표시를 실기 확인한다. 팀원 PC마다 `Tools/setup-git-unity.ps1`을 1회 실행한다.
-- **수어 지문자 인식 미니게임**: 계획서 [`docs/AI/Sign-Fingerspelling-Plan.md`](docs/AI/Sign-Fingerspelling-Plan.md) v1.0. 1차 구현은 2026-11-26 main에 병합됐다(Done 참고). 다음은 실기 확인(관절 정렬·왼손/오른손 거울 기준), P0 글자 5개 확정(한국수어사전 영상 확인), P2 녹화·정확도 측정, 학교 PC 성능 측정. 10절 결정 사항 8개를 팀이 정해야 한다.
-- **Claude Max 활용 기획**: [`docs/AI/Claude-Max-Usage-Plan.md`](docs/AI/Claude-Max-Usage-Plan.md) 초안. 대회 규정의 AI 사용 고지 방식과 지원 계정 사용 규칙을 먼저 확인한다.
-- iPhone 수정 보정으로 같은 자세에서 독립 검증 오차와 실제 목표 응시 오차를 측정한다. 채팅 방향 측정은 센서 방향 구분 확인용이며 게임 화면 보정 정확도를 보장하지 않는다.
-- 눈맞춤 카운터: iPhone 경로·엔딩 표시·이어하기 실기 확인. 판정 상수(`GameController.EyeContact.cs`)는 F8로 보며 조정. 호감도 반영 여부는 추후 결정.
-- 눈빛 피하기: 실제 웹캠/iPhone으로 난이도(속도·판정 반경)와 소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`도 같은 `RotateAroundPivot` 문제 여부 확인.
-- AI 모드: 에디터에서 단답형 퀴즈 힌트 대기 중 Enter 동작 확인. 설정에 내 Gemini 키가 있으면 서버(Terra)를 거치지 않으므로 Terra 확인 시 키를 지울 것.
-- iPhone에서 같은 중앙 목표를 보며 고개 회전/평행이동/거리 변화를 분리 측정. `[iPhone gaze trace]`로 원시 예측·포인터·blink·fresh를 비교하고 현 인터페이스에 없는 머리 위치/거리 정보 도입 여부 판단.
-- Unity Editor 상에서 플레이어 웹캠 아바타 촬영 기능 및 2인 구도 실기 점검.
-- 팀원 취침 복귀 후 변경 사항(아바타 브랜치 머지, AI GC 최적화, Fallback 강화) 공유.
-- 16개 학과별 스토리 미니게임 및 엔딩 분기 통합 밸런스 모니터링.
+- **도구 설치·Serena 시범**: 팀원 PC에서 `Tools/setup-dev.ps1` 실행, Codex·Antigravity의 Serena 연결과 메모리 사용량 확인(`docs/plans/Dev-Tooling.md` 5절).
+- **병합분 Unity 확인**: `wip/mjpg-camera`·`wip/posture-fit` 병합분을 컴파일하고 웹캠 보정·Gaze Lab 표시를 확인한다. 팀원 PC마다 `Tools/setup-git-unity.ps1` 1회 실행.
+- **수어 지문자**: 실기 확인(관절 정렬·거울 기준), P0 글자 5개 확정, P2 녹화·정확도, 학교 PC 성능. 계획서 10절 결정 8개를 팀이 정한다.
+- **Claude Max 활용**: `docs/plans/Claude-Max-Usage-Plan.md` 초안. 대회 AI 사용 고지 방식과 지원 계정 규칙부터 확인.
+- **iPhone 시선**: 같은 자세에서 독립 검증 오차와 목표 응시 오차 측정. 고개 회전/평행이동/거리를 분리 측정하고 머리 위치 정보 도입 여부 판단(`docs/plans/iPhone-Gaze-Handoff.md`).
+- 눈맞춤 카운터: iPhone 경로·엔딩 표시·이어하기 실기 확인. 판정 상수(`GameController.EyeContact.cs`)는 F8로 보며 조정.
+- 눈빛 피하기: 실제 장치로 난이도·소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`의 `RotateAroundPivot` 문제 여부 확인.
+- AI 모드: 단답형 퀴즈 힌트 대기 중 Enter 동작 확인. Terra 확인 시 설정의 개인 Gemini 키를 지운다.
+- 플레이어 웹캠 아바타 촬영·2인 구도 실기 점검. 16개 학과 스토리·미니게임·엔딩 분기 밸런스 점검.

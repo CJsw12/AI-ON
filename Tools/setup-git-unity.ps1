@@ -11,7 +11,9 @@
     conflicts: git mergetool --tool=unityyamlmerge <file>.
   - Reports whether the paid Modern UI Pack (Assets/Resources/UI, not in git) is present.
   - Sets pull.rebase=true and rebase.autoStash=true locally for the main-only workflow.
-  Only local (.git/config) settings are changed; global git config is not touched.
+  - Finally runs Tools/setup-dev.ps1, which installs missing developer tools (pwsh, rg, uv, .NET 10,
+    Unity CLI, Serena) with winget. Skip with -SkipTools.
+  Git settings are local (.git/config) only; global git config is not touched (git lfs install aside).
   Exit code 0 = configured, 2 = a required tool was not found.
 
 .EXAMPLE
@@ -20,7 +22,8 @@
 #>
 param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')] [string] $AgentId,
-    [string] $EditorPath
+    [string] $EditorPath,
+    [switch] $SkipTools
 )
 
 $ErrorActionPreference = 'Stop'
@@ -123,14 +126,10 @@ if ((Test-Path -LiteralPath $uiPack) -and (Get-ChildItem -LiteralPath $uiPack -F
     Write-Output 'UI pack  missing: copy the privately shared files into Assets/Resources/UI (the game still runs with simple fallbacks)'
 }
 
-# 5. Tool presence report (informational)
-foreach ($tool in 'git-lfs', 'gh', 'pwsh', 'node') {
-    $found = [bool](Get-Command $tool -ErrorAction SilentlyContinue)
-    Write-Output ("{0,-8} {1}" -f $tool, $(if ($found) { 'ok' } else { 'missing (see docs/COLLABORATION.md)' }))
-}
-if (Get-Command gh -ErrorAction SilentlyContinue) {
-    $ErrorActionPreference = 'Continue'
-    & cmd /c 'gh auth status >nul 2>&1'
-    if ($LASTEXITCODE -ne 0) { Write-Output 'gh       not logged in: run gh auth login' }
-}
+# 5. Developer tools (installs what is missing; -SkipTools only reports)
+$ErrorActionPreference = 'Continue'
+$devArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'setup-dev.ps1'))
+if ($SkipTools) { $devArgs += '-CheckOnly' }
+& powershell @devArgs
+if ($LASTEXITCODE -ne 0) { $status = 2 }
 exit $status

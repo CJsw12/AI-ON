@@ -12,6 +12,8 @@ public partial class GameController
     enum GazeGame { None, Match, Dodge }
 
     bool practiceHighlight;
+    GazeGame highlightChoice;
+    bool forceManualHighlight;
     bool matchEventDone, dodgeEventDone, dodgePending;
     GazeGame storyGazeEvent;        // an event waiting on its intro card
     GazeGame gazeSession;           // a game launched from here (highlight or story), followed until it closes
@@ -26,16 +28,39 @@ public partial class GameController
 
     void HighlightTab(Rect card)
     {
+        if (highlightChoice != GazeGame.None)
+        {
+            NovelUI.Label(new Rect(card.x, card.y + 180, card.width, 55),
+                (highlightChoice == GazeGame.Match ? "눈빛 맞추기" : "눈빛 피하기") + " · 모드 선택",
+                NovelUI.Round, 28, NovelUI.Berry, TextAnchor.MiddleCenter);
+            if (Tile(new Rect(card.x+50, card.y+250, card.width-100, 125),
+                "웹캠·iPhone 시선 모드", "실제 시선으로 플레이 · 보정이 필요하면 준비 화면으로 이동", false))
+            {
+                GazeGame chosen = highlightChoice;
+                highlightChoice = GazeGame.None;
+                StartGazeGame(chosen, false, false);
+            }
+            if (Tile(new Rect(card.x+50, card.y+395, card.width-100, 125),
+                "웹캠 없는 모드", "눈빛 맞추기: 마우스 클릭·드래그 / 눈빛 피하기: 방향키", false))
+            {
+                GazeGame chosen = highlightChoice;
+                highlightChoice = GazeGame.None;
+                StartGazeGame(chosen, false, true);
+            }
+            if (NovelUI.Button(new Rect(card.center.x-100, card.y+550, 200, 48), "게임 선택으로", false, 20))
+                highlightChoice = GazeGame.None;
+            return;
+        }
         NovelUI.Label(new Rect(card.x, card.y + 170, card.width, 28), "시선과 손으로 하는 특별한 체험", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
         GUI.enabled = !handProbeConfirm && !signRecalibrateNotice;
-        if (Tile(new Rect(card.x + 50, card.y + 204, card.width - 100, 130), "눈빛 맞추기", "분홍 점을 시선으로 따라가요.\n스토리 등장: 호감도 4 이상", false)) StartGazeGame(GazeGame.Match, false);
-        if (Tile(new Rect(card.x + 50, card.y + 344, card.width - 100, 130), "눈빛 피하기", "다가오는 빨간 눈빛을 피해요.\n스토리 등장: 마지막 장면 · 호감도 8 이상", false)) StartGazeGame(GazeGame.Dodge, false);
+        if (Tile(new Rect(card.x + 50, card.y + 204, card.width - 100, 130), "눈빛 맞추기", "분홍 점을 시선으로 따라가요.\n스토리 등장: 호감도 4 이상", false)) highlightChoice = GazeGame.Match;
+        if (Tile(new Rect(card.x + 50, card.y + 344, card.width - 100, 130), "눈빛 피하기", "다가오는 빨간 눈빛을 피해요.\n스토리 등장: 마지막 장면 · 호감도 8 이상", false)) highlightChoice = GazeGame.Dodge;
         if (Tile(new Rect(card.x + 50, card.y + 484, card.width - 100, 130), "수어 지문자", "웹캠으로 손 모양을 따라 해요.", false))
         {
             if (!gazeUseIphone && (gazeObject != null || requestingCamera)) handProbeConfirm = true;
             else StartHandProbe();
         }
-        NovelUI.Label(new Rect(card.x + 40, card.y + 625, card.width - 80, 65), "눈빛 게임에는 웹캠이나 iPhone 시선 보정이 필요해요.\n보정이 안 돼 있으면 보정 화면부터 열려요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(card.x + 40, card.y + 625, card.width - 80, 65), "눈빛 게임은 시선 모드 또는 마우스·방향키 모드를 선택해요.\n수어 지문자는 웹캠이 필요해요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
         GUI.enabled = true;
         if (handProbeConfirm)
         {
@@ -232,8 +257,9 @@ public partial class GameController
         if (NovelUI.Button(new Rect(490, 730, 300, 60), "돌아가기", false, 22)) { CloseHandProbe(); practiceHighlight = true; OpenMenu(Menu.Practice); }
     }
     // Opens the gaze test screen; the game starts right away when the tracker is ready, otherwise once calibrated.
-    void StartGazeGame(GazeGame game, bool story)
+    void StartGazeGame(GazeGame game, bool story, bool? manual = null)
     {
+        forceManualHighlight = manual ?? !GazeReadyForDodge;
         novelAudio.Play("Select");
         menu = Menu.None;
         gazeSession = game;
@@ -242,19 +268,21 @@ public partial class GameController
         gazeSessionGain = 0;
         bool alreadyOpen = gazeTestOpen;
         if (!alreadyOpen) OpenGazeTest();
-        if (GazeReadyForDodge)
+        if (forceManualHighlight || GazeReadyForDodge)
         {
             if (game == GazeGame.Match) StartEyeMatchGame(); else StartDodgeGame();
-            return;
         }
-        if (game == GazeGame.Match) matchAfterCalibration = true; else dodgeAfterCalibration = true;
-        if (gazeTracker == null && !requestingCamera && !gazeUseIphone) gazeCameraRequest = StartCoroutine(StartGazeCamera());
+        else
+        {
+            matchAfterCalibration = game == GazeGame.Match;
+            dodgeAfterCalibration = game == GazeGame.Dodge;
+        }
     }
 
     // Called after a slot's result is dismissed (Advance).
     void QueueStoryGazeEvents(bool lastSlot)
     {
-        if (!eyeContactSessionActive) return;
+        if (scene < 1) return;
         if (lastSlot && !dodgeEventDone && affection >= DodgeEventAffection) { dodgeEventDone = true; dodgePending = true; }
         if (!matchEventDone && affection >= MatchEventAffection) { matchEventDone = true; storyGazeEvent = GazeGame.Match; return; }
         if (dodgePending) { dodgePending = false; storyGazeEvent = GazeGame.Dodge; }
@@ -278,7 +306,7 @@ public partial class GameController
         if (!sim) line = (match ? "옆 연구실 심한뫼 교수님이 불쑥 찾아오셨다. " : "엔딩 직전, 심한뫼 교수님이 다시 나타나셨다. ") + "\"" + line + "\"";
         else line = "\"" + line + "\"";
         NovelUI.Label(new Rect(card.x + 40, card.y + 140, card.width - 80, 100), $"{who}\n{line}", NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter, FontStyle.Bold);
-        NovelUI.Label(new Rect(card.x + 40, card.y + 246, card.width - 80, 30), "결과에 따라 호감도 +0~2 · 시선 보정이 필요해요", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(card.x + 40, card.y + 246, card.width - 80, 30), "결과에 따라 호감도 +0~2 · 장치 없이도 플레이 가능", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
         if (NovelUI.Button(new Rect(card.x + 90, card.yMax - 96, 250, 60), "시작하기", true, 22))
         {
             GazeGame game = storyGazeEvent;
@@ -318,6 +346,7 @@ public partial class GameController
         bool story = gazeSessionStory;
         int gain = gazeSessionSawResult ? gazeSessionGain : 0;
         gazeSession = GazeGame.None;
+        forceManualHighlight = false;
         gazeSessionStory = false;
         matchAfterCalibration = dodgeAfterCalibration = false;
         if (gazeTestOpen)

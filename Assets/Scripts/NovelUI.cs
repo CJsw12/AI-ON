@@ -86,15 +86,41 @@ public static class NovelUI
         Fill(rect, fill, radius);
         if (outline.a > 0) Ring(rect, outline, radius, thickness);
     }
+    static Texture2D fallbackHeart;
+    static Texture2D FallbackHeart()
+    {
+        if (fallbackHeart != null) return fallbackHeart;
+        const int size = 128;
+        var pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float alpha = 0f;
+                for (int sy = 0; sy < 2; sy++)
+                    for (int sx = 0; sx < 2; sx++)
+                    {
+                        float px = ((x + (sx + .5f) / 2f) / size - .5f) * 2.6f;
+                        float py = ((y + (sy + .5f) / 2f) / size - .5f) * 2.6f;
+                        float a = px * px + py * py - 1f;
+                        if (a * a * a - px * px * py * py * py <= 0f) alpha += .25f;
+                    }
+                pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+            }
+        fallbackHeart = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        fallbackHeart.hideFlags = HideFlags.HideAndDontSave;
+        fallbackHeart.wrapMode = TextureWrapMode.Clamp;
+        fallbackHeart.SetPixels(pixels);
+        fallbackHeart.Apply(false, true);
+        return fallbackHeart;
+    }
+
     public static void Heart(Rect rect, Color color, bool filled = true)
     {
         if (!Repaint) return;
         Texture2D tex = filled ? heart : heartOutline;
         if (tex == null)
         {
-            if (filled) Fill(rect, color, rect.height / 2);
-            else Ring(rect, color, rect.height / 2, 2);
-            return;
+            tex = FallbackHeart();
         }
         GUI.color = color; GUI.DrawTexture(rect, tex, ScaleMode.ScaleToFit); GUI.color = Color.white;
     }
@@ -335,7 +361,7 @@ public static class NovelUI
         Label(new Rect(track.xMax + 6, rect.y, 46, rect.height), value.ToString(), Round, 22, value < 0 ? Plum : DeepPink, TextAnchor.MiddleCenter);
     }
 
-    // Styles handed to minigames (see MINIGAME_GUIDE.md): white text on the dark minigame panel and pink buttons.
+    // Styles handed to minigames (see AGENTS.md section 6.2): white text on the dark minigame panel and pink buttons.
     public static GUIStyle MiniTitle, MiniBody, MiniButton, Input;
     public static void MakeStyles()
     {

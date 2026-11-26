@@ -54,13 +54,15 @@ public partial class GameController
     int dodgeLivesLeft, dodgeBest = -1;
     readonly Vector2[] dodgeBeam = new Vector2[2], dodgeBeamVelocity = new Vector2[2];
     Vector2 dodgeGaze, dodgeGazeVelocity, dodgeHitPos;
-    bool dodgeHasGaze;
+    bool dodgeHasGaze, dodgeManual;
     string dodgeSay = "";
     float dodgeSayAt, dodgeSayTyping, dodgeSayHold;
 
     bool DodgeScreenOpen => dodgeActive || dodgeFinished;
     int DodgeScore => Mathf.FloorToInt(dodgeAlive * 10f) * 10;
-    float DodgeSpeed => Mathf.Min(DodgeMaxSpeed, DodgeStartSpeed + DodgeSpeedGain * dodgeAlive);
+    float DodgeSpeed => dodgeManual
+        ? Mathf.Min(1050f, 180f + 30f * dodgeAlive + 1.2f * dodgeAlive * dodgeAlive)
+        : Mathf.Min(DodgeMaxSpeed, DodgeStartSpeed + DodgeSpeedGain * dodgeAlive);
     bool DodgeShowingResult => dodgeFinished && Time.unscaledTime >= dodgeResultAt;
 
     DodgeFace DodgeFaceNow => dodgePortrait;
@@ -112,10 +114,12 @@ public partial class GameController
 
     void StartDodgeGame()
     {
+        dodgeManual = forceManualHighlight || !GazeReadyForDodge;
         StopStarGame();
         PrepareDodgePortrait();
-        dodgeAfterCalibration = matchAfterCalibration = false;   // started by hand: no automatic start later
-        if (dodgeBest < 0) dodgeBest = PlayerPrefs.GetInt(DodgeBestPref, 0);
+        dodgeGaze = new Vector2(640f, 650f);
+        dodgeAfterCalibration = matchAfterCalibration = false;   // started by hand: no second automatic start later
+        dodgeBest = PlayerPrefs.GetInt(dodgeManual ? DodgeBestPref + ".Keyboard" : DodgeBestPref, 0);
         dodgeActive = true;
         dodgeFinished = dodgeNewBest = dodgeLost = dodgeHasGaze = dodgeFrowned = dodgeResultSounded = false;
         dodgeStartsAt = Time.unscaledTime + DodgeCountdown;
@@ -175,7 +179,17 @@ public partial class GameController
         // (window drag, breakpoint) is skipped like a pause.
         float dt = Mathf.Min(raw, DodgeMaxFrame);
 
-        bool valid = StarGaze(out Vector2 gaze, out _);   // a blink freezes the point where it was, so the beams still come
+        Vector2 gaze = dodgeGaze;
+        bool valid;
+        if (dodgeManual)
+        {
+            Vector2 move = new Vector2(
+                (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0),
+                (Input.GetKey(KeyCode.DownArrow) ? 1 : 0) - (Input.GetKey(KeyCode.UpArrow) ? 1 : 0));
+            if (now >= dodgeStartsAt) gaze += Vector2.ClampMagnitude(move, 1f) * 620f * dt;
+            valid = true;
+        }
+        else valid = StarGaze(out gaze, out _);   // a blink freezes the point where it was, so the beams still come
         dodgeLost = !valid;
         if (valid)
         {
@@ -279,7 +293,7 @@ public partial class GameController
         if (dodgeNewBest)
         {
             dodgeBest = score;
-            PlayerPrefs.SetInt(DodgeBestPref, dodgeBest);
+            PlayerPrefs.SetInt(dodgeManual ? DodgeBestPref + ".Keyboard" : DodgeBestPref, dodgeBest);
             PlayerPrefs.Save();
         }
     }
@@ -367,8 +381,8 @@ public partial class GameController
             float left = dodgeStartsAt - now;
             float beat = 1f - (left % 1f);
             NovelUI.Card(new Rect(290, 520, 700, 300), NovelUI.Alpha(Color.white, .88f), 26, NovelUI.Alpha(NovelUI.DeepPink, .3f));
-            NovelUI.Label(new Rect(290, 536, 700, 50), "교수님 눈빛(빨간 점)을 피해 시선을 옮기세요!", NovelUI.Soft, 24, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
-            NovelUI.Label(new Rect(290, 584, 700, 32), "파란 점이 내 시선 · 3번 잡히면 끝 · 0.1초 버틸 때마다 10점", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
+            NovelUI.Label(new Rect(290, 536, 700, 50), dodgeManual ? "방향키 ↑ ↓ ← → 로 빨간 눈빛을 피하세요!" : "교수님 눈빛(빨간 점)을 피해 시선을 옮기세요!", NovelUI.Soft, 24, NovelUI.Berry, TextAnchor.MiddleCenter, FontStyle.Bold);
+            NovelUI.Label(new Rect(290, 584, 700, 32), dodgeManual ? "파란 점이 내 캐릭터 · 대각선 이동 가능 · 3번 잡히면 끝" : "파란 점이 내 시선 · 3번 잡히면 끝 · 0.1초 버틸 때마다 10점", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
             int size = Mathf.RoundToInt(Mathf.Lerp(130f, 96f, beat));
             NovelUI.Label(new Rect(440, 620, 400, 190), Mathf.CeilToInt(left).ToString(), NovelUI.Round, size, NovelUI.Alpha(NovelUI.DeepPink, 1f - beat * .5f), TextAnchor.MiddleCenter);
         }
