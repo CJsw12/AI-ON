@@ -1,8 +1,0 @@
-agent: sh-com-claude
-task: 심한뫼 SAY 표 보강
-host: DESKTOP-GCC8QCI
-started: 2026-11-27T06:54:29+0900
-updated: 2026-11-27T06:59:36+0900
-paths:
-- Assets/Resources/Voice/ShimHanmoe/
-- Tools/Voice/generate.py

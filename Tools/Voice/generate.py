@@ -19,6 +19,13 @@ SAY = [
     (r"\bGit\b", "깃"),
     (r"\bCount\b", "카운트"),
     (r"\bOT\b", "오티"),
+    (r"(?<![A-Za-z])LIFO(?![A-Za-z])", "라이포"),   # \b would not split "LIFO예요" (Hangul is a word char too).
+    (r"(?<![A-Za-z])FIFO(?![A-Za-z])", "파이포"),
+    (r"(?<![A-Za-z])target(?![A-Za-z])", "타깃"),
+    (r"\bk번째", "케이번째"),
+    (r"\b10진수", "십진수"),
+    (r"\b2진수", "이진수"),
+    (r"(?<!\d)1이", "일이"),
 ]
 
 
