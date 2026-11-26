@@ -142,6 +142,7 @@
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
+- **수어 지문자 인식 미니게임**: 계획서 [`docs/AI/Sign-Fingerspelling-Plan.md`](docs/AI/Sign-Fingerspelling-Plan.md) v0.2 (Codex 검토 "수정 후 진행" 반영, 코드 없음). 다음은 P0 글자 5개 확정(한국수어사전 영상 확인)과 P0.5 빌드에서 손 관절 출력 확인. 10절 결정 사항 5개를 팀이 정해야 한다.
 - iPhone 수정 보정으로 같은 자세에서 독립 검증 오차와 실제 목표 응시 오차를 측정한다. 채팅 방향 측정은 센서 방향 구분 확인용이며 게임 화면 보정 정확도를 보장하지 않는다.
 - 눈맞춤 카운터: iPhone 경로·엔딩 표시·이어하기 실기 확인. 판정 상수(`GameController.EyeContact.cs`)는 F8로 보며 조정. 호감도 반영 여부는 추후 결정.
 - 눈빛 피하기: 실제 웹캠/iPhone으로 난이도(속도·판정 반경)와 소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`도 같은 `RotateAroundPivot` 문제 여부 확인.
