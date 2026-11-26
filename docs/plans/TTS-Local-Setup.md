@@ -191,3 +191,11 @@ device/dtype/attention 설정, 대본, 참조 음성, 생성 시간, 청취 결�
 
 문서 검증 범위: 공식 자료와 예제 API 대조, Python 예제 구문 검사, 저장소 회귀 검사.
 실제 패키지 설치·모델 다운로드·Intel/CPU 추론·음성 품질은 미검증이다.
+---
+
+# 부록: VoiceTTS (내 목소리 복제 실험, `VoiceTTS/`, NVIDIA GPU)
+- 결과 근거는 `VoiceTTS/결과보고서.txt`(1위 Fun-CosyVoice3 + `pron3` 참조). 모델·파이썬 환경(약 15GB)은 저장소 밖이며 짧은 경로(예 `C:\Users\<이름>\voice-clone`)에 둔다.
+- OmniVoice: Python 3.13 `.venv`에 `torch torchaudio`(cu128 인덱스)와 `omnivoice imageio-ffmpeg soundfile speechbrain uv`를 설치한다.
+- CosyVoice: `git clone --recursive --depth 1 https://github.com/FunAudioLLM/CosyVoice.git cosyvoice` → uv로 Python 3.10 `cosyvoice\.venv`를 만들고 `torch==2.8.0 torchaudio==2.8.0`(cu128), `-r setup\req-win.txt --override setup\override.txt --build-constraint setup\build-c.txt`, `onnxruntime==1.20.1 "setuptools<70"`을 설치한다.
+- 모델: `FunAudioLLM/CosyVoice2-0.5B`, `FunAudioLLM/Fun-CosyVoice3-0.5B-2512`를 `cosyvoice/pretrained_models/`에 받는다(약 13.6GB).
+- 실행: `.venv\Scripts\python.exe tts.py "문장" [--model v3|omni|v2|all] [--file 대본.txt]` → `output/<날짜_시간>/`. 본인 또는 동의한 목소리만 쓴다.

@@ -123,7 +123,8 @@ InitTestScene*.unity*
 /Server/**/.dev.vars
 /Server/**/node_modules/
 # Serena MCP agent project data
-.serena/
+.serena/*
+!.serena/project.yml
 
 # Unity crash recovery scenes
 /[Aa]ssets/_Recovery/
