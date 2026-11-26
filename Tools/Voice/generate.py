@@ -1,6 +1,6 @@
 """Speaks every line in <lines.txt> with a cloned voice (CosyVoice3) into Assets/Resources/Voice/<Voice>/.
 
-Run with the CosyVoice environment's Python (see README.md):
+Run with the CosyVoice environment's Python (see AGENTS.md section 7):
   python generate.py <lines.txt> <out_dir> --clone C:\\Users\\PC12\\voice-clone [--force]
 
 Each clip is named after a hash of its text, so unchanged lines keep their audio and only new or edited

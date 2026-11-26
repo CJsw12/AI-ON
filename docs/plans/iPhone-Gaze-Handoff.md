@@ -65,7 +65,7 @@ Wi-Fi UDP 실기기 진단 로그에서 확인한 수치다. 오차는 GazeMappe
 - Unity 수신기는 PC UDP `11125`에 바인딩하고 추적 JSON을 받아 처리합니다.
 - 프로젝트의 수신 코드: `Assets/Scripts/IPhoneGazeUdpReceiver.cs`
 - 설정/보정/테스트 UI: `Assets/Scripts/GameController.IPhoneGaze.cs`
-- Wi-Fi/USB 일반 절차: `docs/AI/iPhone-Gaze-Tracking-Setup.md`
+- Wi-Fi/USB 일반 절차: `AGENTS.md` 7절 iPhone 시선 추적 연결
 
 ## 2026-11-04~05에 실제 발생한 증상
 

@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Recorded (TTS) lines for professors whose Professor.Voice is set.
 // Resources/Voice/<Voice>/lines.txt has one "file<TAB>text" row per spoken line, and the clip is
-// Resources/Voice/<Voice>/<file>. Tools/Voice/generate.ps1 writes both; see Tools/Voice/README.md.
+// Resources/Voice/<Voice>/<file>. Tools/Voice/generate.ps1 writes both; see AGENTS.md section 7.
 public static class ProfessorVoice
 {
     static readonly Regex Tags = new Regex("<[^>]+>"), Spaces = new Regex(@"\s+");

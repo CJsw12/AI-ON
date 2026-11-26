@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # agent-sync (AI-ON, ported from surviving-game): git-native coordination for several PCs / agents working on main.
 # Needs only git + bash (Git for Windows). Same tool for Claude Code, Codex and humans.
-# Rules and rationale: docs/COLLABORATION.md.
+# Rules and usage: AGENTS.md section 5.
 #
 #   bash Tools/agent-sync.sh status                     fetch; new commits on origin/main, active claims, my inbox
 #   bash Tools/agent-sync.sh claim "<task>" <path>...   reserve paths (folder = trailing /), commit + push claim

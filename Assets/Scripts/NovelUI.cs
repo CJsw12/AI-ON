@@ -335,7 +335,7 @@ public static class NovelUI
         Label(new Rect(track.xMax + 6, rect.y, 46, rect.height), value.ToString(), Round, 22, value < 0 ? Plum : DeepPink, TextAnchor.MiddleCenter);
     }
 
-    // Styles handed to minigames (see MINIGAME_GUIDE.md): white text on the dark minigame panel and pink buttons.
+    // Styles handed to minigames (see AGENTS.md section 6.2): white text on the dark minigame panel and pink buttons.
     public static GUIStyle MiniTitle, MiniBody, MiniButton, Input;
     public static void MakeStyles()
     {

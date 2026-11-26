@@ -126,7 +126,7 @@ if ((Test-Path -LiteralPath $uiPack) -and (Get-ChildItem -LiteralPath $uiPack -F
 # 5. Tool presence report (informational)
 foreach ($tool in 'git-lfs', 'gh', 'pwsh', 'node') {
     $found = [bool](Get-Command $tool -ErrorAction SilentlyContinue)
-    Write-Output ("{0,-8} {1}" -f $tool, $(if ($found) { 'ok' } else { 'missing (see docs/COLLABORATION.md)' }))
+    Write-Output ("{0,-8} {1}" -f $tool, $(if ($found) { 'ok' } else { 'missing (see AGENTS.md section 5)' }))
 }
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     $ErrorActionPreference = 'Continue'
