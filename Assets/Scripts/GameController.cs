@@ -54,6 +54,7 @@ public partial class GameController : MonoBehaviour
     }
     void Update()
     {
+        if (handProbeOpen) TickSignGame();
         UpdateGazeTest();
         TickClickCalibration();
         TickGazeGameSession();
@@ -86,7 +87,7 @@ public partial class GameController : MonoBehaviour
     }
 
     void OnApplicationPause(bool paused) { if (paused) { ReadLog.Flush(); GameSettings.Save(); } }
-    void OnApplicationQuit() { CloseHandProbe(); CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
+    void OnApplicationQuit() { CloseHandProbe(false); CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
 
     void DrawScene(bool portrait = true)
     {

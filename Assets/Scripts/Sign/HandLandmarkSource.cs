@@ -8,6 +8,7 @@ using Mediapipe.Tasks.Vision.HandLandmarker;
 using Mediapipe.Unity.Experimental;
 using UnityEngine;
 
+public enum HandSourceState { Starting, Running, NoModel, NoCamera, PermissionDenied, Failed, UnsupportedRotation }
 public sealed class HandLandmarkSource : MonoBehaviour
 {
     HandLandmarker landmarker;
@@ -28,6 +29,7 @@ public sealed class HandLandmarkSource : MonoBehaviour
     public int FrameHeight => cameraTexture != null ? cameraTexture.height : 0;
     public double DetectionMilliseconds { get; private set; }
     public string Status { get; private set; } = "준비 중";
+    public HandSourceState State { get; private set; } = HandSourceState.Starting;
     public WebCamTexture CameraTexture => cameraTexture;
     public FrameTimingStats DetectionStats { get; } = new FrameTimingStats(120);
     public FrameTimingStats FrameStats { get; } = new FrameTimingStats(120);
@@ -37,12 +39,12 @@ public sealed class HandLandmarkSource : MonoBehaviour
     {
         yield return null;
         string path = Path.Combine(Application.streamingAssetsPath, "hand_landmarker.bytes");
-        if (!File.Exists(path)) { Status = "손 모델 파일이 없습니다"; yield break; }
+        if (!File.Exists(path)) { State = HandSourceState.NoModel; Status = "손 모델 파일이 없습니다"; yield break; }
         yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
-        if (!Application.HasUserAuthorization(UserAuthorization.WebCam)) { Status = "카메라 권한이 거부되었습니다"; yield break; }
+        if (!Application.HasUserAuthorization(UserAuthorization.WebCam)) { State = HandSourceState.PermissionDenied; Status = "카메라 권한이 거부되었습니다"; yield break; }
         try
         {
-            if (WebCamTexture.devices.Length == 0) { Status = "카메라를 찾을 수 없습니다"; yield break; }
+            if (WebCamTexture.devices.Length == 0) { State = HandSourceState.NoCamera; Status = "카메라를 찾을 수 없습니다"; yield break; }
             var options = new HandLandmarkerOptions(new BaseOptions(BaseOptions.Delegate.CPU, modelAssetBuffer: File.ReadAllBytes(path)), runningMode: RunningMode.VIDEO, numHands: 1);
             landmarker = HandLandmarker.CreateFromOptions(options);
             result = HandLandmarkerResult.Alloc(1);
@@ -51,7 +53,7 @@ public sealed class HandLandmarkSource : MonoBehaviour
             clock.Start();
             Status = "카메라 준비 중";
         }
-        catch (Exception e) { Status = "손 추적 시작 실패: " + e.Message; Release(); }
+        catch (Exception e) { State = HandSourceState.Failed; Status = "손 추적 시작 실패: " + e.Message; Release(); }
     }
     void Update()
     {
@@ -85,8 +87,9 @@ public sealed class HandLandmarkSource : MonoBehaviour
                 { var c = result.handedness[0].categories[0]; Handedness = c.categoryName; HandednessScore = c.score; }
             }
             Status = unsupportedRotation ? "카메라 90/270도 회전은 지원하지 않습니다" : IsHandDetected ? "손 감지 중" : "손이 보이지 않습니다";
+            State = unsupportedRotation ? HandSourceState.UnsupportedRotation : HandSourceState.Running;
         }
-        catch (Exception e) { Status = "손 감지 실패: " + e.Message; Release(); }
+        catch (Exception e) { State = HandSourceState.Failed; Status = "손 감지 실패: " + e.Message; Release(); }
     }
     void UpdateFrameOrientation()
     {

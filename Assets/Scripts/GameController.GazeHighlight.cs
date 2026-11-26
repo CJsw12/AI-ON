@@ -27,10 +27,10 @@ public partial class GameController
     void HighlightTab(Rect card)
     {
         NovelUI.Label(new Rect(card.x, card.y + 170, card.width, 28), "시선과 손으로 하는 특별한 체험", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
-        GUI.enabled = !handProbeConfirm;
+        GUI.enabled = !handProbeConfirm && !signRecalibrateNotice;
         if (Tile(new Rect(card.x + 50, card.y + 204, card.width - 100, 130), "눈빛 맞추기", "분홍 점을 시선으로 따라가요.\n스토리 등장: 호감도 4 이상", false)) StartGazeGame(GazeGame.Match, false);
         if (Tile(new Rect(card.x + 50, card.y + 344, card.width - 100, 130), "눈빛 피하기", "다가오는 빨간 눈빛을 피해요.\n스토리 등장: 마지막 장면 · 호감도 8 이상", false)) StartGazeGame(GazeGame.Dodge, false);
-        if (Tile(new Rect(card.x + 50, card.y + 484, card.width - 100, 130), "수어 지문자 (시험)", "웹캠으로 손 관절과 처리 속도를 확인해요.", false))
+        if (Tile(new Rect(card.x + 50, card.y + 484, card.width - 100, 130), "수어 지문자", "웹캠으로 손 모양을 따라 해요.", false))
         {
             if (!gazeUseIphone && (gazeObject != null || requestingCamera)) handProbeConfirm = true;
             else StartHandProbe();
@@ -41,33 +41,121 @@ public partial class GameController
         {
             NovelUI.Card(new Rect(card.x + 70, card.y + 260, card.width - 140, 240), NovelUI.Cream, 25, NovelUI.Pink);
             NovelUI.Label(new Rect(card.x + 90, card.y + 290, card.width - 180, 80), "시선 추적을 끄면 보정이 초기화됩니다", NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter);
-            if (NovelUI.Button(new Rect(card.x + 110, card.y + 400, 210, 55), "끄고 시작", true, 20)) { handProbeConfirm = false; StopWebcamTracking(); StartHandProbe(); }
+            if (NovelUI.Button(new Rect(card.x + 110, card.y + 400, 210, 55), "끄고 시작", true, 20)) { handProbeConfirm = false; signRecalibrate = true; StopWebcamTracking(); StartHandProbe(); }
             if (NovelUI.Button(new Rect(card.x + 380, card.y + 400, 210, 55), "취소", false, 20)) handProbeConfirm = false;
+        }
+        if (signRecalibrateNotice)
+        {
+            NovelUI.Card(new Rect(card.x + 70, card.y + 260, card.width - 140, 240), NovelUI.Cream, 25, NovelUI.Pink);
+            NovelUI.Label(new Rect(card.x + 90, card.y + 285, card.width - 180, 80), "시선 추적을 다시 쓰려면 보정이 필요해요", NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter);
+            if (NovelUI.Button(new Rect(card.x + 110, card.y + 400, 210, 55), "보정하러 가기", true, 19)) { signRecalibrateNotice = false; menu = Menu.None; OpenGazeTest(); }
+            if (NovelUI.Button(new Rect(card.x + 380, card.y + 400, 210, 55), "닫기", false, 20)) signRecalibrateNotice = false;
         }
     }
 
     bool handProbeConfirm, handProbeOpen;
     HandLandmarkSource handProbe;
+    SignDataset signData;
+    SignGameSession signSession;
+    KnnClassifier signClassifier;
+    KnnClassifier.Result signScores;
+    float[] signRatios;
+    SignVote signVote;
+    SignVote.Result signVoteResult;
+    bool signDebug, signBrowse, signRecalibrate, signRecalibrateNotice, signGapCleared;
+    int signBrowseIndex;
+    Coroutine signStartCamera;
+    long signFrameCount, signFrameTime;
+    long signFeedbackUntil;
+    string signFeedback;
+    Vector2 signScoreScroll;
+    string signError;
+    const bool SignLabelsAreMirrored = false;
+    static readonly string[] signLines = { "…천천히, 손 모양을 살펴봐요.", "…네, 잘했어요.", "다시 해 보세요 ({0}로 보였어요)", "…시간이 지났어요. 괜찮아요.", "…수고했어요. 함께 살펴봐요." };
     static readonly int[] handEdges = { 0,1,1,2,2,3,3,4, 0,5,5,6,6,7,7,8, 5,9,9,10,10,11,11,12, 9,13,13,14,14,15,15,16, 13,17,17,18,18,19,19,20, 17,0 };
     // Landmarks already include FrameFlipH/FrameFlipV, so only mirror the result for the preview.
     static Vector2 HandPreviewPoint(Rect view, Vector3 point) =>
         new Vector2(view.x + (1f - point.x) * view.width, view.y + point.y * view.height);
     void StartHandProbe()
     {
+        if (signStartCamera != null) { StopCoroutine(signStartCamera); signStartCamera = null; }
+        if (handProbe != null) { handProbe.Release(); Destroy(handProbe); handProbe = null; }
         menu = Menu.None; handProbeOpen = true;
-        handProbe = gameObject.AddComponent<HandLandmarkSource>();
+        signDebug = signBrowse = false; signBrowseIndex = 0; signError = null; signData = null; signScoreScroll = Vector2.zero; signFeedback = null; signFeedbackUntil = 0;
+        signSession = null; signClassifier = null; signScores = null; signRatios = null; signVote = new SignVote(); signVoteResult = new SignVote.Result(); signFrameCount = 0; signFrameTime = 0; signGapCleared = false;
+        try
+        {
+            signData = SignDataset.Load(System.IO.Path.Combine(Application.streamingAssetsPath, "SignData"), SignLabelsAreMirrored);
+            if (signData.IsEmpty) signError = "학습 데이터 없음";
+            else { signClassifier = new KnnClassifier(signData.Samples, signData.Labels, maxDistance: signData.SuggestedMaxDistance); signSession = new SignGameSession(signData.Labels); }
+        }
+        catch (System.Exception e) { signError = "모델 생성 실패: " + e.Message; }
+        if (signError == null) signStartCamera = StartCoroutine(StartSignCameraNextFrame());
     }
-    void CloseHandProbe()
+    System.Collections.IEnumerator StartSignCameraNextFrame()
+    {
+        yield return null;
+        signStartCamera = null;
+        if (handProbeOpen && signError == null) handProbe = gameObject.AddComponent<HandLandmarkSource>();
+    }
+    void CloseHandProbe(bool showNotice = true)
     {
         handProbeOpen = false; handProbeConfirm = false;
+        if (signStartCamera != null) { StopCoroutine(signStartCamera); signStartCamera = null; }
         if (handProbe != null) { handProbe.Release(); Destroy(handProbe); handProbe = null; }
+        if (signRecalibrate) { signRecalibrate = false; signRecalibrateNotice = showNotice; }
+    }
+    bool SignCameraFailed => handProbe != null && (handProbe.State == HandSourceState.NoModel || handProbe.State == HandSourceState.NoCamera || handProbe.State == HandSourceState.PermissionDenied || handProbe.State == HandSourceState.Failed || handProbe.State == HandSourceState.UnsupportedRotation);
+    void ResetSignVote() { signVote.Reset(); signVoteResult = new SignVote.Result(); signRatios = null; signScores = null; }
+    void TickSignGame()
+    {
+        if (signSession == null || signBrowse || handProbe == null || SignCameraFailed) return;
+        if (signSession.CurrentStage != SignGameSession.Stage.Practice && signSession.CurrentStage != SignGameSession.Stage.Challenge) return;
+        long now = (long)(Time.realtimeSinceStartupAsDouble * 1000);
+        if (handProbe.DetectionStats.FrameCount == signFrameCount)
+        {
+            if (signFrameTime > 0 && !signGapCleared && now - signFrameTime >= 200) { signVoteResult = signVote.Add(now, SignVote.NoHand); signGapCleared = true; signRatios = null; }
+            UpdateSignSession(now, null);
+            return;
+        }
+        signFrameCount = handProbe.DetectionStats.FrameCount; signFrameTime = now; signGapCleared = false;
+        int prediction = SignVote.NoHand;
+        bool left; float[] features;
+        if (handProbe.IsHandDetected && SignHandedness.TryIsLeft(handProbe.Handedness, SignLabelsAreMirrored, out left))
+        {
+            var points = new float[63];
+            for (int i = 0; i < 21; i++) { points[i * 3] = handProbe.Landmarks[i].x; points[i * 3 + 1] = handProbe.Landmarks[i].y; points[i * 3 + 2] = handProbe.Landmarks[i].z; }
+            if (SignFeatures.TryCompute(points, handProbe.FrameWidth, handProbe.FrameHeight, left, out features))
+            { signScores = signClassifier.Classify(features); signRatios = signScores.LabelScores; prediction = signScores.PredictedLabel; }
+        }
+        if (prediction == SignVote.NoHand) { signScores = null; signRatios = null; }
+        signVoteResult = signVote.Add(now, prediction);
+        UpdateSignSession(now, signVoteResult.Confirmed && signVoteResult.Label >= 0 ? signData.Labels[signVoteResult.Label] : null);
+    }
+    void UpdateSignSession(long now, string confirmed)
+    {
+        int previousAnswers = signSession.Answers.Count;
+        int previousWrong = signSession.WrongAttempts;
+        var previousStage = signSession.CurrentStage;
+        string previousLabel = signSession.CurrentLabel;
+        signSession.Update(now, confirmed);
+        if (previousStage != signSession.CurrentStage || previousLabel != signSession.CurrentLabel) ResetSignVote();
+        if (signSession.Answers.Count > previousAnswers)
+        {
+            var answer = signSession.Answers[signSession.Answers.Count - 1];
+            signFeedback = signLines[answer.Correct ? 1 : 3]; signFeedbackUntil = now + 1500;
+        }
+        else if (signSession.WrongAttempts > previousWrong)
+        {
+            signFeedback = string.Format(signLines[2], signSession.LastWrongLabel); signFeedbackUntil = now + 1500;
+        }
     }
     void DrawHandProbe()
     {
         GUI.matrix = Canvas;
         NovelUI.Card(new Rect(80, 40, 1120, 820), NovelUI.Cream, 30, NovelUI.Pink);
-        NovelUI.Label(new Rect(100, 60, 1080, 50), "수어 지문자 (시험)", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
-        Rect view = new Rect(140, 130, 640, 480);
+        NovelUI.Label(new Rect(100, 60, 1080, 50), "수어 지문자", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        Rect view = new Rect(120, 130, 500, 375);
         if (handProbe != null && handProbe.CameraTexture != null && handProbe.FrameWidth > 32)
         {
             GUI.DrawTextureWithTexCoords(view, handProbe.CameraTexture, PreviewTexCoords(handProbe.FrameFlipH, handProbe.FrameFlipV));
@@ -85,12 +173,62 @@ public partial class GameController
                 foreach (Vector3 point in handProbe.Landmarks) { Vector2 p = HandPreviewPoint(view, point); NovelUI.Fill(new Rect(p.x - 5, p.y - 5, 10, 10), NovelUI.Pink, 5); }
             }
         }
-        if (handProbe != null)
+        bool cameraFailed = SignCameraFailed;
+        string label = signBrowse && signData != null && signData.Labels != null ? signData.Labels[signBrowseIndex] : signSession != null ? signSession.CurrentLabel : null;
+        string stage = signSession == null ? "안내" : signSession.CurrentStage == SignGameSession.Stage.Intro ? "소개" : signSession.CurrentStage == SignGameSession.Stage.Practice ? "연습" : signSession.CurrentStage == SignGameSession.Stage.Challenge ? "도전" : "결과";
+        NovelUI.Label(new Rect(650, 130, 480, 55), signBrowse ? "참고 그림 보기" : stage, NovelUI.Round, 25, NovelUI.Berry, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(650, 190, 480, 80), label ?? "", NovelUI.Round, 48, NovelUI.Plum, TextAnchor.MiddleCenter);
+        if (label != null && (signBrowse || (signError == null && !cameraFailed)))
+        {
+            Texture2D reference = Load("Sign/" + label);
+            if (reference != null) GUI.DrawTexture(new Rect(930, 265, 180, 140), reference, ScaleMode.ScaleToFit);
+            else NovelUI.Label(new Rect(930, 265, 180, 140), "참고 그림 준비 중", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+        }
+        if (signError != null || cameraFailed)
+        {
+            NovelUI.Label(new Rect(650, 410, 480, 60), signError ?? handProbe.Status, NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter);
+            if (cameraFailed && signData != null && signData.Labels != null && NovelUI.Button(new Rect(700, 480, 300, 45), signBrowse ? "다음 그림" : "카메라 없이 보기", false, 18))
+            { if (signBrowse) signBrowseIndex = (signBrowseIndex + 1) % signData.Labels.Count; else { signBrowse = true; signBrowseIndex = 0; } while (signData.Labels[signBrowseIndex] == SignLabels.Other) signBrowseIndex = (signBrowseIndex + 1) % signData.Labels.Count; }
+        }
+        else if (signSession != null)
+        {
+            if (signSession.CurrentStage == SignGameSession.Stage.Intro)
+            {
+                NovelUI.Label(new Rect(650, 420, 480, 55), signLines[0], NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleCenter);
+                if (NovelUI.Button(new Rect(730, 480, 260, 50), "연습 시작", true, 20)) { signSession.BeginPractice(); ResetSignVote(); }
+            }
+            else if (signSession.CurrentStage == SignGameSession.Stage.Result)
+            {
+                string result = signLines[4] + "\n정답 " + signSession.CorrectCount + " / " + signSession.Answers.Count;
+                foreach (var answer in signSession.Answers) result += $"\n{answer.Label}: {(answer.Correct ? "정답" : "오답")} {answer.ElapsedMs / 1000f:F1}초";
+                NovelUI.Label(new Rect(650, 290, 470, 260), result, NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.UpperLeft);
+                if (signFeedback != null && (long)(Time.realtimeSinceStartupAsDouble * 1000) < signFeedbackUntil) NovelUI.Label(new Rect(650, 555, 470, 30), signFeedback, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft);
+                if (NovelUI.Button(new Rect(740, 600, 250, 45), "다시 하기", true, 19)) { signSession = new SignGameSession(signData.Labels, seed: System.Environment.TickCount); ResetSignVote(); signFeedback = null; }
+            }
+            else
+            {
+                NovelUI.Label(new Rect(650, 270, 260, 35), signSession.CurrentStage == SignGameSession.Stage.Practice ? "따라 해 보세요" : $"남은 시간 {signSession.RemainingMs((long)(Time.realtimeSinceStartupAsDouble * 1000)) / 1000f:F1}초", NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.MiddleLeft);
+                if (signFeedback != null && (long)(Time.realtimeSinceStartupAsDouble * 1000) < signFeedbackUntil) NovelUI.Label(new Rect(650, 305, 470, 30), signFeedback, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft);
+                signScoreScroll = GUI.BeginScrollView(new Rect(650, 340, 270, 165), signScoreScroll, new Rect(0, 0, 245, signData.Labels.Count * 27));
+                for (int i = 0; i < signData.Labels.Count; i++)
+                {
+                    float score = signRatios == null ? 0 : signRatios[i];
+                    NovelUI.Label(new Rect(0, i * 27, 65, 24), signData.Labels[i] == SignLabels.Other ? "그 외" : signData.Labels[i], NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft);
+                    NovelUI.Fill(new Rect(65, 6 + i * 27, 170 * score, 12), NovelUI.Pink, 3);
+                }
+                GUI.EndScrollView();
+                NovelUI.Label(new Rect(650, 515, 300, 25), $"유지 {signVoteResult.HoldProgress * 100:F0}%", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft);
+                NovelUI.Fill(new Rect(650, 545, 260 * signVoteResult.HoldProgress, 12), NovelUI.Pink, 3);
+            }
+        }
+        signDebug = GUI.Toggle(new Rect(120, 525, 160, 30), signDebug, "디버그 보기");
+        if (handProbe != null && signDebug)
         {
             var d = handProbe.DetectionStats; var f = handProbe.FrameStats;
-            string side = handProbe.IsHandDetected ? $"{handProbe.Handedness} ({handProbe.HandednessScore:P0})\n(MediaPipe 원시 값)" : "손 없음";
-            NovelUI.Label(new Rect(810, 145, 340, 420), $"{handProbe.Status}\n\n손: {side}\n프레임: {handProbe.FrameWidth} × {handProbe.FrameHeight}\n\n감지 시간 (ms)\n평균 {d.Average:F1}\n최대 {d.Maximum:F1}\n중앙값 {d.Median:F1}\n\n전체 FPS {(f.Average > 0 ? 1000 / f.Average : 0):F1}\n전체 프레임 평균/최대 {f.Average:F1} / {f.Maximum:F1} ms", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.UpperLeft);
+            string distanceInfo = float.IsPositiveInfinity(signData.SuggestedMaxDistance) ? "거리 상한 계산 불가(시도 부족)" : $"거리 상한 {signData.SuggestedMaxDistance:F3}";
+            NovelUI.Label(new Rect(120, 560, 520, 90), $"{handProbe.Status} · 손 {handProbe.Handedness} ({handProbe.HandednessScore:F2})\n감지 평균/최대/중앙값 {d.Average:F1} / {d.Maximum:F1} / {d.Median:F1} ms · FPS {(f.Average > 0 ? 1000 / f.Average : 0):F1}\n{distanceInfo} · 계산 {signData.DistanceCalculationMilliseconds:F1} ms", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.UpperLeft);
         }
+        NovelUI.Label(new Rect(120, 660, 1040, 55), $"영상은 저장·전송되지 않고, 손 관절 위치만 이 PC 안에서 계산합니다.\n처리 시간 {(handProbe != null ? handProbe.DetectionMilliseconds : 0):F1} ms · k-NN · CPU", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
         if (NovelUI.Button(new Rect(490, 730, 300, 60), "돌아가기", false, 22)) { CloseHandProbe(); practiceHighlight = true; OpenMenu(Menu.Practice); }
     }
     // Opens the gaze test screen; the game starts right away when the tracker is ready, otherwise once calibrated.

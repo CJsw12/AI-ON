@@ -1,4 +1,6 @@
 $ErrorActionPreference = 'Stop'
+$handSource = Get-Content (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')).Path 'Assets\Scripts\Sign\HandLandmarkSource.cs') -Raw -Encoding UTF8
+foreach ($state in @('Starting','Running','NoModel','NoCamera','PermissionDenied','Failed','UnsupportedRotation')) { if ($handSource -notmatch "HandSourceState\.$state") { throw "Missing hand source state: $state" } }
 $source = [Security.SecurityElement]::Escape((Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')).Path 'Assets\Scripts\Sign\FrameTimingStats.cs'))
 $sdk = & dotnet --version
 if ($LASTEXITCODE -ne 0) { throw 'An installed .NET SDK is required.' }
