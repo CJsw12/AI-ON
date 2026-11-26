@@ -8,6 +8,10 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude+Codex] 2026-11-27 수어 지문자 측정 도구 + 팀 모임 진행 대본**: 녹화 CSV로 한 사람씩 빼는 교차 검증(게임과 같은 전처리·k-NN·투표 규칙)을 돌려 글자별 재현율·혼동표·그 외 오인식률·5초 성공률(근사)을 낸다. 사람이 직접 할 일(글자 확정, 웹캠 확인, 동의, 녹화, 측정, 실기 점검, 학교 PC 측정)을 회차별 대본·역할·인쇄 양식으로 정리했다.
+  - 문서 `docs/plans/Sign-Fingerspelling-Manual-Steps.md`, 도구 `Tools/SignTrain/Measure-SignKnn.ps1`, 테스트 `Tests/SignMeasure.Tests.ps1`. 게임 폴더 `Assets/StreamingAssets/SignData/`의 CSV도 Git 제외.
+  - **플레이 방법**: 녹화 후 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-SignKnn.ps1 -Folder Tools/SignData/raw -Sealed <봉인 가명>` → 결과 `Tools/SignData/reports/`. 모임 진행은 문서 1절부터 순서대로.
+  - 검증: 테스트 14종 exit 0(합성 데이터). **실제 녹화 데이터·웹캠 실기 미검증**, 손 없음 오인식은 도구로 측정 불가(실기 점검 항목).
 - **[Claude+Codex+Antigravity] 2026-11-27 화학과 전공자 미니게임 "결합 설계실"**: 분자 5개(10종 중 무작위)에 결합 차수 놓기 → 분자 모양 → 극성(3D 회전 보기)을 150초 안에 푼다. 비전공자는 기존 분자 모형 조립 그대로.
   - 계획 `docs/plans/Chemistry-Bond-Minigame-Plan.md` v0.5. 코드 `Assets/Scripts/Chemistry/`(판정·문구·3D 기하·IMGUI 뷰), `BondDesigner.cs`. 실측 결합각(NIST), 코드 사실 줄이 정답 근거.
   - AI 모드면 오답 때 AI 교수가 검수된 격려 문구 번호만 골라 덧붙인다(자유 생성 없음, 표시 기한 15초, 문제 정보가 외부 AI로 전송된다는 고지).
