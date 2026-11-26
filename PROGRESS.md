@@ -8,6 +8,8 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **병합 검증**: Unity 배치 컴파일 exit 0, 회귀 10종 exit 0, origin/main 대비 변경 diff 검사 통과. 기존 AiProfessor 및 팀원 UnitEyeSmokeTests의 CS0162 경고를 확인했다. 실기기·게임 화면은 미검증. 사용자가 이번 병합에 한해 ALLOW_FOREIGN_PATHS=1을 승인했다. 원격의 sh-com-claude 선점 기록은 수정하지 않고 유지한다.
+- **하이라이트 입력 모드 추가**: 팀원 눈맞춤 프레임 최적화·지문자 메뉴를 유지하고 수동 게임을 통합했다. 플레이 방법: 미니게임 → 하이라이트 → 눈빛 맞추기/피하기 → 시선 모드 또는 웹캠 없는 모드 선택. 수동 맞추기는 하트 클릭·곡선 슬라이더, 피하기는 방향키와 가속 추적이다. 이미지 없는 하트 대체도 지원한다. 실기기·실플레이 미검증.
 - **[Claude] 2026-11-26 개발 도구·코드모드 도입**: Unity CLI 코드모드 모듈(`Tools/codemode/Unity.psm1`), 도구 자동 설치(`Tools/setup-dev.ps1`, setup-git-unity가 호출), Serena 시범(`.mcp.json`), `com.unity.ide.visualstudio` 추가.
   - 근거·남은 검증은 `docs/plans/Dev-Tooling.md`. `AGENTS.md`는 중복을 걷어 압축했다(21KB → 약 15KB).
   - **플레이 방법(설치)**: `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/setup-dev.ps1`(UAC 창 허용) → Unity를 연 상태에서 PowerShell에 `Import-Module ./Tools/codemode/Unity.psm1; Get-UnityCompileState`.

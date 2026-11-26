@@ -38,6 +38,151 @@ public partial class GameController
     string matchSay = "";
     float matchSayAt, matchSayHold;
     bool matchAfterCalibration;
+    bool matchManual;
+    int rhythmIndex, rhythmHits, rhythmCombo;
+    const float RhythmWindow = .18f, RhythmRadius = 56f;
+    float RhythmInterval => Mathf.Max(.65f, 1f - rhythmIndex * .01f);
+    float rhythmNextDue;
+    Vector2 RhythmTarget => new Vector2(300f + ((rhythmIndex * 3) % 7) * 110f, 620f + ((rhythmIndex * 5) % 3) * 45f);
+    float RhythmDue => rhythmNextDue;
+
+    bool rhythmDragging;
+    float rhythmDragStart, rhythmDragGood, rhythmDragOut;
+    const float RhythmDragDuration = 1.3f;
+    bool RhythmIsDrag => rhythmIndex % 4 == 3;
+    Vector2 RhythmDragEnd => new Vector2(1280f - RhythmTarget.x, 665f);
+    Vector2 RhythmPath(float t)
+    {
+        Vector2 p = Vector2.Lerp(RhythmTarget, RhythmDragEnd, t);
+        p.y += Mathf.Sin(t * Mathf.PI) * (rhythmIndex % 8 == 3 ? -65f : 65f);
+        return p;
+    }
+    Vector2 RhythmDragPoint => RhythmPath(
+        Mathf.Clamp01((matchPlayed - rhythmDragStart) / RhythmDragDuration));
+
+    void CompleteRhythm(bool success, float now)
+    {
+        if (success)
+        {
+            rhythmHits++;
+            rhythmCombo++;
+            matchHit = Mathf.Min(MatchGoal, matchHit + (RhythmIsDrag ? 1.6f : .55f));
+            if (rhythmCombo >= 6) matchShyCount = 1;
+            matchEnterAt = Time.unscaledTime;
+            SayMatch(RhythmIsDrag ? "...끝까지 바라봐 주셨네요." : "좋아요. 지금이에요.");
+            NovelUI.Sound?.Invoke("Select");
+        }
+        else
+        {
+            rhythmCombo = 0;
+            SayMatch("다시 제 눈을 봐 주세요.");
+        }
+        bool wasDrag = RhythmIsDrag;
+        rhythmDragging = false;
+        rhythmIndex++;
+        rhythmNextDue = (wasDrag ? now : rhythmNextDue) + RhythmInterval;
+    }
+
+    void TickManualMatch(float dt)
+    {
+        matchPlayed += dt;
+        Vector3 mouse = Canvas.inverse.MultiplyPoint3x4(
+            new Vector3(Input.mousePosition.x, Screen.height - Input.mousePosition.y, 0));
+        Vector2 pointer = new Vector2(mouse.x, mouse.y);
+        if (rhythmDragging)
+        {
+            bool following = Input.GetMouseButton(0) &&
+                Vector2.Distance(pointer, RhythmDragPoint) <= RhythmRadius + 12f;
+            if (following) { rhythmDragGood += dt; rhythmDragOut = 0f; }
+            else rhythmDragOut += dt;
+            if (!Input.GetMouseButton(0) || rhythmDragOut > .25f)
+                CompleteRhythm(false, matchPlayed);
+            else if (matchPlayed >= rhythmDragStart + RhythmDragDuration)
+                CompleteRhythm(rhythmDragGood >= RhythmDragDuration * .75f, matchPlayed);
+        }
+        else
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (Mathf.Abs(matchPlayed - RhythmDue) <= RhythmWindow &&
+                    Vector2.Distance(pointer, RhythmTarget) <= RhythmRadius)
+                {
+                    if (RhythmIsDrag)
+                    {
+                        rhythmDragging = true;
+                        rhythmDragStart = matchPlayed;
+                        rhythmDragGood = rhythmDragOut = 0f;
+                    }
+                    else CompleteRhythm(true, matchPlayed);
+                }
+                else { rhythmCombo = 0; matchHit = Mathf.Max(0f, matchHit - .1f); SayMatch("타이밍과 위치를 확인해 주세요."); }
+            }
+            if (!rhythmDragging && matchPlayed > RhythmDue + RhythmWindow)
+                CompleteRhythm(false, matchPlayed);
+        }
+        if (matchPlayed >= MatchDuration) FinishEyeMatchGame();
+    }
+
+    void DrawManualMatch()
+    {
+        NovelUI.Label(new Rect(100, 510, 1080, 48),
+            $"클릭 + 드래그 · 성공 {rhythmHits} · 콤보 {rhythmCombo} · 남은 시간 {Mathf.CeilToInt(MatchDuration - matchPlayed)}초",
+            NovelUI.Soft, 24, NovelUI.Berry, TextAnchor.MiddleCenter);
+        if (Time.unscaledTime < matchStartsAt)
+            NovelUI.Label(new Rect(100, 570, 1080, 150), "하트가 겹칠 때 클릭 · 슬라이더는 누른 채 끝까지 따라가기!\n" + Mathf.CeilToInt(matchStartsAt - Time.unscaledTime),
+                NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        else
+        {
+            Vector2 pos = rhythmDragging ? RhythmDragPoint : RhythmTarget;
+            if (RhythmIsDrag)
+            {
+                // Two capsule strokes form a continuous outlined slider track.
+                for (int layer = 0; layer < 2; layer++)
+                {
+                    float r = layer == 0 ? 31f : 25f;
+                    Color c = layer == 0 ? MatchPink : new Color(1f, .87f, .93f);
+                    for (int i = 0; i <= 64; i++)
+                    {
+                        Vector2 trail = RhythmPath(i / 64f);
+                        NovelUI.Fill(new Rect(trail.x-r, trail.y-r, r*2, r*2), c, r);
+                    }
+                }
+                Vector2 end = RhythmDragEnd;
+                NovelUI.Fill(new Rect(end.x-27, end.y-27, 54, 54), MatchPink, 27);
+                NovelUI.Label(new Rect(end.x-27, end.y-27, 54, 54), "끝",
+                    NovelUI.Soft, 18, Color.white, TextAnchor.MiddleCenter);
+                if (rhythmDragging)
+                {
+                    float follow = RhythmRadius + 12f;
+                    NovelUI.Fill(new Rect(pos.x-follow, pos.y-follow, follow*2, follow*2),
+                        NovelUI.Alpha(MatchPink, .22f), follow);
+                    NovelUI.Fill(new Rect(pos.x-30, pos.y-30, 60, 60), MatchPink, 30);
+                    NovelUI.Heart(new Rect(pos.x-20, pos.y-20, 40, 40), Color.white, true);
+                }
+            }
+            if (!rhythmDragging)
+            {
+                float radius = Mathf.Lerp(RhythmRadius, 150f, Mathf.Clamp01((RhythmDue - matchPlayed) / RhythmInterval));
+                Rect outer = new Rect(pos.x-radius, pos.y-radius, radius*2, radius*2);
+                Rect inner = new Rect(pos.x-RhythmRadius, pos.y-RhythmRadius, RhythmRadius*2, RhythmRadius*2);
+                if (RhythmIsDrag)
+                {
+                    NovelUI.Fill(outer, MatchPink, radius);
+                    NovelUI.Fill(new Rect(outer.x+4, outer.y+4, outer.width-8, outer.height-8), NovelUI.Cream, radius);
+                    NovelUI.Fill(inner, MatchPink, RhythmRadius);
+                    NovelUI.Label(inner, "누르기", NovelUI.Soft, 19, Color.white, TextAnchor.MiddleCenter);
+                }
+                else
+                {
+                    NovelUI.Heart(outer, NovelUI.Alpha(MatchPink, .35f), true);
+                    NovelUI.Heart(inner, MatchPink, true);
+                }
+            }
+        }
+        DrawEyeMatchSpeech(Time.unscaledTime);
+        if (NovelUI.Button(new Rect(1030, 836, 200, 48), "게임 끝내기", false, 18)) StopEyeMatchGame();
+    }
+
 
     // Presentation: particles, the moment the dots meet, and the outro clip before the result card.
     struct MatchParticle { public Vector2 Pos, Vel; public float Born, Life, Spin, Angle, Size; public Color Color; public bool Petal; }
@@ -105,10 +250,14 @@ public partial class GameController
 
     void StartEyeMatchGame()
     {
+        matchManual = forceManualHighlight || !GazeReadyForDodge;
+        rhythmIndex = rhythmHits = rhythmCombo = 0;
+        rhythmNextDue = RhythmInterval;
+        rhythmDragging = false;
         StopStarGame();   // also ends 눈빛 피하기 and any earlier 눈빛 맞추기 (and frees its frame texture)
         if (!LoadEyeMatchAssets()) return;
         matchAfterCalibration = false;
-        if (matchBest < 0f) matchBest = PlayerPrefs.GetFloat(MatchBestPref, 0f);
+        matchBest = PlayerPrefs.GetFloat(matchManual ? MatchBestPref + ".Mouse" : MatchBestPref, 0f);
         matchActive = true;
         matchFinished = matchCleared = matchLost = matchHasGaze = matchShyThisStreak = matchResultSounded = false;
         matchStartsAt = Time.unscaledTime + MatchCountdown;
@@ -119,7 +268,7 @@ public partial class GameController
         matchParticles.Clear();
         matchWasInside = false;
         matchEnterAt = -100f;
-        SayMatch("제 눈을 잘 따라와 보세요.", MatchCountdown + 1f);
+        SayMatch(matchManual ? "원이 겹칠 때 눈을 맞춰 주세요." : "제 눈을 잘 따라와 보세요.", MatchCountdown + 1f);
     }
 
     void StopEyeMatchGame()
@@ -172,6 +321,12 @@ public partial class GameController
         matchLastTick = now;
         float dt = Mathf.Min(raw, MatchMaxFrame);
 
+        if (matchManual)
+        {
+            matchLost = false;
+            if (now >= matchStartsAt) TickManualMatch(Mathf.Min(dt, now - matchStartsAt));
+            return;
+        }
         bool valid = StarGaze(out Vector2 gaze, out bool blinking);
 #if UNITY_EDITOR
         if (MatchDevFakeGaze && now >= matchStartsAt) { valid = true; blinking = false; gaze = MatchTarget(matchPlayed) + new Vector2(30f, -20f); }
@@ -242,7 +397,7 @@ public partial class GameController
         if (matchHit > matchBest)
         {
             matchBest = matchHit;
-            PlayerPrefs.SetFloat(MatchBestPref, matchBest);
+            PlayerPrefs.SetFloat(matchManual ? MatchBestPref + ".Mouse" : MatchBestPref, matchBest);
             PlayerPrefs.Save();
         }
         Debug.Log($"[eye match] cleared={matchCleared} matched={matchHit:F1}s played={matchPlayed:F1}s bestStreak={matchBestStreak:F1}s shy={matchShyCount} affection+{matchAffectionGain}");
@@ -401,6 +556,12 @@ public partial class GameController
         NovelUI.Fill(new Rect(-40, -40, 1360, 980), NovelUI.Cream, 0);
         NovelUI.Label(new Rect(0, 12, 1280, 48), "눈빛 맞추기 · 심한뫼 교수님", NovelUI.Round, 32, NovelUI.Berry, TextAnchor.MiddleCenter);
 
+        if (matchManual && !matchFinished)
+        {
+            if (NovelUI.Repaint) GUI.DrawTexture(MatchVideoRect, MatchFrame(matchPlayed), ScaleMode.StretchToFill);
+            DrawManualMatch();
+            return;
+        }
         bool counting = matchActive && now < matchStartsAt;
         if (NovelUI.Repaint) GUI.DrawTexture(MatchVideoRect, MatchShownFrame(now, counting), ScaleMode.StretchToFill);
         float shy = matchFinished && matchCleared ? Mathf.Clamp01((now - matchShyAt) / .6f) : Mathf.Clamp01(1f - (now - matchShyAt) / 2.6f);
