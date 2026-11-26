@@ -86,7 +86,7 @@ public partial class GameController : MonoBehaviour
     }
 
     void OnApplicationPause(bool paused) { if (paused) { ReadLog.Flush(); GameSettings.Save(); } }
-    void OnApplicationQuit() { CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
+    void OnApplicationQuit() { CloseHandProbe(); CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
 
     void DrawScene(bool portrait = true)
     {
@@ -215,6 +215,7 @@ public partial class GameController : MonoBehaviour
 
     void DrawScreen()
     {
+        if (handProbeOpen) { DrawHandProbe(); return; }
         if (gazeTestOpen) { DrawGazeTest(); return; }
         if (storyGazeEvent != GazeGame.None) { DrawStoryGazeIntro(); return; }
         if (photoCaptureOpen) { DrawPhotoCapture(); return; }

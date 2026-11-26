@@ -26,14 +26,73 @@ public partial class GameController
 
     void HighlightTab(Rect card)
     {
-        NovelUI.Label(new Rect(card.x, card.y + 176, card.width, 30), "시선으로 하는 교수님과의 특별한 순간", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
-        if (Tile(new Rect(card.x + 50, card.y + 220, card.width - 100, 148), "눈빛 맞추기", "분홍 점을 시선으로 따라가요.\n스토리 등장: 호감도 4 이상", false))
-            StartGazeGame(GazeGame.Match, false);
-        if (Tile(new Rect(card.x + 50, card.y + 386, card.width - 100, 148), "눈빛 피하기", "다가오는 빨간 눈빛을 피해요.\n스토리 등장: 마지막 장면 · 호감도 8 이상", false))
-            StartGazeGame(GazeGame.Dodge, false);
-        NovelUI.Label(new Rect(card.x + 40, card.y + 560, card.width - 80, 66), "웹캠이나 iPhone 시선 보정이 필요해요.\n보정이 안 돼 있으면 보정 화면부터 열려요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+        NovelUI.Label(new Rect(card.x, card.y + 170, card.width, 28), "시선과 손으로 하는 특별한 체험", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.MiddleCenter);
+        GUI.enabled = !handProbeConfirm;
+        if (Tile(new Rect(card.x + 50, card.y + 204, card.width - 100, 130), "눈빛 맞추기", "분홍 점을 시선으로 따라가요.\n스토리 등장: 호감도 4 이상", false)) StartGazeGame(GazeGame.Match, false);
+        if (Tile(new Rect(card.x + 50, card.y + 344, card.width - 100, 130), "눈빛 피하기", "다가오는 빨간 눈빛을 피해요.\n스토리 등장: 마지막 장면 · 호감도 8 이상", false)) StartGazeGame(GazeGame.Dodge, false);
+        if (Tile(new Rect(card.x + 50, card.y + 484, card.width - 100, 130), "수어 지문자 (시험)", "웹캠으로 손 관절과 처리 속도를 확인해요.", false))
+        {
+            if (!gazeUseIphone && (gazeObject != null || requestingCamera)) handProbeConfirm = true;
+            else StartHandProbe();
+        }
+        NovelUI.Label(new Rect(card.x + 40, card.y + 625, card.width - 80, 65), "눈빛 게임에는 웹캠이나 iPhone 시선 보정이 필요해요.\n보정이 안 돼 있으면 보정 화면부터 열려요.", NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.MiddleCenter);
+        GUI.enabled = true;
+        if (handProbeConfirm)
+        {
+            NovelUI.Card(new Rect(card.x + 70, card.y + 260, card.width - 140, 240), NovelUI.Cream, 25, NovelUI.Pink);
+            NovelUI.Label(new Rect(card.x + 90, card.y + 290, card.width - 180, 80), "시선 추적을 끄면 보정이 초기화됩니다", NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleCenter);
+            if (NovelUI.Button(new Rect(card.x + 110, card.y + 400, 210, 55), "끄고 시작", true, 20)) { handProbeConfirm = false; StopWebcamTracking(); StartHandProbe(); }
+            if (NovelUI.Button(new Rect(card.x + 380, card.y + 400, 210, 55), "취소", false, 20)) handProbeConfirm = false;
+        }
     }
 
+    bool handProbeConfirm, handProbeOpen;
+    HandLandmarkSource handProbe;
+    static readonly int[] handEdges = { 0,1,1,2,2,3,3,4, 0,5,5,6,6,7,7,8, 5,9,9,10,10,11,11,12, 9,13,13,14,14,15,15,16, 13,17,17,18,18,19,19,20, 17,0 };
+    // Landmarks already include FrameFlipH/FrameFlipV, so only mirror the result for the preview.
+    static Vector2 HandPreviewPoint(Rect view, Vector3 point) =>
+        new Vector2(view.x + (1f - point.x) * view.width, view.y + point.y * view.height);
+    void StartHandProbe()
+    {
+        menu = Menu.None; handProbeOpen = true;
+        handProbe = gameObject.AddComponent<HandLandmarkSource>();
+    }
+    void CloseHandProbe()
+    {
+        handProbeOpen = false; handProbeConfirm = false;
+        if (handProbe != null) { handProbe.Release(); Destroy(handProbe); handProbe = null; }
+    }
+    void DrawHandProbe()
+    {
+        GUI.matrix = Canvas;
+        NovelUI.Card(new Rect(80, 40, 1120, 820), NovelUI.Cream, 30, NovelUI.Pink);
+        NovelUI.Label(new Rect(100, 60, 1080, 50), "수어 지문자 (시험)", NovelUI.Round, 30, NovelUI.Berry, TextAnchor.MiddleCenter);
+        Rect view = new Rect(140, 130, 640, 480);
+        if (handProbe != null && handProbe.CameraTexture != null && handProbe.FrameWidth > 32)
+        {
+            GUI.DrawTextureWithTexCoords(view, handProbe.CameraTexture, PreviewTexCoords(handProbe.FrameFlipH, handProbe.FrameFlipV));
+            if (handProbe.IsHandDetected)
+            {
+                for (int i = 0; i < handEdges.Length; i += 2)
+                {
+                    Vector3 a = handProbe.Landmarks[handEdges[i]], b = handProbe.Landmarks[handEdges[i + 1]];
+                    Vector2 from = HandPreviewPoint(view, a);
+                    Vector2 to = HandPreviewPoint(view, b);
+                    Matrix4x4 matrix = GUI.matrix; Vector2 delta = to - from;
+                    NovelUI.RotateAround(Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg, from);
+                    GUI.color = Color.cyan; GUI.DrawTexture(new Rect(from.x, from.y - 2, delta.magnitude, 4), Texture2D.whiteTexture); GUI.color = Color.white; GUI.matrix = matrix;
+                }
+                foreach (Vector3 point in handProbe.Landmarks) { Vector2 p = HandPreviewPoint(view, point); NovelUI.Fill(new Rect(p.x - 5, p.y - 5, 10, 10), NovelUI.Pink, 5); }
+            }
+        }
+        if (handProbe != null)
+        {
+            var d = handProbe.DetectionStats; var f = handProbe.FrameStats;
+            string side = handProbe.IsHandDetected ? $"{handProbe.Handedness} ({handProbe.HandednessScore:P0})\n(MediaPipe 원시 값)" : "손 없음";
+            NovelUI.Label(new Rect(810, 145, 340, 420), $"{handProbe.Status}\n\n손: {side}\n프레임: {handProbe.FrameWidth} × {handProbe.FrameHeight}\n\n감지 시간 (ms)\n평균 {d.Average:F1}\n최대 {d.Maximum:F1}\n중앙값 {d.Median:F1}\n\n전체 FPS {(f.Average > 0 ? 1000 / f.Average : 0):F1}\n전체 프레임 평균/최대 {f.Average:F1} / {f.Maximum:F1} ms", NovelUI.Soft, 18, NovelUI.Plum, TextAnchor.UpperLeft);
+        }
+        if (NovelUI.Button(new Rect(490, 730, 300, 60), "돌아가기", false, 22)) { CloseHandProbe(); practiceHighlight = true; OpenMenu(Menu.Practice); }
+    }
     // Opens the gaze test screen; the game starts right away when the tracker is ready, otherwise once calibrated.
     void StartGazeGame(GazeGame game, bool story)
     {
