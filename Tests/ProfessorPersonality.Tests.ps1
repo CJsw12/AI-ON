@@ -35,6 +35,7 @@ $managed = [Security.SecurityElement]::Escape((Join-Path $UnityManagedPath '*.dl
 '<configuration><packageSources><clear /></packageSources></configuration>' | Set-Content (Join-Path $work 'NuGet.Config') -Encoding UTF8
 @'
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -70,6 +71,12 @@ class Check {
             var speech = AiSwStory.Data.EndingLines[p][6];
             Require(AiSwStory.Data.Ending(p,6).Split('\n').Count(x => x == "교수님: " + speech) == 1, "Research ending must speak its reply only once");
         }
+        string voicePath = Environment.GetEnvironmentVariable("AION_TEST_SHIM_VOICE_LINES");
+        Require(File.Exists(voicePath), "Shim Hanmoe voice line index must exist");
+        string voiceRow = File.ReadAllLines(voicePath).FirstOrDefault(x => x.StartsWith("75ea2e57be20\t", StringComparison.Ordinal));
+        Require(voiceRow != null, "Expected voice row 75ea2e57be20");
+        Require(ProfessorVoice.Normalize(AiSwLectures.ChoicePrompt(0)) == ProfessorVoice.Normalize(voiceRow.Substring(voiceRow.IndexOf('\t') + 1)), "Shim Hanmoe topic prompt must map exactly to its recorded voice line");
+        Require(AiSwLectures.ChoicePrompt(1) == "오늘은 뭘 배워 볼까요? 자료구조, 알고리즘, 컴퓨터 기초 중 먼저 레벨업할 주제를 골라요!", "Lee professor topic prompt should remain unchanged");
         Require(Stories.All.Length == 16, "Expected 16 faculties");
         Require(Stories.All.SelectMany(s => s.Professors).Select(p => p.Name).Distinct().Count() == 32, "Professor names must be unique");
         Require(Stories.All.SelectMany(s => s.Slots).Count(x => x.Game != null && x.Game.Kind == MiniGameKind.Lecture) == 1, "Only the computer-science pilot should expose a lecture minigame");
@@ -120,6 +127,8 @@ class Check {
     }
 }
 '@ | Set-Content (Join-Path $work 'Program.cs') -Encoding UTF8
+$env:AION_TEST_SHIM_VOICE_LINES = Join-Path $repo 'Assets/Resources/Voice/ShimHanmoe/lines.txt'
 & dotnet run --project (Join-Path $work 'Check.csproj') --verbosity quiet
+Remove-Item Env:AION_TEST_SHIM_VOICE_LINES -ErrorAction SilentlyContinue
 if ($LASTEXITCODE -ne 0) { throw "Personality checks failed; diagnostics retained at $work" }
 Write-Output "Validation project retained at $work"

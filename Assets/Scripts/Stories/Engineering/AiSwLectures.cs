@@ -88,7 +88,7 @@ public static class AiSwLectures
     public static string Description(LectureTopic topic) => Descriptions[(int)topic];
     public static string Concept(LectureTopic topic) => Concepts[(int)topic];
     public static string ChoicePrompt(int professor) => professor == 0
-        ? "오늘은 뭘 배워 볼까요? 하나 골라요."
+        ? "하나만 묻죠. 여기서 뭘 해 보고 싶어요."
         : "오늘은 뭘 배워 볼까요? 자료구조, 알고리즘, 컴퓨터 기초 중 먼저 레벨업할 주제를 골라요!";
     public static AiSwLectureLine[] Script(int professor, LectureTopic topic) => Lines[(int)topic][professor];
 }

@@ -8,6 +8,7 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-27 컴공 심한뫼 교수 주제 선택 대사를 녹음된 문장으로 교체**: `NopepYCO/feat-cs-ai-quiz`(11/6)에서 대사·테스트만 가져왔다(음성 재생 코드는 main `88ae068`이 이미 대체). **플레이 방법**: 컴퓨터공학과 → 심한뫼 교수 → 강의 미니게임 주제 선택 화면에서 "하나만 묻죠. 여기서 뭘 해 보고 싶어요."가 음성으로 나오는지 듣는다. 검증: 테스트 14종 exit 0, 실제 재생 미검증.
 - **[Claude+Codex] 2026-11-27 수어 지문자 측정 도구 + 팀 모임 진행 대본**: 녹화 CSV로 한 사람씩 빼는 교차 검증(게임과 같은 전처리·k-NN·투표 규칙)을 돌려 글자별 재현율·혼동표·그 외 오인식률·5초 성공률(근사)을 낸다. 사람이 직접 할 일(글자 확정, 웹캠 확인, 동의, 녹화, 측정, 실기 점검, 학교 PC 측정)을 회차별 대본·역할·인쇄 양식으로 정리했다.
   - 문서 `docs/plans/Sign-Fingerspelling-Manual-Steps.md`, 도구 `Tools/SignTrain/Measure-SignKnn.ps1`, 테스트 `Tests/SignMeasure.Tests.ps1`. 게임 폴더 `Assets/StreamingAssets/SignData/`의 CSV도 Git 제외.
   - **플레이 방법**: 녹화 후 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-SignKnn.ps1 -Folder Tools/SignData/raw -Sealed <봉인 가명>` → 결과 `Tools/SignData/reports/`. 모임 진행은 문서 1절부터 순서대로.
