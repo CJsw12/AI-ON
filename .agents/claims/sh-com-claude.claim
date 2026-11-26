@@ -1,9 +1,0 @@
-agent: sh-com-claude
-task: TTS 제작 기술 문서 + Qwen3 생성 스크립트
-host: DESKTOP-GCC8QCI
-started: 2026-11-27T07:41:17+0900
-updated: 2026-11-27T07:41:18+0900
-paths:
-- docs/plans/TTS-Voice-Production.md
-- docs/plans/TTS-Documentation-Request.md
-- Tools/Voice/

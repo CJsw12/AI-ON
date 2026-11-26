@@ -1,6 +1,6 @@
 # 요청서: 교수 음성(TTS) 제작 기술 문서화
 
-작성 2026-11-27 · 요청 home-claude-opus55(사용자 승인) → 담당 sh-com-claude · 상태: **요청됨**
+작성 2026-11-27 · 요청 home-claude-opus55(사용자 승인) → 담당 sh-com-claude · 상태: **완료(2026-11-27)** — 산출물: [TTS-Voice-Production.md](TTS-Voice-Production.md), 생성·설계·검사·측정 스크립트와 설정 `Tools/Voice/generate_qwen.py`·`design_qwen.py`·`check_asr.py`·`bench_qwen.py`·`voice_stats.py`·`voice_similarity.py`·`asr_summary.py`·`qwen/`. 사용자 결정 대기: 문서 9.1절
 
 교수 32명 음성을 어떤 기술로 어떻게 만들었는지 정리해 발표와 보고서에 쓰려고 합니다. 이 요청서를 읽고 아래 "산출물"을 만들어 주세요.
 
