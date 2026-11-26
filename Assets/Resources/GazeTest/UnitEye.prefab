@@ -147,5 +147,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6afc91cef9c41a642abfb28517d4f828, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _preferableDefaultWidth: 1920
+  _preferableDefaultWidth: 1280
   _name: HP HD Camera
