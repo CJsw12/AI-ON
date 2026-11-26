@@ -8,6 +8,7 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-27 심한뫼 강의 미니게임 대사 음성 13개 추가(CosyVoice3 복제 목소리)**: 음성 커밋(11/6)이 강의 미니게임보다 먼저라 `lines.txt`에서 빠졌던 대사 13개를 `generate.py --model v3`(사용자 본인 녹음 복제, `--force` 없음)로 생성해 79개 전부 연결. 옛 강의 대사 6개(.ogg+.meta 12파일) 삭제, 기존 66개 클립은 변경 없음. 영어·숫자 읽기용 `SAY` 7개 추가(LIFO·FIFO·target·k번째·2진수·10진수·1이). 검증: Whisper 받아쓰기로 13개 모두 확인(LIFO는 "라이퍼"로 들림), Tests 14종 exit 0, git diff --check 통과. **플레이 방법**: 컴퓨터공학과 → 심한뫼 교수 → 강의 미니게임 → 주제 선택 후 강의 대사 음성 확인. 미검증: 직접 청취(기존 목소리와 같은 사람인지)·Unity 실제 재생. `.ogg.meta`는 Unity 없이 생성해 Unity가 열릴 때 바뀔 수 있음.
 - **[Claude] 2026-11-27 컴공 심한뫼 교수 주제 선택 대사를 녹음된 문장으로 교체**: `NopepYCO/feat-cs-ai-quiz`(11/6)에서 대사·테스트만 가져왔다(음성 재생 코드는 main `88ae068`이 이미 대체). **플레이 방법**: 컴퓨터공학과 → 심한뫼 교수 → 강의 미니게임 주제 선택 화면에서 "하나만 묻죠. 여기서 뭘 해 보고 싶어요."가 음성으로 나오는지 듣는다. 검증: 테스트 14종 exit 0, 실제 재생 미검증.
 - **[Claude+Codex] 2026-11-27 수어 지문자 측정 도구 + 팀 모임 진행 대본**: 녹화 CSV로 한 사람씩 빼는 교차 검증(게임과 같은 전처리·k-NN·투표 규칙)을 돌려 글자별 재현율·혼동표·그 외 오인식률·5초 성공률(근사)을 낸다. 사람이 직접 할 일(글자 확정, 웹캠 확인, 동의, 녹화, 측정, 실기 점검, 학교 PC 측정)을 회차별 대본·역할·인쇄 양식으로 정리했다.
   - 문서 `docs/plans/Sign-Fingerspelling-Manual-Steps.md`, 도구 `Tools/SignTrain/Measure-SignKnn.ps1`, 테스트 `Tests/SignMeasure.Tests.ps1`. 게임 폴더 `Assets/StreamingAssets/SignData/`의 CSV도 Git 제외.
