@@ -20,7 +20,13 @@ class Check {
   s.Add(1); s.Add(5); Require(s.Average == 3 && s.Maximum == 5 && s.Median == 3);
   s.Add(3); Require(s.Average == 3 && s.Maximum == 5 && s.Median == 3);
   s.Add(7); Require(s.Count == 3 && s.FrameCount == 4 && s.Average == 5 && s.Maximum == 7 && s.Median == 5);
-  Console.WriteLine("PASS: empty, average, maximum, median, eviction");
+  var p = new FrameTimingStats(20);
+  Require(p.Percentile95 == 0);
+  p.Add(1); Require(p.Percentile95 == 1);
+  for (int i = 2; i <= 20; i++) p.Add(i);
+  Require(p.Percentile95 == 19);
+  p.Add(100); p.Add(101); Require(p.Percentile95 == 100);
+  Console.WriteLine("PASS: empty, average, maximum, median, percentile, eviction");
  }
 }
 '@

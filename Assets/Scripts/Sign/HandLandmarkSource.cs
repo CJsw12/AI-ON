@@ -33,6 +33,9 @@ public sealed class HandLandmarkSource : MonoBehaviour
     public WebCamTexture CameraTexture => cameraTexture;
     public FrameTimingStats DetectionStats { get; } = new FrameTimingStats(120);
     public FrameTimingStats FrameStats { get; } = new FrameTimingStats(120);
+    public FrameTimingStats UpdateIntervalStats { get; } = new FrameTimingStats(120);
+    public double UpdateRate => UpdateIntervalStats.Average > 0 ? 1000 / UpdateIntervalStats.Average : 0;
+    double lastDetectionTime = -1;
     float nextLog;
 
     IEnumerator Start()
@@ -49,6 +52,7 @@ public sealed class HandLandmarkSource : MonoBehaviour
             landmarker = HandLandmarker.CreateFromOptions(options);
             result = HandLandmarkerResult.Alloc(1);
             cameraTexture = new WebCamTexture();
+            lastDetectionTime = -1;
             cameraTexture.Play();
             clock.Start();
             Status = "카메라 준비 중";
@@ -58,7 +62,7 @@ public sealed class HandLandmarkSource : MonoBehaviour
     void Update()
     {
         FrameStats.Add(Time.unscaledDeltaTime * 1000.0);
-        if (Time.unscaledTime >= nextLog) { nextLog = Time.unscaledTime + 1; Debug.Log($"[Hand probe] 상태={Status} 손={IsHandDetected} 감지 ms 평균={DetectionStats.Average:F1} 최대={DetectionStats.Maximum:F1} 중앙값={DetectionStats.Median:F1} 프레임 ms 평균={FrameStats.Average:F1} 최대={FrameStats.Maximum:F1} 중앙값={FrameStats.Median:F1} FPS={(FrameStats.Average > 0 ? 1000 / FrameStats.Average : 0):F1} 횟수={DetectionStats.FrameCount}"); }
+        if (Time.unscaledTime >= nextLog) { nextLog = Time.unscaledTime + 1; Debug.Log($"[Hand probe] 상태={Status} 손={IsHandDetected} 감지 ms 평균={DetectionStats.Average:F1} 최대={DetectionStats.Maximum:F1} 중앙값={DetectionStats.Median:F1} 95%={DetectionStats.Percentile95:F1} 갱신={UpdateRate:F1}회/초 갱신간격 95%={UpdateIntervalStats.Percentile95:F1}ms 프레임 ms 평균={FrameStats.Average:F1} 최대={FrameStats.Maximum:F1} 중앙값={FrameStats.Median:F1} FPS={(FrameStats.Average > 0 ? 1000 / FrameStats.Average : 0):F1} 횟수={DetectionStats.FrameCount}"); }
         if (landmarker == null || cameraTexture == null || !cameraTexture.didUpdateThisFrame || cameraTexture.width < 32 || cameraTexture.height < 32) return;
         try
         {
@@ -76,6 +80,9 @@ public sealed class HandLandmarkSource : MonoBehaviour
             var timer = System.Diagnostics.Stopwatch.StartNew();
             try { found = landmarker.TryDetectForVideo(image, timestamp, null, ref result); }
             finally { timer.Stop(); image.Dispose(); }
+            double detectionTime = Time.realtimeSinceStartupAsDouble;
+            if (lastDetectionTime >= 0) UpdateIntervalStats.Add((detectionTime - lastDetectionTime) * 1000);
+            lastDetectionTime = detectionTime;
             DetectionMilliseconds = timer.Elapsed.TotalMilliseconds; DetectionStats.Add(DetectionMilliseconds);
             IsHandDetected = found && result.handLandmarks != null && result.handLandmarks.Count > 0 && result.handLandmarks[0].landmarks.Count == 21;
             if (IsHandDetected)
@@ -108,6 +115,7 @@ public sealed class HandLandmarkSource : MonoBehaviour
     }
     public void Release()
     {
+        lastDetectionTime = -1;
         IsHandDetected = false;
         if (cameraTexture != null) { cameraTexture.Stop(); Destroy(cameraTexture); cameraTexture = null; }
         pool?.Dispose(); pool = null;

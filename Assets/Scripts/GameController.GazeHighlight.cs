@@ -200,7 +200,7 @@ public partial class GameController
             else if (signSession.CurrentStage == SignGameSession.Stage.Result)
             {
                 string result = signLines[4] + "\n정답 " + signSession.CorrectCount + " / " + signSession.Answers.Count;
-                foreach (var answer in signSession.Answers) result += $"\n{answer.Label}: {(answer.Correct ? "정답" : "오답")} {answer.ElapsedMs / 1000f:F1}초";
+                foreach (var answer in signSession.Answers) result += $"\n{answer.Label}: {(answer.Correct ? "정답" : "오답")} {answer.ElapsedMs / 1000f:F1}초{(answer.WrongAttempts > 0 ? $" · 틀린 시도 {answer.WrongAttempts}회" : "")}";
                 NovelUI.Label(new Rect(650, 290, 470, 260), result, NovelUI.Soft, 19, NovelUI.Plum, TextAnchor.UpperLeft);
                 if (signFeedback != null && (long)(Time.realtimeSinceStartupAsDouble * 1000) < signFeedbackUntil) NovelUI.Label(new Rect(650, 555, 470, 30), signFeedback, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft);
                 if (NovelUI.Button(new Rect(740, 600, 250, 45), "다시 하기", true, 19)) { signSession = new SignGameSession(signData.Labels, seed: System.Environment.TickCount); ResetSignVote(); signFeedback = null; }
@@ -226,7 +226,7 @@ public partial class GameController
         {
             var d = handProbe.DetectionStats; var f = handProbe.FrameStats;
             string distanceInfo = float.IsPositiveInfinity(signData.SuggestedMaxDistance) ? "거리 상한 계산 불가(시도 부족)" : $"거리 상한 {signData.SuggestedMaxDistance:F3}";
-            NovelUI.Label(new Rect(120, 560, 520, 90), $"{handProbe.Status} · 손 {handProbe.Handedness} ({handProbe.HandednessScore:F2})\n감지 평균/최대/중앙값 {d.Average:F1} / {d.Maximum:F1} / {d.Median:F1} ms · FPS {(f.Average > 0 ? 1000 / f.Average : 0):F1}\n{distanceInfo} · 계산 {signData.DistanceCalculationMilliseconds:F1} ms", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.UpperLeft);
+            NovelUI.Label(new Rect(120, 560, 520, 90), $"{handProbe.Status} · 손 {handProbe.Handedness} ({handProbe.HandednessScore:F2})\n감지 평균/중앙값/95%/최대 {d.Average:F1} / {d.Median:F1} / {d.Percentile95:F1} / {d.Maximum:F1} ms\nFPS {(f.Average > 0 ? 1000 / f.Average : 0):F1} · 갱신 {handProbe.UpdateRate:F1}회/초 · 간격 95% {handProbe.UpdateIntervalStats.Percentile95:F1} ms\n{distanceInfo} · 계산 {signData.DistanceCalculationMilliseconds:F1} ms", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.UpperLeft);
         }
         NovelUI.Label(new Rect(120, 660, 1040, 55), $"영상은 저장·전송되지 않고, 손 관절 위치만 이 PC 안에서 계산합니다.\n처리 시간 {(handProbe != null ? handProbe.DetectionMilliseconds : 0):F1} ms · k-NN · CPU", NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleCenter);
         if (NovelUI.Button(new Rect(490, 730, 300, 60), "돌아가기", false, 22)) { CloseHandProbe(); practiceHighlight = true; OpenMenu(Menu.Practice); }
