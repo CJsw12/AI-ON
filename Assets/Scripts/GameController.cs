@@ -88,6 +88,16 @@ public partial class GameController : MonoBehaviour
 
     void OnApplicationPause(bool paused) { if (paused) { ReadLog.Flush(); GameSettings.Save(); } }
     void OnApplicationQuit() { CloseHandProbe(false); CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
+    void QuitGame()
+    {
+        novelAudio.Play("Close");
+        GameSettings.Save();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
 
     void DrawScene(bool portrait = true)
     {
@@ -758,6 +768,9 @@ public partial class GameController : MonoBehaviour
         float width = NovelUI.Width(Subtitle, NovelUI.Round, 26) + 46;
         NovelUI.Pill(640 - width / 2, 192, 52, Subtitle, NovelUI.Alpha(NovelUI.Cream, .95f), NovelUI.DeepPink, 26);
         NovelUI.Outlined(new Rect(0, 252, 1280, 40), "낯선 캠퍼스에서 시작하는 나의 첫 학기", NovelUI.Soft, 24, NovelUI.Berry, NovelUI.Alpha(Color.white, .9f), 2);
+        // Fits the left margin in all three title steps without touching the wider professor panel in step 2.
+        Rect quitRect = entryStep == 2 ? new Rect(16, 810, 138, 54) : new Rect(40, 810, 200, 54);
+        if (NovelUI.Button(quitRect, "게임 종료", false, entryStep == 2 ? 19 : 20)) { QuitGame(); return; }
 
         if (entryStep == 0)
         {

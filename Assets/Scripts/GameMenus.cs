@@ -11,7 +11,7 @@ public partial class GameController
     float menuAt, toastAt = -10;
     string toast;
     int confirmSlot = -1, galleryCollege, galleryFaculty, galleryProfessor, galleryEnding;
-    bool confirmTitle;
+    bool confirmTitle, confirmQuit;
     readonly GameSave.Data[] slots = new GameSave.Data[GameSave.Slots];
     // Lines shown this run, oldest first: { line key, speaker, text }.
     readonly List<string[]> backlog = new List<string[]>();
@@ -36,6 +36,7 @@ public partial class GameController
         menuAt = Time.unscaledTime;
         confirmSlot = -1;
         confirmTitle = false;
+        confirmQuit = false;
         for (int i = 0; i < slots.Length; i++) slots[i] = GameSave.Read(i);
         if (next == Menu.Gallery) { galleryFaculty = faculty; galleryCollege = Stories.CollegeOf(faculty); galleryProfessor = Mathf.Max(0, professor); }
         if (next == Menu.Practice) practiceCollege = Stories.CollegeOf(practiceFaculty);
@@ -45,6 +46,8 @@ public partial class GameController
     {
         novelAudio.Play("Close");
         if (menu == Menu.Settings) GameSettings.Save();
+        confirmTitle = false;
+        confirmQuit = false;
         menu = Menu.None;
         // Restart auto mode's wait so a long stay in a menu does not skip the line on close.
         if (typedAt >= 0) typedAt = Time.unscaledTime;
@@ -160,14 +163,26 @@ public partial class GameController
         AiKeyRow(x, y, width);
 
         Rect close = new Rect(card.xMax - 230, card.yMax - 74, 190, 54);
+        Rect quit = new Rect(close.x - 230, card.yMax - 74, 210, 54);
         if (InGame)
         {
             Rect title = new Rect(card.x + 40, card.yMax - 74, 220, 54);
             if (NovelUI.Button(title, confirmTitle ? "정말 나갈까요?" : "타이틀로", false, 21))
             {
+                confirmQuit = false;
                 if (!confirmTitle) { confirmTitle = true; novelAudio.Play("Select"); ShowToast("저장하지 않은 진행은 사라져요"); }
                 else { GameSettings.Save(); novelAudio.Play("Back"); ResetRun(); menu = Menu.None; }
             }
+        }
+        bool storyInProgress = InGame || (scene >= 1 && scene <= 6);
+        if (!storyInProgress) confirmQuit = false;
+        if (confirmQuit)
+            NovelUI.Label(new Rect(card.x + 40, card.yMax - 104, card.width - 80, 24), "한 번 더 누르면 게임이 종료돼요 · 저장하지 않은 진행은 사라져요", NovelUI.Soft, 15, NovelUI.DeepPink, TextAnchor.MiddleCenter, FontStyle.Bold);
+        if (NovelUI.Button(quit, confirmQuit ? "정말 종료?" : "게임 종료", false, 21))
+        {
+            confirmTitle = false;
+            if (storyInProgress && !confirmQuit) { confirmQuit = true; novelAudio.Play("Select"); ShowToast("저장하지 않은 진행은 사라져요"); }
+            else QuitGame();
         }
         if (NovelUI.Button(close, "닫기", true, 22)) CloseMenu();
     }
