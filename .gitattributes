@@ -4,3 +4,6 @@ Builds/AI-ON/** filter=lfs diff=lfs merge=lfs -text
 *.sh text eol=lf
 Tools/git-hooks/* text eol=lf
 .agents/** text eol=lf
+
+# PROGRESS.md: keep both sides on merge (append, do not rewrite lines). See docs/COLLABORATION.md section 4.
+PROGRESS.md merge=union

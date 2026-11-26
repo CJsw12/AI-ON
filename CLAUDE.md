@@ -45,20 +45,21 @@ Claude는 요구 분석, 설계, 작업 명세 작성, 결과 검토, 사용자 
 4. 실패 기준 (non-zero exit가 실패인지, 그 출력을 받는 게 목적인지)
 
 ## 검증
-- 회귀 테스트: `Tests/*.ps1` 5종 (ImpactLabIntegration, PhysicsExperiencedDialogue, PhysicsImpactRules, PhysicsStory, ProfessorPersonality). 모두 exit 0이어야 한다.
+- 회귀 테스트: `Tests/*.ps1` 전부(2026-11-26 기준 10종). 모두 exit 0이어야 한다.
 - AiProfessor/CoffeeRecipeSO 경고는 기존 경고다. 새 경고와 구분할 것.
 - PS 테스트 통과는 Unity 전체 컴파일이나 실기기 동작을 보장하지 않는다. 검증하지 않은 항목은 "미검증"이라고 적는다.
 - 시선 추적 수치(보정 오차 px)는 자세·표본이 다르면 전후 개선율로 해석하지 않는다.
 
 ## Git / 협업
 - 커밋·푸시는 사용자가 요청할 때만 한다. Codex 워커에게도 명세에 명시한다.
-- 푸시 요청을 받으면 별도 지시가 없어도 먼저 `git fetch`로 원격 최신 상태를 확인한다. 팀원의 새 커밋이 같은 파일·같은 기능을 건드렸으면 사용자에게 알리고 해결 방법을 묻는다. 겹치지 않으면 최신 `origin/main`에 충돌 없이 합치고 테스트 5종과 `git diff --check`를 다시 통과시킨 뒤 푸시한다.
+- 푸시 요청을 받으면 별도 지시가 없어도 먼저 `git fetch`로 원격 최신 상태를 확인한다. 팀원의 새 커밋이 같은 파일·같은 기능을 건드렸으면 사용자에게 알리고 해결 방법을 묻는다. 겹치지 않으면 최신 `origin/main`에 충돌 없이 합치고 `Tests/*.ps1` 전부와 `git diff --check`를 다시 통과시킨 뒤 푸시한다.
 - `PROGRESS.md`는 작업 세션 종료·푸시 직전에 한 번만 갱신한다 (Done / Next Steps).
 - stash와 다른 사람의 미커밋 변경은 자동으로 적용하거나 버리지 않는다.
 - Unity 에셋을 추가하면 `.meta` 파일도 함께 포함되는지 확인한다.
 
 ## 협업 도구 (agent-sync, 상세는 `docs/COLLABORATION.md`)
-- 세션 시작 때 SessionStart 훅이 `bash Tools/agent-sync.sh status`를 실행한다. 새 커밋과 다른 사람의 선점을 확인하고, `NOT SET UP` 경고가 보이면 사용자에게 `Tools/setup-git-unity.ps1` 실행을 요청한다.
+- 세션 시작 때 SessionStart 훅이 `bash Tools/agent-sync.sh status`를 실행한다. 새 커밋과 다른 사람의 선점을 확인하고, `NOT SET UP` 경고가 보이면 사용자에게 에이전트 ID를 받아 `Tools/setup-git-unity.ps1` 실행을 요청한다. 설정이 끝날 때까지 편집하지 않는다.
+- 커밋은 경로를 지정한다(`git add -A`/`.`/`-f` 금지). 내 선점 밖 충돌은 직접 풀지 않고 `git rebase --abort` 후 `send`로 알린다. 팀 규칙 전체는 `docs/COLLABORATION.md` 4절.
 - 다른 사람이 선점한 경로는 고치지 않는다. 사용자가 커밋·푸시를 요청한 `main` 작업은 `claim` → 작업 → `finish`로 마무리한다.
 - pre-push 훅이 `Tests/*.ps1`과 Unity 컴파일을 검사한다. 우회 변수(`AION_SKIP_*`, `ALLOW_*`)는 사용자가 지시한 경우에만 쓴다.
 

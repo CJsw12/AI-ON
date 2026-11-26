@@ -18,6 +18,10 @@
 ---
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-26 원격 브랜치 전체 main 병합 + 협업 규칙 적용**: `feature/agent-sync`, `feature/sign-fingerspelling`, `voice-tts`, `wip/mjpg-camera`, `wip/posture-fit`를 병합했다(`fix/*` 2개는 이미 반영). posture-fit 충돌은 `WebcamFeatures()` 구조를 따르고 Gaze Lab 기록 값을 그 결과로 채웠다.
+  - surviving-game 규칙을 [`docs/COLLABORATION.md`](docs/COLLABORATION.md) 4절에 반영했다(경로 지정 커밋, 병합 어려운 파일 단위 선점, 선점 밖 충돌은 알리기, 대용량 확인). `PROGRESS.md`는 `merge=union`이므로 기존 줄을 고치기보다 덧붙인다.
+  - **플레이 방법(설치)**: pull 후 `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/setup-git-unity.ps1 -AgentId <이름>-<도구>-<모델>` → `bash Tools/agent-sync.sh status`.
+  - 검증: `Tests/*.ps1` 10종 exit 0, `test_agent_sync.sh` 23항목 통과. **Unity 컴파일과 웹캠 실기(WIP 2개 병합분)는 미검증.** `VoiceTTS/` WAV 30MB 이상이 LFS 밖에 있다.
 - **2026-11-26 Qwen3-TTS 로컬 설치 안내**: docs/AI/Qwen3-TTS-Local-Setup.md에 Intel XPU 실험 경로, CPU 대체 경로, 박태준 70대 음색 설계와 참조 음성 기반 대본 합성 방법을 기록했다. 바탕화면에도 동일 문서를 복사했다. 사용 방법: 문서 1절부터 실행한다. Python 예제 2개 구문 검사·PS 회귀 7종·diff 검사 통과. 실제 설치 및 추론은 미검증이다.
 - **[Claude+Codex+Antigravity] 2026-11-26 수어 지문자 미니게임 1차 구현 (2026-11-26 main 병합)**:
   - 웹캠 → MediaPipe 손 관절 21개 → 좌표 정규화 → k-NN(거리·투표 마진 거절, "그 외" 처리) → 0.6초 유지 확정 → 하이라이트 미니게임(소개·연습·도전·결과·다시 하기). 에디터 전용 녹화 도구(`Tools → Sign → Recorder`)는 관절 좌표만 CSV로 저장한다.
@@ -154,7 +158,8 @@
 ---
 
 ## 5. 다음 진행 작업 (Next Steps)
-- **수어 지문자 인식 미니게임**: 계획서 [`docs/AI/Sign-Fingerspelling-Plan.md`](docs/AI/Sign-Fingerspelling-Plan.md) v1.0. 1차 구현은 브랜치 `feature/sign-fingerspelling`에 있다(Done 참고). 다음은 실기 확인(관절 정렬·왼손/오른손 거울 기준), P0 글자 5개 확정(한국수어사전 영상 확인), P2 녹화·정확도 측정, 학교 PC 성능 측정, main 병합 여부 결정. 10절 결정 사항 8개를 팀이 정해야 한다.
+- **병합분 Unity 확인**: 2026-11-26 병합한 `wip/mjpg-camera`(MJPG 웹캠 읽기)·`wip/posture-fit`(자세 기반 보정)을 Unity에서 컴파일하고 웹캠 보정·Gaze Lab 표시를 실기 확인한다. 팀원 PC마다 `Tools/setup-git-unity.ps1`을 1회 실행한다.
+- **수어 지문자 인식 미니게임**: 계획서 [`docs/AI/Sign-Fingerspelling-Plan.md`](docs/AI/Sign-Fingerspelling-Plan.md) v1.0. 1차 구현은 2026-11-26 main에 병합됐다(Done 참고). 다음은 실기 확인(관절 정렬·왼손/오른손 거울 기준), P0 글자 5개 확정(한국수어사전 영상 확인), P2 녹화·정확도 측정, 학교 PC 성능 측정. 10절 결정 사항 8개를 팀이 정해야 한다.
 - **Claude Max 활용 기획**: [`docs/AI/Claude-Max-Usage-Plan.md`](docs/AI/Claude-Max-Usage-Plan.md) 초안. 대회 규정의 AI 사용 고지 방식과 지원 계정 사용 규칙을 먼저 확인한다.
 - iPhone 수정 보정으로 같은 자세에서 독립 검증 오차와 실제 목표 응시 오차를 측정한다. 채팅 방향 측정은 센서 방향 구분 확인용이며 게임 화면 보정 정확도를 보장하지 않는다.
 - 눈맞춤 카운터: iPhone 경로·엔딩 표시·이어하기 실기 확인. 판정 상수(`GameController.EyeContact.cs`)는 F8로 보며 조정. 호감도 반영 여부는 추후 결정.

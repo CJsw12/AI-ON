@@ -28,6 +28,7 @@ bash Tools/agent-sync.sh finish "Add arts faculty story" Assets/Scripts/Stories/
 - `PROGRESS.md`는 선점하지 않는다. 짧게 고치고, 고치기 직전에 pull하고 고친 직후에 푸시한다.
 - `claim`과 `finish`는 `main` 브랜치에서만 동작한다.
 - 아직 푸시하지 않은 커밋이 있으면 `claim`·`release`·`heartbeat`가 거절된다. 선점 커밋과 함께 그 커밋까지 공개되는 일을 막기 위해서다. 먼저 `git push`하거나 `finish`로 마무리한다.
+- Unity Play Mode나 에디터 검사를 하기 전에는 `bash Tools/agent-sync.sh editor acquire "<목적>"`을, 끝나면 `editor release`를 실행한다. 같은 PC에서 두 에이전트가 에디터를 동시에 쓰지 않게 하는 로컬 사용권이며 커밋은 생기지 않는다. Orca 워커는 Unity를 실행하지 않는다.
 
 ## 3. 자동으로 막히는 것
 | 언제 | 검사 | 우회(합의한 경우에만) |
@@ -45,7 +46,18 @@ bash Tools/agent-sync.sh finish "Add arts faculty story" Assets/Scripts/Stories/
 - Unity나 PowerShell 7을 찾지 못하면 푸시를 막지 않고 경고만 출력한다. 설치 위치가 다른 팀원이 막히지 않게 하려는 설계이므로, 경고가 보이면 직접 확인한다.
 - 선점이 겹쳐 막히면 카톡으로 조율하거나 `bash Tools/agent-sync.sh send <상대 ID> "<메시지>"`를 쓴다. 상대는 다음 `status`에서 메시지를 본다.
 
-## 4. 도구 자체 확인
+## 4. 팀 규칙 (surviving-game 운영 경험 반영)
+- **커밋 범위**: 커밋할 경로를 직접 지정한다. `git add -A`, `git add .`, `git add -f`는 쓰지 않는다. `main`에는 강제 푸시하지 않는다.
+- **작게 자주**: 테스트나 컴파일 검사를 통과한 단위마다 커밋하고 푸시한다. 몇 시간씩 쌓아 두지 않는다.
+- **병합이 어려운 파일**(`.unity`, `.prefab`, `.controller`, `ProjectSettings/*`, `Packages/manifest.json`, `packages-lock.json`)은 폴더가 아니라 파일 단위로 선점하고, 끝나면 바로 푸시해서 해제한다.
+- **내 선점 밖 충돌**: pull/rebase에서 다른 사람 선점 경로가 충돌하면 직접 풀지 않는다. `git rebase --abort` 후 `send`로 상대에게 알린다. Unity YAML 충돌은 `git mergetool --tool=unityyamlmerge <파일>`을 먼저 시도한다.
+- **우회 변수**(`ALLOW_*`, `AION_SKIP_*`)는 사람이 동의했을 때만 쓰고, 사용 사실을 커밋 메시지나 `PROGRESS.md`에 적는다.
+- **대용량 파일**: 새 음성·이미지·영상·모델처럼 큰 바이너리는 커밋 전에 팀에 확인한다. 계속 둘 파일이면 확장자나 경로를 `.gitattributes`의 LFS에 먼저 등록한다.
+- **검사 실패**: 실패한 검사를 약하게 바꾸지 말고 실제 동작부터 확인한다. 필요한 도구가 없어 검사를 못 했으면 원인과 실행하지 못한 범위를 "미검증"으로 기록한다.
+- **`PROGRESS.md`**: `.gitattributes`에 `merge=union`이 설정되어 있어 양쪽 기록이 자동으로 합쳐진다. 그러니 기존 줄을 고치기보다 새 줄을 덧붙인다(같은 줄을 둘이 고치면 두 줄이 다 남는다). 항목은 5줄 안쪽, 줄당 200자 안쪽으로 쓰고, 긴 로그·수치는 파일 경로만 남긴다.
+- **기다리기**: 다른 에이전트의 메시지나 선점 해제를 타이머로 반복 확인하지 않는다. 급하면 사람에게 알린다.
+
+## 5. 도구 자체 확인
 ```bash
 bash Tools/test_agent_sync.sh   # 임시 폴더에 PC 두 대를 흉내 내 선점·차단·해제를 검사 (exit 0 = 통과)
 ```
