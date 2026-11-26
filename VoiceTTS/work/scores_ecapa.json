@@ -1,0 +1,154 @@
+{
+ "human_sim": 0.7933517564897952,
+ "results": [
+  {
+   "model": "cosyv2",
+   "ref": "pron3",
+   "sim": 0.834,
+   "cer": 0.009,
+   "score": 0.8295
+  },
+  {
+   "model": "cosyv2",
+   "ref": "casual",
+   "sim": 0.8167,
+   "cer": 0.0,
+   "score": 0.8167
+  },
+  {
+   "model": "cosyv2",
+   "ref": "long_breath",
+   "sim": 0.8073,
+   "cer": 0.0,
+   "score": 0.8073
+  },
+  {
+   "model": "cosyv2",
+   "ref": "narration",
+   "sim": 0.807,
+   "cer": 0.0108,
+   "score": 0.8016
+  },
+  {
+   "model": "cosyv2",
+   "ref": "daily_A",
+   "sim": 0.7774,
+   "cer": 0.0,
+   "score": 0.7774
+  },
+  {
+   "model": "cosyv2",
+   "ref": "emotion3",
+   "sim": 0.7547,
+   "cer": 0.0,
+   "score": 0.7547
+  },
+  {
+   "model": "cosyv3",
+   "ref": "pron3",
+   "sim": 0.8501,
+   "cer": 0.0,
+   "score": 0.8501
+  },
+  {
+   "model": "cosyv3",
+   "ref": "narration",
+   "sim": 0.8319,
+   "cer": 0.0,
+   "score": 0.8319
+  },
+  {
+   "model": "cosyv3",
+   "ref": "daily_A",
+   "sim": 0.7975,
+   "cer": 0.0,
+   "score": 0.7975
+  },
+  {
+   "model": "cosyv3",
+   "ref": "long_breath",
+   "sim": 0.7907,
+   "cer": 0.0,
+   "score": 0.7907
+  },
+  {
+   "model": "cosyv3",
+   "ref": "emotion3",
+   "sim": 0.7848,
+   "cer": 0.0,
+   "score": 0.7848
+  },
+  {
+   "model": "cosyv3",
+   "ref": "casual",
+   "sim": 0.5303,
+   "cer": 0.3423,
+   "score": 0.3592
+  },
+  {
+   "model": "omni",
+   "ref": "narration",
+   "sim": 0.8359,
+   "cer": 0.0,
+   "score": 0.8359
+  },
+  {
+   "model": "omni",
+   "ref": "pron3",
+   "sim": 0.8331,
+   "cer": 0.0,
+   "score": 0.8331
+  },
+  {
+   "model": "omni",
+   "ref": "casual",
+   "sim": 0.8133,
+   "cer": 0.0,
+   "score": 0.8133
+  },
+  {
+   "model": "omni",
+   "ref": "long_breath",
+   "sim": 0.8097,
+   "cer": 0.0,
+   "score": 0.8097
+  },
+  {
+   "model": "omni",
+   "ref": "emotion3",
+   "sim": 0.7985,
+   "cer": 0.0,
+   "score": 0.7985
+  },
+  {
+   "model": "omni",
+   "ref": "daily_A",
+   "sim": 0.7852,
+   "cer": 0.0,
+   "score": 0.7852
+  }
+ ],
+ "best": {
+  "cosyv2": {
+   "model": "cosyv2",
+   "ref": "pron3",
+   "sim": 0.834,
+   "cer": 0.009,
+   "score": 0.8295
+  },
+  "cosyv3": {
+   "model": "cosyv3",
+   "ref": "pron3",
+   "sim": 0.8501,
+   "cer": 0.0,
+   "score": 0.8501
+  },
+  "omni": {
+   "model": "omni",
+   "ref": "narration",
+   "sim": 0.8359,
+   "cer": 0.0,
+   "score": 0.8359
+  }
+ }
+}

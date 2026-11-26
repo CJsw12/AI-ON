@@ -1,0 +1,35 @@
+=== 내 목소리 TTS (OmniVoice, RTX 5060 Ti) ===
+
+[1] 녹음하기 (아이폰 17 Pro Max)
+ - 앱: 기본 "음성 메모" 앱. 설정 > 앱 > 음성 메모 > 오디오 품질 = "무손실"
+ - 조용한 방에서, 휴대폰은 입에서 20~30cm, 정면보다 살짝 옆으로
+ - 평소 말투로 또박또박, 10~20초 분량 (너무 길 필요 없음)
+ - 에어컨/선풍기/TV 끄기, 이불이나 커튼 많은 방이 울림이 적어 좋음
+ - 웃음/기침/숨소리 크게 나는 부분은 피하기
+ - 녹음 파일(.m4a)을 PC로 옮기기 (에어드롭 불가 시 카카오톡 나에게 보내기, 원본 화질로)
+
+[2] 목소리 등록 (한 번만)
+ - 녹음 파일을 register_voice.bat 위로 드래그&드롭
+ - 자동 받아쓰기 결과가 화면에 나옴. 틀렸다면 아래처럼 정확한 문장으로 재등록:
+   .venv\Scripts\python.exe clone.py register "녹음.m4a" --ref-text "녹음에서 말한 문장 그대로"
+
+[3] 읽히기
+ - speak.bat 실행 → 문장 입력 → output 폴더에 wav 생성
+ - 대본 여러 줄: .venv\Scripts\python.exe clone.py say --file 대본.txt
+ - 속도: --speed 0.9 (느리게) / 1.1 (빠르게)
+
+[웹 화면으로 쓰기]
+ - web_ui.bat 실행 → 브라우저에서 녹음 업로드 + 문장 입력 (가장 쉬움)
+
+※ 본인 목소리 또는 동의받은 목소리만 사용하세요.
+
+=== [추가] CosyVoice2 / CosyVoice3 와 비교하기 ===
+ - 녹음 파일을 compare.bat 위로 드래그&드롭
+   → OmniVoice, CosyVoice2, CosyVoice3 로 같은 문장을 만들어
+     output\비교_1_OmniVoice.wav / 비교_2_CosyVoice2.wav / 비교_3_CosyVoice3.wav 생성
+ - 녹음 대본은 ref_text.txt 의 문장(A 대본) 기준. 다른 문장을 읽었다면 ref_text.txt 를 그 문장으로 수정
+ - CosyVoice 단독 사용:
+   cosyvoice\.venv\Scripts\python.exe cosy.py --model v3 --ref "녹음.m4a" --ref-text "녹음 문장" "읽힐 문장"
+   (--model v2 로 CosyVoice2, 여러 줄은 --file 대본.txt)
+ - 팁: CosyVoice는 생성 문장이 녹음 문장보다 많이 짧으면 품질이 떨어질 수 있음. 짧은 문장은 몇 개 묶어서 생성.
+ - 속도(이 PC 기준, 10초 음성): OmniVoice 약 3초 / CosyVoice2·3 약 10초
