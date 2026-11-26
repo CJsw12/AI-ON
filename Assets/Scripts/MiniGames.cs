@@ -163,7 +163,7 @@ public static class MiniGames
             case MiniGameKind.Route: return new RobotRoute(theme);
             case MiniGameKind.Cashier: return new ChangeMaker(theme);
             case MiniGameKind.Tray: return new PlateBalance(theme);
-            case MiniGameKind.Molecule: return new MoleculeBuilder(theme);
+            case MiniGameKind.Molecule: return experienced ? (MiniGame)new BondDesigner(theme, professor) : new MoleculeBuilder(theme);
             case MiniGameKind.Indicator: return new IndicatorTest(theme);
             case MiniGameKind.Microscope: return new MicroscopeFocus(theme);
             case MiniGameKind.BasePair: return new BasePairing(theme);

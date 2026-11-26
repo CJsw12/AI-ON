@@ -4,7 +4,7 @@ using UnityEngine;
 
 // AI mode (AiProfessor): at choice slots the player types their own answer and the professor model replies
 // in a tone set by the current affection, scoring it against the slot's designed options; at quiz slots the
-// player may ask the professor up to three questions for hints. Minigames are unchanged.
+// player may ask the professor up to three questions for hints. Lecture quizzes and Bond Designer may also use AI.
 public partial class GameController
 {
     const int HintLimit = 3;
@@ -289,6 +289,8 @@ public partial class GameController
         return value;
     }
 
+    const string AiExternalNotice = "미니게임 오답 코멘트를 위해 문제 정보(분자·답)가 외부 AI 서비스로 전송돼요";
+
     // The AI mode switch along the professor screen's bottom edge; the key itself is entered in Settings.
     void AiModeControls(Rect panel)
     {
@@ -308,6 +310,8 @@ public partial class GameController
             ShowToast(aiMode ? (AiProfessor.HasKey ? "AI 모드: 직접 대답하고 퀴즈 중에 질문할 수 있어요" : "설정에서 AI API 키를 먼저 넣어 주세요") : "AI 모드를 껐어요");
         }
         if (!aiMode) return;
+        float noticeWidth = NovelUI.Width(AiExternalNotice, NovelUI.Soft, 15) + 28 * .9f;
+        NovelUI.Pill(panel.center.x - noticeWidth / 2, panel.yMax + 8, 28, AiExternalNotice, NovelUI.Alpha(NovelUI.Cream, .94f), NovelUI.Plum, 15, NovelUI.Soft);
         if (AiProfessor.HasKey) { NovelUI.Pill(panel.x + 170, panel.yMax - 58, 36, AiProfessor.Connection + " 연결됨", NovelUI.Mint, NovelUI.Berry, 17); return; }
         float note = NovelUI.Pill(panel.x + 170, panel.yMax - 58, 36, "API 키가 없어요", NovelUI.Blush, NovelUI.DeepPink, 17);
         if (NovelUI.Button(new Rect(panel.x + 180 + note, panel.yMax - 62, 150, 44), "설정에서 넣기", true, 17)) OpenMenu(Menu.Settings);

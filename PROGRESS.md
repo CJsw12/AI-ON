@@ -8,6 +8,11 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude+Codex+Antigravity] 2026-11-27 화학과 전공자 미니게임 "결합 설계실"**: 분자 5개(10종 중 무작위)에 결합 차수 놓기 → 분자 모양 → 극성(3D 회전 보기)을 150초 안에 푼다. 비전공자는 기존 분자 모형 조립 그대로.
+  - 계획 `docs/plans/Chemistry-Bond-Minigame-Plan.md` v0.5. 코드 `Assets/Scripts/Chemistry/`(판정·문구·3D 기하·IMGUI 뷰), `BondDesigner.cs`. 실측 결합각(NIST), 코드 사실 줄이 정답 근거.
+  - AI 모드면 오답 때 AI 교수가 검수된 격려 문구 번호만 골라 덧붙인다(자유 생성 없음, 표시 기한 15초, 문제 정보가 외부 AI로 전송된다는 고지).
+  - **플레이 방법**: 화학과 → 전공자 → 스토리 미니게임 또는 `연습` → 분자 모형 조립. 결합 선을 눌러 1→2→3중 결합, `결합 제출` → 모양 → 극성(분자를 드래그해 돌려 볼 수 있음).
+  - 검증: 테스트 13종 exit 0, Unity 컴파일 오류 0, Unity CLI로 전 단계·시간 초과·결과 화면 캡처 확인, 실제 AI 응답 형식 확인(응답 9~11초). **실제 마우스 클릭·드래그, 스토리 경험자 진입, 작은 창, 학교 PC 성능, AI 코멘트 실제 표시는 미검증.**
 - **[Claude] 2026-11-26 원격 브랜치 전체 main 병합 + 협업 규칙 적용**: `feature/agent-sync`, `feature/sign-fingerspelling`, `voice-tts`, `wip/mjpg-camera`, `wip/posture-fit`를 병합했다(`fix/*` 2개는 이미 반영). posture-fit 충돌은 `WebcamFeatures()` 구조를 따르고 Gaze Lab 기록 값을 그 결과로 채웠다.
   - surviving-game 규칙을 [`docs/COLLABORATION.md`](docs/COLLABORATION.md) 4절에 반영했다(경로 지정 커밋, 병합 어려운 파일 단위 선점, 선점 밖 충돌은 알리기, 대용량 확인). `PROGRESS.md`는 `merge=union`이므로 기존 줄을 고치기보다 덧붙인다.
   - **플레이 방법(설치)**: pull 후 `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/setup-git-unity.ps1 -AgentId <이름>-<도구>-<모델>` → `bash Tools/agent-sync.sh status`.
@@ -181,3 +186,4 @@
 - 눈빛 피하기: 실제 장치로 난이도·소리 균형 확인. `GameController.cs` 별 회전과 `GameEffects.cs`의 `RotateAroundPivot` 문제 여부 확인.
 - AI 모드: 단답형 퀴즈 힌트 대기 중 Enter 동작 확인. Terra 확인 시 설정의 개인 Gemini 키를 지운다.
 - 플레이어 웹캠 아바타 촬영·2인 구도 실기 점검. 16개 학과 스토리·미니게임·엔딩 분기 밸런스 점검.
+- 결합 설계실: 실제 마우스로 결합 클릭·3D 드래그, 스토리 챕터 1 전공자 진입, 작은 창 배치, AI 모드에서 코멘트가 15초 안에 뜨는지 확인. 교수별 격려 문구 44개 사람 검수.

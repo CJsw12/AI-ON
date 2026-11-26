@@ -538,6 +538,7 @@ public partial class GameController
         MiniGame.Easy = !practiceExperienced;
         miniGame = MiniGames.Create(theme, practiceProfessor, true, practiceExperienced);
         if (miniGame is Lecture lecture) lecture.ConfigureAi(aiMode, Stories.All[practiceFaculty], 0);
+        if (miniGame is BondDesigner bond) bond.ConfigureAi(aiMode, Stories.All[practiceFaculty], 0);
         menu = Menu.None;
     }
     void EndPractice()
