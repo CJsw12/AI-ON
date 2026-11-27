@@ -73,7 +73,29 @@ try {
  Assert ($r.Text -match '왼손과 오른손이 섞여' -and $r.Text -notmatch '세션이 1개뿐') '세션 2개와 손 섞임'
  $r = Run @('-Target', '3')
  Assert ($r.Code -eq 1) '전체 점검은 p02 의 오류로 1'
- # 9. 폴더 없음 → 1
+ # 9. 손 이미지: <세션>_images 의 jpg 를 글자별로 세고, 이미지 없음은 경고(-RequireImages 이면 미달 2)
+ Reset; Build 'p01' 's01' $good
+ $r = Run @('-Target', '3')
+ Assert ($r.Code -eq 0 -and $r.Text -match '손 이미지가 없습니다') ('이미지 없음 경고: ' + $r.Code + ' ' + $r.Text)
+ $r = Run @('-Target', '3', '-RequireImages')
+ Assert ($r.Code -eq 2 -and $r.Text -match '이미지 없음') ('-RequireImages 미달: ' + $r.Code + ' ' + $r.Text)
+ $imgDir = Join-Path (Join-Path $root 'p01') 's01_images'; New-Item -ItemType Directory -Force $imgDir | Out-Null
+ foreach ($lab in @('A', 'B', '_other')) { for ($k = 1; $k -le 4; $k++) { [IO.File]::WriteAllBytes((Join-Path $imgDir ('001-{0:00}-R-{1}.jpg' -f $k, $lab)), [byte[]](255, 216, 255)) } }
+ $r = Run @('-Target', '3', '-RequireImages')
+ Assert ($r.Code -eq 0) ('이미지 있으면 통과: ' + $r.Code + ' ' + $r.Text)
+ Assert ($r.Text -notmatch '손 이미지가 없습니다' -and $r.Text -match '이미지') '이미지 열 표시'
+ [IO.File]::WriteAllBytes((Join-Path $imgDir 'bad name.jpg'), [byte[]](255, 216, 255))
+ $r = Run @('-Target', '3')
+ Assert ($r.Text -match '해석할 수 없는 이미지 1') ('이름 해석 불가 경고: ' + $r.Text)
+ [IO.File]::WriteAllBytes((Join-Path $imgDir '009-01-R-A.jpg'), [byte[]](255, 216, 255))   # CSV에 없는 시도(9번)의 이미지
+ $r = Run @('-Target', '3')
+ Assert ($r.Text -match 'CSV에 없는 시도의 이미지 1') ('고아 이미지 경고: ' + $r.Text)
+ # 대소문자만 다른 글자는 이미지 수가 합쳐지지 않는다
+ Remove-Item -LiteralPath $imgDir -Recurse -Force; New-Item -ItemType Directory -Force $imgDir | Out-Null
+ [IO.File]::WriteAllBytes((Join-Path $imgDir '001-01-R-A.jpg'), [byte[]](255, 216, 255))
+ $r = Run @('-Target', '3')
+ Assert ($r.Code -eq 0 -and $r.Text -notmatch '이미지가 없습니다') ('A 이미지 1장 인식: ' + $r.Text)
+ # 10. 폴더 없음 → 1
  Reset
  $r = Run @()
  Assert ($r.Code -eq 1) '폴더 없음'
