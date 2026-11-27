@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public sealed class SignRecorderWindow : EditorWindow
 {
-    const string PrivacyNotice = "관절 좌표만 저장합니다. 영상·이미지는 저장하지 않습니다. 참여자 동의를 받은 뒤 녹화하세요.";
+    const string PrivacyNotice = "관절 좌표와, 켜 두면 손 부분만 잘라 낸 이미지(224×224)를 저장합니다. 전체 영상은 저장하지 않습니다. 팀 합의에 따라 녹화하세요.";
     const string LimitNotice = "한계: 단일 에디터·단일 창 기준이며 프로세스 간 파일 잠금은 지원하지 않습니다.";
     const string DefaultLabels = "A,B,C,_other";
     const int TargetTrialsPerLabel = 15, MinValidFramesPerTrial = 10, LandmarkCount = 21;
@@ -32,6 +32,7 @@ public sealed class SignRecorderWindow : EditorWindow
 
     [SerializeField] string personId = "p01", sessionId = "s01", labelListInput = DefaultLabels;
     [SerializeField] int selectedLabelIndex;
+    [SerializeField] bool saveHandImages = true;   // 이미지 CNN(GPU 학습)용. 실패해도 CSV 저장에는 영향이 없다.
 
     GameObject recorderHost;
     HandLandmarkSource handSource;
@@ -43,6 +44,14 @@ public sealed class SignRecorderWindow : EditorWindow
     int activeTrialSkippedFrames;
     readonly System.Diagnostics.Stopwatch trialStopwatch = new System.Diagnostics.Stopwatch();
     readonly List<SignSample> currentTrialSamples = new List<SignSample>(256);
+
+    // 손 이미지(JPG). 시도가 CSV에 저장될 때만 파일로 쓴다.
+    struct HandShot { public byte[] Jpg; public int Index; public bool Left; }
+    readonly List<HandShot> currentTrialShots = new List<HandShot>(12), pendingShots = new List<HandShot>(12);
+    long lastShotMs = -1;
+    byte[] shotRgba;
+    Color32[] shotPixels;
+    string lastShotError = "";
 
     // 저장 실패 시 메모리에 보존해 '다시 저장'으로 재시도할 시도 버퍼
     readonly List<SignSample> pendingSaveSamples = new List<SignSample>();
@@ -124,6 +133,54 @@ public sealed class SignRecorderWindow : EditorWindow
         lastTrialTimestampMs = ts;
         currentTrialSamples.Add(sample);
         activeTrialFrameIndex++;
+        TryCaptureShot(sample, ts);
+    }
+
+    // 손 부분 이미지 1장. 어떤 실패도 녹화(CSV)를 막지 않는다. 건너뛴 이유는 lastShotError에 남겨 저장 안내에 보여 준다.
+    void TryCaptureShot(SignSample sample, long ts) {
+        if (!saveHandImages || !SignHandCrop.ShouldCapture(ts, lastShotMs, currentTrialShots.Count)) return;
+        try {
+            WebCamTexture cam = handSource.CameraTexture;
+            if (cam == null || !cam.isPlaying) { lastShotError = "카메라 없음"; return; }
+            int w = cam.width, h = cam.height;
+            if (w != sample.Width || h != sample.Height) { lastShotError = "카메라 해상도가 바뀜"; return; }
+            if (!SignHandCrop.IsSafeLabel(sample.Label)) { lastShotError = "글자 이름에 쓸 수 없는 문자(-, /, 공백 등)"; return; }
+            if (HasCaseOnlyDuplicateLabel(sample.Label)) { lastShotError = "대소문자만 다른 글자가 있어 이미지 이름이 겹침"; return; }
+            int x, y, size;
+            if (!SignHandCrop.TryRect(sample.Landmarks, w, h, SignHandCrop.DefaultMargin, out x, out y, out size)) { lastShotError = "손이 너무 작거나 영상 밖"; return; }
+            if (shotPixels == null || shotPixels.Length != w * h) { shotPixels = new Color32[w * h]; shotRgba = new byte[Math.Min(w, h) * Math.Min(w, h) * 4]; }
+            cam.GetPixels32(shotPixels);
+            // 잘라 낼 영역만 변환한다. 관절 좌표와 같은 방향(좌상단 원점, FrameFlip 적용)으로 펼쳐 size×size RGBA로 만든다.
+            for (int v = 0; v < size; v++) {
+                for (int u = 0; u < size; u++) {
+                    int sx, sy;
+                    SignHandCrop.ToSource(x + u, y + v, w, h, handSource.FrameFlipH, handSource.FrameFlipV, out sx, out sy);
+                    Color32 c = shotPixels[sy * w + sx];
+                    int o = (v * size + u) * 4;
+                    shotRgba[o] = c.r; shotRgba[o + 1] = c.g; shotRgba[o + 2] = c.b; shotRgba[o + 3] = 255;
+                }
+            }
+            // 이미 영상 방향으로 펼쳤으므로 flip 없이 224×224로 줄인다.
+            byte[] rgb = SignHandCrop.CropRgb(shotRgba, size, size, false, false, 0, 0, size, SignHandCrop.ImageSize);
+            var tex = new Texture2D(SignHandCrop.ImageSize, SignHandCrop.ImageSize, TextureFormat.RGB24, false);
+            byte[] jpg;
+            try { tex.LoadRawTextureData(SignHandCrop.FlipRows(rgb, SignHandCrop.ImageSize)); tex.Apply(false); jpg = tex.EncodeToJPG(90); }
+            finally { UnityEngine.Object.DestroyImmediate(tex); }
+            if (jpg == null || jpg.Length == 0) { lastShotError = "JPG 인코딩 실패"; return; }
+            currentTrialShots.Add(new HandShot { Jpg = jpg, Index = currentTrialShots.Count + 1, Left = sample.Handedness == "Left" });
+            lastShotMs = ts;
+        } catch (Exception e) {
+            lastShotError = e.Message;
+            lastShotMs = ts;   // 같은 오류를 매 프레임 반복하지 않는다.
+            UnityEngine.Debug.LogWarning("[SignRecorder] 손 이미지 저장 건너뜀: " + e.Message);
+        }
+    }
+
+    // NTFS는 대소문자를 구분하지 않아 A와 a의 이미지 이름이 겹친다. 그런 글자는 이미지를 저장하지 않는다.
+    bool HasCaseOnlyDuplicateLabel(string label) {
+        for (int i = 0; i < parsedLabels.Count; i++)
+            if (!string.Equals(parsedLabels[i], label, StringComparison.Ordinal) && string.Equals(parsedLabels[i], label, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 
     static bool TryBuildValidSample(HandLandmarkSource src, string person, string session, string trial, string label, long frame, long tsMs, out SignSample sample) {
@@ -200,6 +257,7 @@ public sealed class SignRecorderWindow : EditorWindow
             sessionId = EditorGUILayout.TextField("세션 ID", sessionId);
             labelListInput = EditorGUILayout.TextField("글자 목록 (쉼표 구분)", labelListInput);
             if (EditorGUI.EndChangeCheck()) { ParseLabels(); RefreshCsvSummary(); }
+            saveHandImages = EditorGUILayout.ToggleLeft("손 이미지도 함께 저장 (이미지 학습용, 손 부분만 224×224 JPG)", saveHandImages);
             if (parsedLabels.Count > 0) {
                 selectedLabelIndex = Mathf.Clamp(selectedLabelIndex, 0, parsedLabels.Count - 1);
                 selectedLabelIndex = GUILayout.SelectionGrid(selectedLabelIndex, parsedLabelArray, Mathf.Clamp(parsedLabels.Count, 1, 4));
@@ -303,7 +361,7 @@ public sealed class SignRecorderWindow : EditorWindow
                 using (new EditorGUILayout.HorizontalScope()) {
                     EditorGUI.BeginDisabledGroup(IsSecondaryWindow || isRecording);
                     if (GUILayout.Button("다시 저장", GUILayout.Height(26f))) TrySavePendingTrial();
-                    if (GUILayout.Button("보관 시도 버리기", GUILayout.Width(120f), GUILayout.Height(26f))) { pendingSaveSamples.Clear(); SetNotice("보관 중이던 미저장 시도를 비웠습니다.", MessageType.Info); }
+                    if (GUILayout.Button("보관 시도 버리기", GUILayout.Width(120f), GUILayout.Height(26f))) { pendingSaveSamples.Clear(); pendingShots.Clear(); SetNotice("보관 중이던 미저장 시도를 비웠습니다.", MessageType.Info); }
                     EditorGUI.EndDisabledGroup();
                 }
             }
@@ -392,7 +450,7 @@ public sealed class SignRecorderWindow : EditorWindow
         activePerson = personId.Trim(); activeSession = sessionId.Trim(); activeLabel = GetCurrentLabel();
         activeCsvPath = path; activeTrialText = GetNextTrialNumber(activeLabel).ToString(CultureInfo.InvariantCulture);
         activeTrialFrameIndex = 0; activeTrialSkippedFrames = 0; lastTrialTimestampMs = -1;
-        currentTrialSamples.Clear();
+        currentTrialSamples.Clear(); currentTrialShots.Clear(); lastShotMs = -1; lastShotError = "";
         lastSeenDetectionFrameCount = handSource.DetectionStats.FrameCount;
         trialStopwatch.Restart();
         isRecording = true; recordingStartedBySpace = startedBySpace;
@@ -406,11 +464,12 @@ public sealed class SignRecorderWindow : EditorWindow
         lastTrialSkippedFrames = activeTrialSkippedFrames;
 
         if (currentTrialSamples.Count < MinValidFramesPerTrial) {
-            currentTrialSamples.Clear();
+            currentTrialSamples.Clear(); currentTrialShots.Clear();
             SetNotice($"너무 짧음: 유효 프레임 {lastTrialFrameCount}개 (최소 {MinValidFramesPerTrial}개 필요, 건너뜀 {lastTrialSkippedFrames}개) — 저장하지 않았습니다.", MessageType.Warning);
             return;
         }
         pendingSaveSamples.Clear(); pendingSaveSamples.AddRange(currentTrialSamples);
+        pendingShots.Clear(); pendingShots.AddRange(currentTrialShots); currentTrialShots.Clear();
         pendingCsvPath = activeCsvPath; pendingLabel = activeLabel; pendingTrialText = activeTrialText; pendingSkippedFrames = activeTrialSkippedFrames;
         currentTrialSamples.Clear();
         TrySavePendingTrial();
@@ -435,12 +494,13 @@ public sealed class SignRecorderWindow : EditorWindow
             }
 
             WriteCsvAtomically(pendingCsvPath, outputLines, exists);
+            string imageNote = SavePendingShots(pendingCsvPath, pendingLabel, pendingTrialText);
             int saved = pendingSaveSamples.Count, skipped = pendingSkippedFrames;
             string savedLabel = pendingLabel, savedTrial = pendingTrialText;
             pendingSaveSamples.Clear();
             RefreshCsvSummary();
             lastTrialFrameCount = saved; lastTrialSkippedFrames = skipped;
-            SetNotice($"시도 저장 완료: {savedLabel} #{savedTrial} (유효 {saved}프레임, 건너뜀 {skipped})", MessageType.Info);
+            SetNotice($"시도 저장 완료: {savedLabel} #{savedTrial} (유효 {saved}프레임, 건너뜀 {skipped}{imageNote})", MessageType.Info);
         } catch (Exception e) {
             SetNotice($"CSV 저장 실패(메모리 유지됨, 다시 저장 가능): {e.Message}", MessageType.Error);
             UnityEngine.Debug.LogError("[SignRecorder] CSV 저장 실패: " + e);
@@ -467,9 +527,10 @@ public sealed class SignRecorderWindow : EditorWindow
 
         try {
             WriteCsvAtomically(csvPath, kept, replaceExisting: true);
+            int removedImages = DeleteTrialImages(csvPath, target.Label, target.Trial);
             RefreshCsvSummary();
             lastTrialFrameCount = hasLastTrialInFile ? lastTrialInFile.FrameCount : 0; lastTrialSkippedFrames = 0;
-            SetNotice($"마지막 시도 삭제 완료: {target.Label} #{target.Trial} ({removed}줄 제거)", MessageType.Info);
+            SetNotice($"마지막 시도 삭제 완료: {target.Label} #{target.Trial} ({removed}줄 제거{(removedImages > 0 ? $", 이미지 {removedImages}장 삭제" : "")})", MessageType.Info);
         } catch (Exception e) {
             SetNotice("마지막 시도 삭제 실패: " + e.Message, MessageType.Error);
             UnityEngine.Debug.LogError("[SignRecorder] 마지막 시도 삭제 실패: " + e);
@@ -492,6 +553,42 @@ public sealed class SignRecorderWindow : EditorWindow
             normalizedLines.Add(row); samples.Add(parsed);
         }
         return true;
+    }
+
+    // 세션 CSV 옆의 <세션>_images 폴더. 이미지 파일 이름은 시도번호-순번-손-글자.jpg (SignHandCrop.FileName).
+    static string ImageDir(string csvPath) => Path.Combine(Path.GetDirectoryName(csvPath) ?? "", Path.GetFileNameWithoutExtension(csvPath) + "_images");
+
+    // 이미 CSV에 저장된 시도의 이미지를 쓴다. 실패해도 예외를 밖으로 내지 않는다(CSV는 이미 안전).
+    string SavePendingShots(string csvPath, string label, string trialText) {
+        string note = "";
+        try {
+            if (pendingShots.Count > 0 && int.TryParse(trialText, NumberStyles.None, CultureInfo.InvariantCulture, out int trial)) {
+                DeleteTrialImages(csvPath, label, trialText);   // 지우지 못해 남은 같은 시도 이미지가 섞이지 않게 먼저 정리
+                string dir = ImageDir(csvPath);
+                Directory.CreateDirectory(dir);
+                for (int i = 0; i < pendingShots.Count; i++) File.WriteAllBytes(Path.Combine(dir, SignHandCrop.FileName(trial, pendingShots[i].Index, pendingShots[i].Left, label)), pendingShots[i].Jpg);
+                note = $", 손 이미지 {pendingShots.Count}장";
+            } else if (saveHandImages) {
+                note = ", 손 이미지 0장" + (string.IsNullOrEmpty(lastShotError) ? "" : " (" + lastShotError + ")");
+            }
+        } catch (Exception e) {
+            note = ", 손 이미지 저장 실패: " + e.Message;
+            UnityEngine.Debug.LogWarning("[SignRecorder] 손 이미지 쓰기 실패: " + e);
+        }
+        pendingShots.Clear();
+        return note;
+    }
+
+    static int DeleteTrialImages(string csvPath, string label, string trialText) {
+        int removed = 0;
+        try {
+            string dir = ImageDir(csvPath);
+            if (!Directory.Exists(dir) || !int.TryParse(trialText, NumberStyles.None, CultureInfo.InvariantCulture, out int trial)) return 0;
+            foreach (string file in Directory.GetFiles(dir, "*.jpg")) {
+                if (SignHandCrop.TryParseFileName(Path.GetFileName(file), out int t, out int _, out bool _, out string l) && t == trial && l == label) { File.Delete(file); removed++; }
+            }
+        } catch (Exception e) { UnityEngine.Debug.LogWarning("[SignRecorder] 이미지 삭제 실패: " + e.Message); }
+        return removed;
     }
 
     static void WriteCsvAtomically(string csvPath, List<string> lines, bool replaceExisting) {

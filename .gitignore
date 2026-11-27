@@ -145,3 +145,6 @@ __pycache__/
 /Assets/StreamingAssets/SignData/**/*.csv.meta
 /Assets/StreamingAssets/SignData/*.csv
 /Assets/StreamingAssets/SignData/*.csv.meta
+Tools/WearOS/**/build/
+Tools/WearOS/**/.gradle/
+Tools/WearOS/**/local.properties
