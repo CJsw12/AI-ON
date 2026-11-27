@@ -198,3 +198,4 @@
 - 플레이어 웹캠 아바타 촬영·2인 구도 실기 점검. 16개 학과 스토리·미니게임·엔딩 분기 밸런스 점검.
 - 결합 설계실: 실제 마우스로 결합 클릭·3D 드래그, 스토리 챕터 1 전공자 진입, 작은 창 배치, AI 모드에서 코멘트가 15초 안에 뜨는지 확인. 교수별 격려 문구 44개 사람 검수.
 - TTS 기술 문서화: sh-com-claude에 `docs/plans/TTS-Documentation-Request.md` 요청(GPU 실측, AI 활용, Qwen3-TTS 생성 스크립트 재현성). 합성 음성 고지 방식과 `VoiceTTS/` 녹음 원본 공개 범위는 사용자 결정 필요.
+- 수어 인식 학습: `docs/plans/Sign-Recognition-Training-Guide.md` 튜토리얼 A(k-NN)부터 진행. B(관절 MLP, GPU) 전에 `train_mlp.py`·`export_onnx.py`·게임 ONNX 실행 코드 구현 필요, C(이미지 CNN) 전에 손 이미지 녹화 기능 필요. 녹화본은 게임 저장소에 올리지 않고 암호화 USB 등으로 학습 PC에 옮긴다(가이드 2.6절).
