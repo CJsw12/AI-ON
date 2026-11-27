@@ -85,5 +85,15 @@ Get-UnityConsole -Level error -Tail 20; Invoke-UnityEval 'return UnityEditor.Edi
 
 **AI 모드 서버** (`Server/ai-proxy/`, Cloudflare Worker): `gpt-6.1-terra`(12초, 하루 500회) → 실패 시 `gemini-3.1-flash-lite`. 키는 Cloudflare 비밀 설정에만 둔다. 배포: `npx wrangler login` → `npx wrangler secret put GEMINI_API_KEY`/`OPENAI_API_KEY` → `npx wrangler deploy`(주소는 `AiProfessor.ProxyEndpoint`). 설정에 개인 Gemini 키가 있으면 서버를 거치지 않는다.
 
+**로컬 음성 입력·대화** (`Tools/StorySpeech/`, Windows 확인용): `transcribe.py --worker`는 faster-whisper 1.2.1·av 16.1.0·small CPU int8 모델을 유지한다. 첫 실행 모델 다운로드 후 캐시를 우선 사용한다.
+스토리 AI 자유 대답에서 자동 음성 입력을 켜면 발화 뒤 1.3초 침묵 감지 → 인식 문장 1.5초 표시 → 기존 채점으로 전송한다. 마이크 이름 버튼으로 장치를 바꾸고 감도를 조절한다.
+타이틀 → `교수님께 질문하기`는 학과·교수 선택 후 키보드로 질문하고 글로 답변받는 별도 화면이다. 마이크·TTS를 사용하지 않고 스토리 점수에 반영하지 않는다.
+스토리 마이크의 정확도 우선 옵션은 medium 모델을 처음 다운로드한다(큰 모델·CPU 처리 지연 및 인식률 미검증). 기본값은 small이다. uv·Python 도구가 있는 로컬 PC용이다. 배포 빌드에는 도구 동봉이 추가로 필요하다. 자동 검사 `Tests/SpeechTurnGate.Tests.ps1`, 실마이크 인식률은 별도 확인한다.
+
+**AR 코드 실행 실험실** (로컬 비교용): 미니게임 → 컴퓨터공학과 → AR 코드 실행 실험실. 기존 AI 조교 실습·스토리는 유지한다. PC 한 줄 실행과 휴대폰 변수 상자를 동기화한다.
+휴대폰 QR은 HTTP 안내/3D 미리보기로 연결한다. 실제 카메라 AR은 페이지의 HTTPS 안내에서 로컬 개발 인증서를 사용자가 직접 신뢰한 뒤 Hiro 학습 카드를 비춘다. 신뢰 저장소는 자동 변경하지 않는다.
+인증서 도구 `Tools/ArCodeLab/make_certificate.py`(uv cryptography), 키·PFX는 Git 제외 Library/ArCodeLab에만 둔다. 인증서 7일 만료·IP 변경 시 다시 준비한다. 영상은 기기 안에서만 처리한다.
+AR.js 3.4.7·Three.js r128 및 라이선스는 Assets/StreamingAssets/ArCodeLab에 로컬 배포한다. 코드 계산은 CodeLabTrace, AI는 실행 상태 설명만 담당한다. 검사: Tests/CodeLabTrace.Tests.ps1.
+
 ## 8. 환경 주의
 - 방화벽·네트워크 같은 PC 설정은 Git에 없다. 다른 PC에 그대로 적용된다고 가정하지 않는다. 학교/관리 PC 보안 정책을 우회하지 않는다.

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -30,6 +30,7 @@ public partial class GameController
 
     void OpenMenu(Menu next)
     {
+        CancelStoryDictation();
         novelAudio.Play("Open");
         ReadLog.Flush();
         menu = next;
@@ -533,9 +534,9 @@ public partial class GameController
         // and some games also change their content), so it is always shown.
         Slot[] games = story.Slots.Where(slot => slot.Game != null).ToArray();
         bool stretch = story.Name == "체육학과";
-        bool compact = games.Length > 3 || stretch;
-        float tileHeight = compact ? 66 : 90;
-        float tileStep = compact ? 72 : 98;
+        bool compact = games.Length > 3 || stretch || story.Name == "컴퓨터공학과";
+        float tileHeight = story.Name == "컴퓨터공학과" ? 42 : compact ? 66 : 90;
+        float tileStep = story.Name == "컴퓨터공학과" ? 46 : compact ? 72 : 98;
         float y = card.y + 280;
         foreach (Slot slot in games)
         {
@@ -553,6 +554,23 @@ public partial class GameController
             miniGame = new StretchPractice(theme, practiceProfessor);
             menu = Menu.None;
         }
+        if (story.Name == "컴퓨터공학과" &&
+            PracticeGameTile(new Rect(card.x + 50, y, card.width - 100, 42),
+                CodeTutorTheme))
+        {
+            novelAudio.Play("Select");
+            practice = CodeTutorTheme;
+            MiniGame.Easy = false;
+            miniGame = new CodeTutorPractice(practice, story.Professors[practiceProfessor].Name);
+            menu = Menu.None;
+        }
+        if (story.Name == "컴퓨터공학과" && PracticeGameTile(new Rect(card.x + 50, y + tileStep, card.width - 100, 42), ArCodeTheme))
+        {
+            practice = ArCodeTheme;
+            MiniGame.Easy = false;
+            miniGame = new ArCodeLab(practice, story.Professors[practiceProfessor].Name);
+            menu = Menu.None;
+        }
         NovelUI.Label(new Rect(card.x, card.y + 578, card.width, 30), "연습 난이도", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
         int mode = NovelUI.Segmented(new Rect(card.center.x - 190, card.y + 608, 380, 44), new[] { "비전공자", "전공자" }, practiceExperienced ? 1 : 0, 19);
         if ((mode == 1) != practiceExperienced) { novelAudio.Play("Toggle"); practiceExperienced = mode == 1; }
@@ -560,6 +578,16 @@ public partial class GameController
         int who = NovelUI.Segmented(new Rect(card.center.x - 220, card.y + 698, 440, 48), new[] { story.Professors[0].Name, story.Professors[1].Name }, practiceProfessor, 19);
         if (who != practiceProfessor) { novelAudio.Play("Toggle"); practiceProfessor = who; }
     }
+
+    static readonly MiniGameTheme CodeTutorTheme = new MiniGameTheme
+    {
+        Title = "AI 조교와 코드 검증", Place = "ComputerLab",
+        Note = "반복문·평균 계산 · 변수 추적 · 휴대폰 풀이"
+    };
+    static readonly MiniGameTheme ArCodeTheme = new MiniGameTheme
+    {
+        Title = "AR 코드 실행 실험실", Place = "ComputerLab", Note = "새 실습 · 한 줄 실행 · 변수 상자 · 휴대폰 AR"
+    };
 
     void StartPractice(MiniGameTheme theme)
     {
@@ -575,6 +603,8 @@ public partial class GameController
     {
         novelAudio.StopVoice();
         if (miniGame is StretchPractice stretchGame) stretchGame.Release();
+        if (miniGame is CodeTutorPractice tutor) tutor.Release();
+        if (miniGame is ArCodeLab arCode) arCode.Release();
         practice = null;
         miniGame = null;
         OpenMenu(Menu.Practice);
@@ -596,8 +626,8 @@ public partial class GameController
         Rect face = hover ? new Rect(rect.x, rect.y - 2, rect.width, rect.height) : rect;
         NovelUI.Card(face, hover ? NovelUI.Blush : NovelUI.Cream, 22, NovelUI.Pink);
         NovelUI.Heart(new Rect(face.x + 18, face.center.y - 15, 30, 30), NovelUI.Pink);
-        NovelUI.Label(new Rect(face.x + 62, face.y + 6, face.width - 84, 30), theme.Title, NovelUI.Round, 23, NovelUI.Berry, TextAnchor.MiddleLeft);
-        NovelUI.Label(new Rect(face.x + 62, face.y + 35, face.width - 84, 28), theme.Note, NovelUI.Soft, 16, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
+        NovelUI.Label(new Rect(face.x + 62, face.y + 3, face.width - 84, 27), theme.Title, NovelUI.Round, face.height < 46 ? 19 : face.height < 60 ? 21 : 23, NovelUI.Berry, TextAnchor.MiddleLeft);
+        NovelUI.Label(new Rect(face.x + 62, face.y + (face.height < 46 ? 22 : face.height < 60 ? 27 : 35), face.width - 84, 23), theme.Note, NovelUI.Soft, face.height < 46 ? 12 : face.height < 60 ? 14 : 16, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
         return GUI.Button(rect, GUIContent.none, GUIStyle.none);
     }
 }

@@ -61,7 +61,9 @@ public partial class GameController : MonoBehaviour
         UpdatePhotoCapture();
         novelAudio.SetMood(DodgeScreenOpen ? "Darkness" : S.Mood(scene, choiceStage));   // tense music for the gaze-dodge game
         AiImeUpdate();
+        TickVoiceInput();
         if (menu == Menu.None && (miniGame == null || !miniGame.Reviewing)) MiniGame.Tick(Time.unscaledDeltaTime);
+        if (menu == Menu.None && miniGame is ArCodeLab arCodeLab) arCodeLab.Tick();
     }
     Story S => Stories.All[faculty];   // The chosen faculty's semester.
     string ProfessorName => S.Professors[professor].Name;
@@ -86,7 +88,9 @@ public partial class GameController : MonoBehaviour
         return texture;
     }
 
-    void OnApplicationPause(bool paused) { if (paused) { ReadLog.Flush(); GameSettings.Save(); } }
+    void OnApplicationPause(bool paused) { if (paused) { CancelStoryDictation(); ReadLog.Flush(); GameSettings.Save(); } }
+    void OnDestroy() { CloseVoiceChat(); DisposeSpeechInput(); if (miniGame is CodeTutorPractice tutor) tutor.Release(); if (miniGame is ArCodeLab arCode) arCode.Release(); }
+
     void OnApplicationQuit() { CloseHandProbe(false); CloseGazeTest(); ReadLog.Flush(); GameSettings.Save(); }
     void QuitGame()
     {
@@ -226,6 +230,7 @@ public partial class GameController : MonoBehaviour
 
     void DrawScreen()
     {
+        if (voiceChatOpen) { DrawVoiceChat(); return; }
         if (handProbeOpen) { DrawHandProbe(); return; }
         if (gazeTestOpen) { DrawGazeTest(); return; }
         if (storyGazeEvent != GazeGame.None) { DrawStoryGazeIntro(); return; }
@@ -377,7 +382,7 @@ public partial class GameController : MonoBehaviour
         {
             NovelUI.Pill(box.x + 34, box.y - 26, 52, speaker, SpeakerTag(speaker), SpeakerInk(speaker), 24);
         }
-        Rect textRect = new Rect(box.x + 42, box.y + 46, box.width - 100, box.height - 64 - (AiBoxField ? 76 : 0));
+        Rect textRect = new Rect(box.x + 42, box.y + 46, box.width - 100, AiInlineAnswer ? 58 : box.height - 64 - (AiBoxField ? 76 : 0));
         int size = NovelUI.Height(text, NovelUI.Soft, 26, textRect.width) > textRect.height ? 22 : 26;
         NovelUI.Label(textRect, typing ? plain.Substring(0, shown) : text, NovelUI.Soft, size, narration ? NovelUI.Plum : NovelUI.Berry, TextAnchor.UpperLeft, FontStyle.Bold);
 
@@ -786,6 +791,7 @@ public partial class GameController : MonoBehaviour
             if (NovelUI.Button(new Rect(card.x + 380, card.yMax - 66, 124, 46), "엔딩 도감", false, 19)) OpenMenu(Menu.Gallery);
             if (NovelUI.Button(new Rect(card.x + 514, card.yMax - 66, 116, 46), "설정", false, 19)) OpenMenu(Menu.Settings);
             if (NovelUI.Button(new Rect(990, 810, 250, 54), "시선 추적 테스트", false, 20)) OpenGazeTest();
+            if (NovelUI.Button(new Rect(990, 740, 250, 54), "교수님께 질문하기", true, 20)) OpenVoiceChat();
             int college = NovelUI.Segmented(new Rect(card.x + 40, card.y + 80, card.width - 80, 48), Stories.Colleges, titleCollege, 18);
             if (college != titleCollege) { novelAudio.Play("Toggle"); titleCollege = college; }
             int[] faculties = Stories.In(titleCollege);

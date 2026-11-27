@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -25,7 +25,7 @@ public partial class GameController
     // IMGUI only receives Hangul when IME composition is forced on; Auto drops it (notably in the Editor's Game view).
     void AiImeUpdate()
     {
-        Input.imeCompositionMode = aiImeWanted ? IMECompositionMode.On : IMECompositionMode.Auto;
+        Input.imeCompositionMode = (aiImeWanted || (miniGame is CodeTutorPractice tutor && tutor.WantsIme) || (miniGame is ArCodeLab arCode && arCode.WantsIme)) ? IMECompositionMode.On : IMECompositionMode.Auto;
         aiImeWanted = false;
     }
     // A syllable still being composed when Enter or the button is pressed would otherwise be lost.
@@ -35,10 +35,12 @@ public partial class GameController
     bool AiWaiting => aiPending != null;
     // The professor's latest hint replaces the quiz's question line in the dialogue box.
     bool AiHintShown => aiMode && aiHint != null && !showResult && AtChoice && aiSlot == AiSlotKey;
+    bool AiInlineAnswer => aiMode && scene >= 1 && scene <= 6 && !showResult && AtChoice && !aiShowOptions && S.Slot(scene, choiceStage).Options != null;
     bool AiBoxField => aiMode && aiAsking && !showResult && AtChoice;
 
     void AiReset()
     {
+        CancelStoryDictation();
         aiRun++;
         aiPending = null;
         aiSlot = null;
@@ -54,6 +56,7 @@ public partial class GameController
     {
         string key = AiSlotKey;
         if (aiSlot == key) return;
+        CancelStoryDictation();
         aiSlot = key;
         aiPending = null;   // a request from the previous question must not keep this one waiting
         aiTyped = aiQuestion = "";
@@ -66,6 +69,16 @@ public partial class GameController
     // Applies a finished request on the main thread; replies for a slot no longer on screen are dropped.
     void AiPoll()
     {
+        if (storyDictated != null)
+        {
+            if (storyDictatedSlot == AiSlotKey && !AiWaiting && StoryVoiceContext)
+            {
+                aiTyped = (aiTyped + " " + storyDictated).Trim();
+                if (storyVoiceAuto) speechReviewAt = Time.unscaledTime + 1.5f;
+            }
+            if (aiTyped.Length > SpeechAnswerLimit) aiTyped = aiTyped.Substring(0, SpeechAnswerLimit);
+            storyDictated = null;
+        }
         if (aiPending == null || !aiPending.IsCompleted) return;
         AiProfessor.Result result = aiPending.IsFaulted || aiPending.IsCanceled ? new AiProfessor.Result { Error = "연결 실패" } : aiPending.Result;
         aiPending = null;
@@ -132,6 +145,7 @@ public partial class GameController
 
     void AiSend(string system, string user, bool hint)
     {
+        CancelStoryDictation();
         aiError = null;
         aiErrorScroll = Vector2.zero;
         aiPendingSlot = AiSlotKey;
@@ -151,19 +165,10 @@ public partial class GameController
             return false;
         }
 
-        bool showError = aiError != null && !AiWaiting;
-        string note = aiError != null ? "앗, " + aiError + " · 다시 보내거나 '선택지로 전환'을 누르세요" : "AI 교수님이 대답을 듣고 호감도를 정해요 (Enter로 보내기)";
-        float noteWidth = showError ? 720 : 880;
-        float textWidth = noteWidth - 20; // Reserve space for the scrollbar on long errors.
-        float noteContentHeight = NovelUI.Text(NovelUI.Soft, 17, NovelUI.Plum, TextAnchor.UpperLeft, FontStyle.Bold).CalcHeight(new GUIContent(note), textWidth);
-        float noteHeight = Mathf.Clamp(noteContentHeight, 30, 140);
-        float cardHeight = 106 + noteHeight;
-        Rect card = new Rect(170, bottom - 14 - cardHeight, 940, cardHeight);
-        NovelUI.Card(card, NovelUI.Alpha(NovelUI.Cream, .97f), 30, NovelUI.Pink);
-        NovelUI.Pill(card.x + 26, card.y - 18, 36, "AI 자유 대답", NovelUI.Mint, NovelUI.Berry, 18);
-        if (NovelUI.Button(new Rect(card.xMax - 190, card.y - 22, 170, 40), AiWaiting ? "취소하고 선택지로" : "선택지로 고르기", false, 17)) { novelAudio.Play("Toggle"); AiCancelPending(); aiShowOptions = true; return true; }
-
-        Rect field = new Rect(card.x + 30, card.y + 34, 680, 58);
+        string note = aiError != null ? "전송 실패 · 다시 보내거나 선택지로 전환해 주세요." : "직접 입력하거나 음성으로 답한 뒤 전송할 수 있어요.";
+        Rect card = new Rect(70, 628, 1140, 244);
+        if (NovelUI.Button(new Rect(card.xMax - 378, card.y + 112, 150, 48), "선택지로", false, 18)) { novelAudio.Play("Toggle"); AiCancelPending(); aiShowOptions = true; CancelStoryDictation(); return true; }
+        Rect field = new Rect(card.x + 42, card.y + 112, 700, 48);
         bool enter = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
         if (AiWaiting)
         {
@@ -171,12 +176,21 @@ public partial class GameController
             string dots = new string('.', 1 + (int)(Time.unscaledTime * 3) % 3);
             NovelUI.Label(new Rect(field.x + 28, field.y, field.width - 40, field.height), ProfessorName + "님이 생각 중" + dots, NovelUI.Soft, 21, NovelUI.Plum, TextAnchor.MiddleLeft, FontStyle.Bold);
         }
-        else aiTyped = AiField(field, "FreeAnswer", aiTyped, 80, "교수님께 내 말로 대답해 보세요", true);
+        else
+        {
+            string changed = AiField(field, "FreeAnswer", aiTyped, SpeechAnswerLimit, "교수님께 내 말로 대답해 보세요", !storyListening);
+            if (changed != aiTyped) { aiTyped = changed; storyVoiceAuto = false; CancelStoryDictation(); }
+            DrawStoryDictation(new Rect(card.x + 42, card.y + 178, 1056, 34));
+        }
 
-        GUI.enabled = !AiWaiting && WithComposition(aiTyped) != "";
-        if (NovelUI.Button(new Rect(card.x + 725, card.y + 34, 185, 58), "대답하기", true, 22) || (enter && GUI.enabled))
+        bool autoSend = storyVoiceAuto && speechReviewAt >= 0 && Time.unscaledTime >= speechReviewAt && StoryVoiceContext;
+        GUI.enabled = !AiWaiting && !storyListening && storyTranscription == null && WithComposition(aiTyped) != "";
+        string sendLabel = storyVoiceAuto && speechReviewAt >= 0 ? "자동 전송 대기" : "대답하기";
+        if ((NovelUI.Button(new Rect(card.xMax - 210, card.y + 112, 168, 48), sendLabel, true, 22) || enter || autoSend) && GUI.enabled)
         {
             if (enter) Event.current.Use();
+            speechReviewAt = -1;
+            speechAutoSubmitted = true;
             novelAudio.Play("Select");
             string answer = aiAnswer = WithComposition(aiTyped);
             AddToBacklog("ai/" + AiSlotKey + "/answer", "나", answer, true);
@@ -185,21 +199,7 @@ public partial class GameController
         }
         GUI.enabled = true;
 
-        if (showError)
-        {
-            if (NovelUI.Button(new Rect(card.xMax - 180, card.y + 94, 160, 36), "선택지로 전환", false, 16))
-            {
-                novelAudio.Play("Toggle");
-                aiShowOptions = true;
-                return true;
-            }
-        }
-        Rect noteRect = new Rect(card.x + 34, card.y + 98, noteWidth, noteHeight);
-        bool scrollNote = noteContentHeight > noteHeight;
-        if (scrollNote)
-            aiErrorScroll = GUI.BeginScrollView(noteRect, aiErrorScroll, new Rect(0, 0, textWidth, noteContentHeight), false, true);
-        NovelUI.Label(scrollNote ? new Rect(0, 0, textWidth, noteContentHeight) : new Rect(noteRect.x, noteRect.y, textWidth, noteRect.height), note, NovelUI.Soft, 17, aiError != null ? NovelUI.DeepPink : NovelUI.Plum, TextAnchor.UpperLeft, FontStyle.Bold);
-        if (scrollNote) GUI.EndScrollView();
+        NovelUI.Label(new Rect(card.x + 42, card.y + 218, 1056, 22), note, NovelUI.Soft, 14, aiError != null ? NovelUI.DeepPink : NovelUI.Plum);
         return true;
     }
 

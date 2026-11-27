@@ -1,0 +1,14 @@
+﻿AR CODE LAB THIRD-PARTY NOTICES
+
+AR.js 3.4.7: MIT License. Upstream: https://github.com/AR-js-org/AR.js/tree/3.4.7
+Bundled ar-threex.js is unmodified. AR.js embeds @ar-js-org/artoolkit5-js; package 0.3.1 declares LGPL-3.0.
+ARToolkit JavaScript source: https://github.com/andypotato/artoolkit5-js
+Published package and source files: https://www.npmjs.com/package/@ar-js-org/artoolkit5-js/v/0.3.1
+Corresponding AR.js build source and dependency manifest: https://github.com/AR-js-org/AR.js/tree/3.4.7
+The scripts are separate, replaceable files; no proprietary source is embedded in them.
+See ARJS-LICENSE.txt and ARTOOLKIT-LICENSE.txt. The LGPL text incorporates GPLv3; see GPL-3.0.txt.
+
+Three.js 0.128.0: MIT License. See THREE-LICENSE.txt.
+Source: https://github.com/mrdoob/three.js/tree/r128
+Hiro marker and camera parameters: AR.js 3.4.7 data directory, under its upstream license.
+All assets are served locally; the page does not fetch a CDN at runtime.
