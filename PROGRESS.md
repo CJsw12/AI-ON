@@ -8,6 +8,7 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude] 2026-11-27 수어 녹화기에 손 이미지 자동 저장 추가(GPU 이미지 CNN 학습용)**: `Tools → Sign → Recorder`가 같은 시도에서 손 부분만 224×224 JPG로 `<세션>_images/`에 함께 저장한다(시도마다 최대 10장, 시작 300ms 뒤부터 150ms 간격, 체크박스 `손 이미지도 함께 저장` 기본 켜짐). 계산은 `Assets/Scripts/Sign/SignHandCrop.cs`(Unity 무관, 테스트 `Tests/SignHandCrop.Tests.ps1`)로 분리했고, 이미지 저장이 실패해도 CSV 저장에는 영향이 없다. `Check-SignRecording.ps1`에 이미지 개수 열·`-RequireImages`·고아 이미지 경고 추가. 가이드(md+PDF 14쪽)에 이미지·첫 시도 확인 단계 반영. 검증: Tests 22종 exit 0, unittest 8개 통과, git diff --check 통과, UnityEngine/UnityEditor DLL 참조 컴파일 오류 0(손 추적 클래스는 가짜로 대체). 독립 리뷰(맥락 없는 Claude 에이전트, 읽기 전용)에서 방향 변환이 Mediapipe 플러그인 소스와 일치하고 CSV 안전하다고 확인, 지적 medium 3·low 다수는 모두 수정. **Codex 리뷰는 못 했다**(이 PC의 Codex가 로그인되어 있지 않음, `codex login` 필요). **플레이 방법**: Play → `Tools → Sign → Recorder`에서 녹화하고 `Tools/SignData/raw/<가명>/<세션>_images/`의 jpg 한 장을 열어 손이 똑바로 가운데에 나오는지 확인. **미검증: Unity 에디터·실제 웹캠에서의 실행(이미지 방향 포함), 푸시 훅의 Unity 컴파일(이 PC의 에디터가 프로젝트를 열고 있어 CLI가 못 닿음 — Console 확인 필요).** 다음: 이미지 CNN 학습 스크립트(GPU).
 - **[Claude+Codex] 2026-11-27 수어 규칙 분류기(C#, 게임 미연결)**: `Assets/Scripts/Sign/SignRuleClassifier.cs`(손가락 펴짐+방향, ㅂ·ㅇ·ㅎ·ㄹ·ㅅ, 데이터·학습 없음)와 `Tests/SignRule.Tests.ps1`(사전 영상 관절 183프레임 fixture).
   - 사전 영상: 5글자 유지 구간 100%, ㄴ·ㅁ 거절, 좌우 판정 뒤집힘·±20° 회전 불변. 인터넷 강의 영상(수어자 4명): ㅂ·ㅇ·ㅎ 인식, ㅌ→ㄹ·ㅈ→ㅅ 혼동, 주먹 자세→ㅎ 오인식. 상세 `docs/plans/Sign-Fingerspelling-1203-Proposal.md` 0.5절.
   - **플레이 방법**: 없음(게임 연결 전). 검증: 테스트 전부 exit 0, Unity 배치 컴파일 OK. 미검증: Unity 실행, 실제 웹캠. 게임 연결은 팀 합의 후.
