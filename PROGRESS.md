@@ -201,3 +201,4 @@
 - TTS 기술 문서화: sh-com-claude에 `docs/plans/TTS-Documentation-Request.md` 요청(GPU 실측, AI 활용, Qwen3-TTS 생성 스크립트 재현성). 합성 음성 고지 방식과 `VoiceTTS/` 녹음 원본 공개 범위는 사용자 결정 필요.
 - 수어 인식 학습: `docs/plans/Sign-Recognition-Training-Guide.md` 튜토리얼 A(k-NN)부터 진행. B(관절 MLP, GPU) 전에 `train_mlp.py`·`export_onnx.py`·게임 ONNX 실행 코드 구현 필요, C(이미지 CNN) 전에 손 이미지 녹화 기능 필요. 녹화본은 게임 저장소에 올리지 않고 암호화 USB 등으로 학습 PC에 옮긴다(가이드 2.6절).
 - 수어 학습 PC 준비: sh-com-claude(RTX 5060 Ti PC)에 `docs/plans/Sign-Training-PC-Setup-Request.md` 작업 지시(Python 3.11 + PyTorch cu128, GPU 검증, GPU 대 CPU 실측표). 학습 스크립트는 home PC Codex가 작성 중.
+- 수어 문서 통합: 계획서·학습 가이드·팀 모임 대본·학습 PC 작업 지시서 4개를 `docs/plans/Sign-Fingerspelling.md` 한 파일(1~4부, 맨 위 "읽는 법" 표)로 합침. 위 줄들의 옛 경로(`Sign-Fingerspelling-Plan.md` 등)는 이 파일로 대체. 학습 가이드 PDF `docs/reports/AI-ON-수어인식-학습가이드.pdf`.
