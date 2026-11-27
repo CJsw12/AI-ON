@@ -532,7 +532,8 @@ public partial class GameController
         // Same layout for every faculty. The difficulty applies to every minigame (non-majors run on a 0.75x clock,
         // and some games also change their content), so it is always shown.
         Slot[] games = story.Slots.Where(slot => slot.Game != null).ToArray();
-        bool compact = games.Length > 3;
+        bool stretch = story.Name == "체육학과";
+        bool compact = games.Length > 3 || stretch;
         float tileHeight = compact ? 66 : 90;
         float tileStep = compact ? 72 : 98;
         float y = card.y + 280;
@@ -541,6 +542,16 @@ public partial class GameController
             Rect tile = new Rect(card.x + 50, y, card.width - 100, tileHeight);
             if (compact ? PracticeGameTile(tile, slot.Game) : Tile(tile, slot.Game.Title, slot.Game.Note, false)) StartPractice(slot.Game);
             y += tileStep;
+        }
+        if (stretch && Tile(new Rect(card.x+50,y,card.width-100,66), "교수님과 스트레칭", "웹캠 자세 인식 · 연습 전용 · 3포즈", false))
+        {
+            StopWebcamTracking();
+            StopIPhoneGaze();
+            var theme = new MiniGameTheme { Title = "교수님과 스트레칭", Place = "Campus", Note = "체육학과 연습 전용" };
+            practice = theme;
+            MiniGame.Easy = false;
+            miniGame = new StretchPractice(theme, practiceProfessor);
+            menu = Menu.None;
         }
         NovelUI.Label(new Rect(card.x, card.y + 578, card.width, 30), "연습 난이도", NovelUI.Round, 20, NovelUI.Berry, TextAnchor.MiddleCenter);
         int mode = NovelUI.Segmented(new Rect(card.center.x - 190, card.y + 608, 380, 44), new[] { "비전공자", "전공자" }, practiceExperienced ? 1 : 0, 19);
@@ -563,6 +574,7 @@ public partial class GameController
     void EndPractice()
     {
         novelAudio.StopVoice();
+        if (miniGame is StretchPractice stretchGame) stretchGame.Release();
         practice = null;
         miniGame = null;
         OpenMenu(Menu.Practice);
