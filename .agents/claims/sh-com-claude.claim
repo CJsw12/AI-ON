@@ -1,9 +1,0 @@
-agent: sh-com-claude
-task: 수어 가이드: 구글 드라이브 전달 경로 반영
-host: DESKTOP-GCC8QCI
-started: 2026-11-27T15:24:55+0900
-updated: 2026-11-27T15:24:55+0900
-paths:
-- docs/plans/Sign-Data-Recording-Guide.md
-- docs/reports/AI-ON-수어데이터-녹화가이드.pdf
-- docs/plans/Sign-Fingerspelling.md
