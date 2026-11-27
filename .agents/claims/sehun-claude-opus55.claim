@@ -1,8 +1,8 @@
 agent: sehun-claude-opus55
-task: 수어 규칙 v2 게임 연결·연습 넘기기·테스트 기록 모드
+task: AGENTS.md 수어 기록 모드 사용법 한 줄
 host: YUZA
 started: 2026-11-27T18:13:05+0900
-updated: 2026-11-27T18:13:05+0900
+updated: 2026-11-27T18:27:05+0900
 paths:
 - Assets/Scripts/Sign/SignRuleClassifier.cs
 - Assets/Scripts/Sign/SignGameSession.cs
@@ -12,3 +12,4 @@ paths:
 - Tests/SignRule.Tests.ps1
 - Tests/SignGame.Tests.ps1
 - Tests/SignPlayLog.Tests.ps1
+- AGENTS.md
