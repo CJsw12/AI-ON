@@ -5,6 +5,8 @@ public static class SignRuleClassifier
 {
     public const float ExtendedDegrees = 470f;
     public const float BentDegrees = 420f;
+    public const float RMaxIndexMiddleDegrees = 18f;
+    public const float SMaxThumbSpreadDegrees = 70f;
     public static readonly string[] Letters = { "ㅂ", "ㅇ", "ㅎ", "ㄹ", "ㅅ" };
 
     private const double RadiansToDegrees = 180.0 / Math.PI;
@@ -77,7 +79,27 @@ public static class SignRuleClassifier
             matches++;
         }
 
-        return matches == 1 ? letter : null;
+        if (matches != 1)
+            return null;
+        if (letter == "ㄹ" && IndexMiddleGapDegrees(features) >= RMaxIndexMiddleDegrees)
+            return null;
+        if (letter == "ㅅ" && ThumbSpreadDegrees(features) >= SMaxThumbSpreadDegrees)
+            return null;
+        return letter;
+    }
+
+    public static double IndexMiddleGapDegrees(float[] f) { return AngleBetween(f, 5, 8, 9, 12); }
+
+    public static double ThumbSpreadDegrees(float[] f) { return AngleBetween(f, 5, 4, 5, 8); }
+
+    private static double AngleBetween(float[] f, int aStart, int aEnd, int bStart, int bEnd)
+    {
+        double ax = (double)f[2 * aEnd] - f[2 * aStart];
+        double ay = (double)f[2 * aEnd + 1] - f[2 * aStart + 1];
+        double bx = (double)f[2 * bEnd] - f[2 * bStart];
+        double by = (double)f[2 * bEnd + 1] - f[2 * bStart + 1];
+        double angle = Math.Atan2(ay, ax) - Math.Atan2(by, bx);
+        return Math.Abs(Math.Atan2(Math.Sin(angle), Math.Cos(angle))) * RadiansToDegrees;
     }
 
     private static FingerState State(float[] features, int finger)

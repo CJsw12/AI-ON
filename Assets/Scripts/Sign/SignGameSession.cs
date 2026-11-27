@@ -9,6 +9,7 @@ public sealed class SignGameSession
     readonly List<string> challenge = new List<string>();
     readonly List<Answer> answers = new List<Answer>();
     readonly long limitMs;
+    readonly long practiceLimitMs;
     int index; long started, lastTime; bool armed = true, hasLastTime;
     public Stage CurrentStage { get; private set; }
     public string CurrentLabel { get { var current = CurrentStage == Stage.Challenge ? challenge : letters; return CurrentStage != Stage.Result && index < current.Count ? current[index] : null; } }
@@ -16,11 +17,16 @@ public sealed class SignGameSession
     public int CorrectCount { get; private set; }
     public string LastWrongLabel { get; private set; }
     public int WrongAttempts { get; private set; }
-    public long RemainingMs(long time) { return Math.Max(0, limitMs - Math.Max(0, time - started)); }
-    public SignGameSession(SignLabels labels, long limitMs = 8000, int seed = 17)
+    public long RemainingMs(long time)
     {
-        if (labels == null || limitMs <= 0) throw new ArgumentException("게임 설정이 잘못되었습니다.");
+        long limit = CurrentStage == Stage.Practice ? practiceLimitMs : limitMs;
+        return hasLastTime ? Math.Max(0, limit - Math.Max(0, time - started)) : limit;
+    }
+    public SignGameSession(SignLabels labels, long limitMs = 8000, int seed = 17, long practiceLimitMs = 15000)
+    {
+        if (labels == null || limitMs <= 0 || practiceLimitMs < 0) throw new ArgumentException("게임 설정이 잘못되었습니다.");
         this.limitMs = limitMs;
+        this.practiceLimitMs = practiceLimitMs;
         for (int i = 0; i < labels.Count; i++) if (labels[i] != SignLabels.Other) letters.Add(labels[i]);
         if (letters.Count == 0) throw new ArgumentException("연습할 글자가 없습니다.");
         challenge.AddRange(letters);
@@ -29,6 +35,16 @@ public sealed class SignGameSession
         if (challenge.Count > 5) challenge.RemoveRange(5, challenge.Count - 5);
     }
     public void BeginPractice() { if (CurrentStage == Stage.Intro) { CurrentStage = Stage.Practice; index = 0; armed = true; } }
+    public void SkipPracticeLetter()
+    {
+        if (CurrentStage != Stage.Practice) return;
+        started = lastTime;
+        if (++index == letters.Count)
+        {
+            CurrentStage = Stage.Challenge;
+            index = 0;
+        }
+    }
     public void SkipAsCorrect()
     {
         if (CurrentStage == Stage.Result) return;
@@ -47,14 +63,15 @@ public sealed class SignGameSession
     {
         if (CurrentStage != Stage.Practice && CurrentStage != Stage.Challenge) return;
         if (hasLastTime && time < lastTime) return;
+        if (!hasLastTime) started = time;
         lastTime = time; hasLastTime = true;
         if (string.IsNullOrEmpty(confirmedLabel)) armed = true;
         bool confirmed = !string.IsNullOrEmpty(confirmedLabel) && armed;
         if (confirmed) armed = false;
         if (CurrentStage == Stage.Practice)
         {
-            if (confirmed && confirmedLabel == CurrentLabel && ++index == letters.Count)
-            { CurrentStage = Stage.Challenge; index = 0; started = time; }
+            if ((practiceLimitMs > 0 && RemainingMs(time) == 0) || (confirmed && confirmedLabel == CurrentLabel))
+                SkipPracticeLetter();
             return;
         }
         long elapsed = Math.Max(0, time - started);

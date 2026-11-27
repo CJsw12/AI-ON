@@ -72,5 +72,36 @@ try {
  $current=$many.CurrentLabel; $many.Update(9,$current); Assert ($many.CurrentLabel -eq $current -and $many.Answers.Count -eq 0) 'backward timestamp ignored'
  for ($i=0; $i -lt 5; $i++) { $many.Update((20+$i*2),$many.CurrentLabel); $many.Update((21+$i*2),$null) }
  Assert ($many.CurrentStage -eq [SignGameSession+Stage]::Result -and $many.Answers.Count -eq 5) 'challenge maximum five'
+
+ $skipped=[SignGameSession]::new($labels,1000,17)
+ $skipped.SkipPracticeLetter()
+ Assert ($skipped.CurrentStage -eq [SignGameSession+Stage]::Intro) 'practice skip ignored in intro'
+ $skipped.BeginPractice()
+ $skipped.Update(40000,$null)
+ Assert ($skipped.RemainingMs(40000) -eq 15000) 'default practice time starts with first update'
+ $skipped.Update(42000,$null)
+ $skipped.SkipPracticeLetter()
+ Assert ($skipped.CurrentStage -eq [SignGameSession+Stage]::Practice -and $skipped.CurrentLabel -eq 'B' -and $skipped.RemainingMs(42000) -eq 15000) 'skip advances and restarts practice timer'
+ $skipped.SkipPracticeLetter()
+ Assert ($skipped.CurrentStage -eq [SignGameSession+Stage]::Challenge -and $skipped.RemainingMs(42000) -eq 1000) 'last practice skip starts challenge'
+ Assert ($skipped.Answers.Count -eq 0 -and $skipped.CorrectCount -eq 0) 'skipped practice does not count'
+ $skippedCurrent=$skipped.CurrentLabel
+ $skipped.SkipPracticeLetter()
+ Assert ($skipped.CurrentLabel -eq $skippedCurrent -and $skipped.Answers.Count -eq 0) 'practice skip ignored in challenge'
+
+ $timed=[SignGameSession]::new($labels,1000,17,500)
+ $timed.BeginPractice()
+ $timed.Update(10000,$null); $timed.Update(10499,$null)
+ Assert ($timed.CurrentLabel -eq 'A' -and $timed.RemainingMs(10499) -eq 1) 'wait until practice deadline'
+ $timed.Update(10500,$null)
+ Assert ($timed.CurrentLabel -eq 'B' -and $timed.RemainingMs(10500) -eq 500) 'practice deadline advances target'
+ $timed.Update(11000,$null)
+ Assert ($timed.CurrentStage -eq [SignGameSession+Stage]::Challenge -and $timed.RemainingMs(11000) -eq 1000) 'last practice deadline starts challenge'
+ Assert ($timed.Answers.Count -eq 0 -and $timed.CorrectCount -eq 0) 'practice deadlines do not count'
+
+ $untimed=[SignGameSession]::new($labels,1000,17,0)
+ $untimed.BeginPractice()
+ $untimed.Update(10000,$null); $untimed.Update(100000,$null)
+ Assert ($untimed.CurrentStage -eq [SignGameSession+Stage]::Practice -and $untimed.CurrentLabel -eq 'A') 'zero disables practice deadline'
  Write-Output 'SignGame tests passed'
 } finally { Remove-Item -LiteralPath $dir -Recurse -Force }
