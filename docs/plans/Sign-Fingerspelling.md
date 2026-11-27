@@ -351,7 +351,7 @@
 | 백업 저장소 | 녹화 원본 보관 | 접근 제한·암호화 |
 
 #### 2.4 학습 PC 소프트웨어 설치 (B·C 단계 전에 한 번)
-아래는 Windows PowerShell 기준입니다. 경로 `C:\SignTrain`은 예시이며, **짧고 영문인 경로**를 쓰세요.
+아래는 Windows PowerShell 기준입니다. 가상 환경은 저장소 밖 `%USERPROFILE%\SignTrainVenv`에 만듭니다(4부와 같은 위치). 학습 PC 에이전트에게 맡길 때는 **4부 작업 지시서**를 그대로 쓰면 됩니다.
 
 1. **NVIDIA 드라이버 확인**
    ```powershell
@@ -365,14 +365,13 @@
    ```
 3. **가상 환경 만들기** (프로젝트별로 패키지를 분리)
    ```powershell
-   mkdir C:\SignTrain; cd C:\SignTrain
-   py -3.11 -m venv .venv
-   .\.venv\Scripts\Activate.ps1
+   py -3.11 -m venv $env:USERPROFILE\SignTrainVenv
+   & $env:USERPROFILE\SignTrainVenv\Scripts\Activate.ps1
    python -m pip install --upgrade pip
    ```
-4. **PyTorch (GPU 빌드) 설치** — RTX 50 시리즈는 cu128 이상
+4. **PyTorch (GPU 빌드) 설치** — RTX 50 시리즈는 cu128 이상. 버전은 `requirements.txt` 맨 위 주석을 따릅니다.
    ```powershell
-   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+   python -m pip install torch==2.15.0 torchvision==0.29.2 --index-url https://download.pytorch.org/whl/cu128
    ```
 5. **나머지 패키지**
    ```powershell
@@ -773,9 +772,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-
 
 ---
 
-## 4부. 작업 지시서: 수어 인식 학습 PC 사전 준비
+## 4부. 작업 지시서: 학습 PC 소프트웨어 설치와 GPU 검증 (B·C 단계 전에 한 번)
 
-작성 2026-11-27 · 요청 home-claude-opus55(사용자 승인) → 담당: 학습 PC 에이전트(sh-com-claude, RTX 5060 Ti PC) · 상태: **요청됨**
+작성 2026-11-27 · 요청 home-claude-opus55(사용자 승인) → 담당: 학습 PC 에이전트(sh-com-claude, RTX 5060 Ti PC) · 상태: **요청됨** (2차 갱신: 2부 2.4절 설치 전체 + C 단계 준비 포함)
 
 근거 문서: 수어 인식 학습 가이드(2부)(특히 1.7, 2.3~2.6, 4장), 계획서(1부) 6.2·11.6절, [TTS 제작 기술 문서](TTS-Voice-Production.md) 3절(같은 GPU 사용 기록)
 
@@ -785,8 +784,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-
 - 실제 참여자 녹화 데이터는 아직 없습니다. 이번 작업에서는 다루지 않습니다.
 
 ### 2. 배경 (확인된 사실)
-- 학습 스크립트(`Tools/SignTrain/` 아래)는 home PC의 Codex 워커가 만들고 있습니다. 구성은 `requirements.txt`, `dataset.py`, `sign_vote.py`, `train_mlp.py`, `export_onnx.py`, 테스트입니다.
-  - home PC에는 NVIDIA GPU가 없어서 **CPU 경로만 검증**됩니다. **GPU 경로(`--device cuda`)는 이 PC에서 처음 확인합니다.**
+- 학습 스크립트(`Tools/SignTrain/` 아래)는 **완성되어 main에 있습니다**(`a2a21c4`). 구성은 `requirements.txt`, `dataset.py`, `sign_vote.py`, `train_mlp.py`, `export_onnx.py`, `make_synthetic.py`, 테스트입니다.
+  - home PC(Python 3.11.9, torch 2.15.0+cpu)에서는 **CPU 경로만 검증**했습니다(unittest 8개 통과). **GPU 경로(`--device cuda`)는 이 PC에서 처음 확인합니다.**
+- C 단계(이미지 CNN·지식 증류)용 이미지 녹화 기능과 학습 스크립트는 **아직 없습니다.** 이번에는 C에 필요한 **환경만** 미리 확인합니다(단계 3-2).
 - 이 PC의 GPU는 RTX 5060 Ti(Blackwell, 컴퓨트 능력 12.0)입니다. PyTorch는 **CUDA 12.8 이상 빌드(cu128·cu130)**가 필요하고, TTS 작업에서 둘 다 동작이 확인됐습니다.
 - TTS에 쓴 Python 환경(3.13, 3.10 CosyVoice)과 **섞지 않습니다.** 수어 학습용 가상 환경을 따로 만듭니다.
 
@@ -812,10 +812,13 @@ py -3.11 --version          # 없으면: winget install --id Python.Python.3.11 
 py -3.11 -m venv $env:USERPROFILE\SignTrainVenv
 & $env:USERPROFILE\SignTrainVenv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+Get-Content Tools/SignTrain/requirements.txt -TotalCount 2      # 맨 위 주석의 GPU 설치 명령 확인
+python -m pip install torch==2.15.0 torchvision==0.29.2 --index-url https://download.pytorch.org/whl/cu128
+python -m pip install -r Tools/SignTrain/requirements.txt
 ```
-- `Tools/SignTrain/requirements.txt`가 있으면 그 파일 맨 위 주석의 GPU 설치 명령을 따르고, 나머지 패키지는 `pip install -r Tools/SignTrain/requirements.txt`로 설치합니다.
-- 없으면 `pip install numpy scikit-learn matplotlib onnx onnxruntime`로 설치합니다.
+- 버전은 `requirements.txt`의 고정값을 따릅니다(home PC에서 검증한 버전). 파일의 주석과 위 명령이 다르면 **파일 쪽**을 따릅니다.
+- cu128 빌드가 이 GPU에서 오류를 내면 cu130(`--index-url https://download.pytorch.org/whl/cu130`)으로 바꿔 보고, 바꾼 사실과 이유를 결과에 적습니다(TTS 작업에서 둘 다 동작 확인).
+- 가상 환경 위치는 2부 2.4절과 같은 `%USERPROFILE%\SignTrainVenv`로 통일합니다.
 - **설치 창(GUI)이 뜨거나 관리자 권한이 필요하면 우회하지 말고 멈춘 뒤 사용자에게 알립니다.** 학교·관리 PC라면 보안 정책을 지킵니다.
 
 #### 단계 3. GPU 인식과 간단 성능 확인
@@ -826,7 +829,13 @@ python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda
 - 간단 성능 확인: 행렬 곱 4096×4096을 bf16과 fp32로 각각 50회 실행합니다. GPU와 CPU의 걸린 시간을 기록합니다(워밍업 1회 제외, `torch.cuda.synchronize()` 포함).
 - 오류가 나면 학습 가이드 7장 표(`no kernel image`, `out of memory` 등)대로 해결하고, 해결 과정을 기록합니다.
 
-#### 단계 4. 학습 스크립트 GPU 검증 (스크립트가 있을 때)
+#### 단계 3-2. C 단계(이미지 학습) 환경 미리 확인
+- C 단계는 아직 데이터·스크립트가 없지만, 그때 막히지 않도록 환경만 확인합니다. 저장소에 새 파일을 만들 필요는 없습니다(임시 스크립트는 저장소 밖에 둠).
+1. **사전학습 가중치 내려받기:** `torchvision.models.mobilenet_v3_small(weights="DEFAULT")`와 `torchvision.models.efficientnet_b0(weights="DEFAULT")`를 한 번씩 불러 캐시(`%USERPROFILE%\.cache\torch\hub\checkpoints`)에 저장합니다. 파일 이름과 크기를 기록합니다.
+2. **GPU 메모리 확인:** 두 모델 각각 입력 `[32, 3, 224, 224]` 무작위 텐서로 `torch.autocast("cuda", dtype=torch.bfloat16)` 아래 순전파·역전파·옵티마이저 1스텝을 10회 돌리고, 스텝당 시간과 `torch.cuda.max_memory_allocated()`를 기록합니다. 배치 64도 시도해 VRAM 8GB 안에 들어가는지 적습니다.
+3. **ONNX 내보내기 확인:** MobileNetV3-Small을 opset 17로 ONNX 내보내기 → onnxruntime(CPU)로 같은 입력 출력 비교(최대 오차 기록). Unity Inference Engine 2.6 호환 여부는 미검증으로 적습니다.
+
+#### 단계 4. 학습 스크립트 GPU 검증
 ```powershell
 python -m unittest discover Tools/SignTrain        # 전체 통과 확인 (CPU 기준 테스트)
 ```
@@ -849,6 +858,9 @@ python -m unittest discover Tools/SignTrain        # 전체 통과 확인 (CPU �
 | 에폭당 시간 | | |
 | 최대 메모리 (VRAM / RAM) | | |
 | 교차 검증 평균 재현율 (두 장치가 같아야 정상) | | |
+| MobileNetV3-Small 배치 32 스텝 시간 / 최대 VRAM (bf16) | | 미측정 가능 |
+| EfficientNet-B0 배치 32 스텝 시간 / 최대 VRAM (bf16) | | 미측정 가능 |
+| 배치 64가 VRAM 8GB에 들어가는지 | | — |
 | 측정 조건 | 데이터 크기, 에폭, 배치, 정밀도, 워밍업 | |
 
 - 관절 MLP는 입력이 작아 **GPU가 더 느릴 수도 있습니다.** 결과를 그대로 적고, 이유(데이터 전송 비용 등)를 한 줄로 설명합니다. 발표에서는 실측값만 씁니다.
@@ -879,6 +891,7 @@ bash Tools/agent-sync.sh finish "수어 학습 PC 준비: GPU 검증과 실측�
 - [ ] 단계 1: GPU·드라이버·CUDA 기록
 - [ ] 단계 2: `SignTrainVenv`(Python 3.11)와 PyTorch cu128 설치
 - [ ] 단계 3: `torch.cuda.is_available() == True`, 행렬 곱 GPU 대 CPU 시간
+- [ ] 단계 3-2: 사전학습 가중치 2종 캐시, bf16 배치 32·64 VRAM·스텝 시간, MobileNetV3 ONNX 일치
 - [ ] 단계 4: unittest 통과, `train_mlp.py --device cuda` 성공, ONNX 일치 (스크립트가 있을 때)
 - [ ] 단계 5: 실측표 작성
 - [ ] 단계 6: Git 제외 확인, 사용자 확인 항목 정리
