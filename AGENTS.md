@@ -20,7 +20,7 @@
 - `PROGRESS.md`는 작업을 마치거나 푸시하기 직전에 한 번 갱신하고, 기능을 추가했으면 `플레이 방법` 한 줄을 적는다.
 
 ## 4. 검증
-- `Tests/*.ps1` 전부(현재 15종)를 `powershell -NoProfile -ExecutionPolicy Bypass -File <파일>`로 실행해 모두 exit 0, 그리고 `git diff --check` 통과.
+- `Tests/*.ps1` 전부(현재 22종)를 `powershell -NoProfile -ExecutionPolicy Bypass -File <파일>`로 실행해 모두 exit 0, 그리고 `git diff --check` 통과.
 - `.cs`를 바꿨고 에디터가 열려 있으면 `Invoke-UnityRecompile`(7절)로 컴파일 오류 0을 확인한다. AiProfessor/CoffeeRecipeSO 경고는 기존 경고다.
 - PS 테스트 통과는 Unity 컴파일·실기기 동작을 보장하지 않는다. 확인하지 않은 것은 "미검증"으로 적고, 실패한 검사를 약하게 바꾸지 않는다.
 - 시선 추적 오차(px)는 자세·표본이 다르면 전후 개선율로 해석하지 않는다.
@@ -76,6 +76,9 @@ Get-UnityConsole -Level error -Tail 20; Invoke-UnityEval 'return UnityEditor.Edi
 **Serena** (C# 심볼·참조, 읽기 전용): Claude Code는 `.mcp.json`으로 등록된다(첫 사용 시 승인). Codex는 `~/.codex/config.toml`에 `[mcp_servers.serena]` `command = "serena"`, `args = ["start-mcp-server", "--project-from-cwd", "--context=codex"]`, `env.PYTHONUTF8 = "1"`. 공유 설정 `.serena/project.yml`은 `read_only: true`(편집은 기본 도구로 해서 선점 훅을 지킨다)와 `ignore_all_files_in_gitignore: false`(git 무시된 `.csproj`를 읽기 위해)를 바꾸지 않는다. `.slnx/.csproj`가 없으면 `Sync-UnityProjectFiles`. Claude에서는 `serena_repl` 하나로 쓰며 `s.lsp.find_symbol`/`find_referencing_symbols`/`get_symbols_overview` 결과를 `print` 대신 마지막 식으로 돌려준다. 텍스트는 rg, 심볼·참조는 Serena.
 
 **수어 지문자** (`Assets/Scripts/Sign/`, 계획·학습 가이드·팀 모임 대본·학습 PC 지시 통합 `docs/plans/Sign-Fingerspelling.md`, 맨 위 "읽는 법" 표부터): Play → `Tools → Sign → Recorder`에서 가명·세션·글자 목록(예 `주먹,보자기,검지,_other`) 입력, 손 추적 시작, 글자별 3회 이상 녹화(창 포커스 시 Space). 참여자 동의를 먼저 받는다. `Tools/SignData/raw/<사람>/<세션>.csv`(Git 제외)를 `Assets/StreamingAssets/SignData/`로 복사 → 미니게임 → 하이라이트 → 수어 지문자(0.6초 유지 = 정답). 측정 `Tools/SignTrain/Measure-SignKnn.ps1`, MLP 학습 `Tools/SignTrain/train_mlp.py`(통합 문서 2부). 녹화 점검 `Tools/SignTrain/Check-SignRecording.ps1 -Person <가명> -Labels "<글자들>,_other"`(좌표는 출력하지 않음, 종료 코드 0 정상·1 형식 오류·2 횟수 부족). 팀원 개인 녹화 방법과 에이전트 보조 규칙은 `docs/plans/Sign-Data-Recording-Guide.md`. **참여자 CSV는 열어 읽거나 채팅·Git에 올리지 않는다.**
+
+**워치 심박·움직임** (`Tools/WearOS/HeartRateStreamer/` Kotlin 앱, PC 수신 `Assets/Scripts/HeartRate*.cs`·`WatchImu*.cs`, 실기·Unity 화면 연동 미검증): 워치(Wear OS 3+, 같은 Wi-Fi)가 UDP 11126으로 심박(1Hz, JSON)과 가속도·자이로(10Hz, `"k":"imu"`)를 보낸다. 빌드 `JAVA_HOME`=Android Studio `jbr`, `ANDROID_HOME`=`%LOCALAPPDATA%\Android\Sdk`로 `gradlew.bat testDebugUnitTest assembleDebug`. 설치 `adb pair/connect` → `adb install -r app-debug.apk` → `adb shell pm grant kr.aion.heartstream android.permission.BODY_SENSORS`(API 36은 `android.permission.health.READ_HEART_RATE`) → `adb shell am start -n kr.aion.heartstream/.MainActivity --es host <PC IPv4> --ei port 11126` → 워치에서 시작. 워치 로그 `adb exec-out run-as kr.aion.heartstream cat files/diag.log`.
+워치 없이 `Tools/WearOS/Send-FakeHeartRate.ps1 [-Pattern flat|ramp|dropout] [-WithImu]`로 가짜 송신, `Tools/WearOS/Record-WatchSensors.ps1`로 받은 패킷을 `Logs/WatchSensors/`에 기록(건강 정보, Git·채팅 금지). PC 방화벽은 UDP 11126 인바운드만 허용한다.
 
 **Gaze Lab**: Play → 시선 추적 테스트 → 연결·보정 → `움직이는 공 · 로그` → 경로·주기·시간·실험 이름 → 기록, 노란 공만 본다. 로그 `Logs/GazeLab/`, 분석 `Tools/Analyze-GazeLab.ps1 [-Iterations 10] [-Csv <파일> -WindowSeconds 10000]`. 같은 장치·자세·보정·경로의 baseline과만 비교하고, `metrics_available=false`는 오차 0이 아니다.
 

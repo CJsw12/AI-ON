@@ -12,6 +12,8 @@
   - 사전 영상: 5글자 유지 구간 100%, ㄴ·ㅁ 거절, 좌우 판정 뒤집힘·±20° 회전 불변. 인터넷 강의 영상(수어자 4명): ㅂ·ㅇ·ㅎ 인식, ㅌ→ㄹ·ㅈ→ㅅ 혼동, 주먹 자세→ㅎ 오인식. 상세 `docs/plans/Sign-Fingerspelling-1203-Proposal.md` 0.5절.
   - **플레이 방법**: 없음(게임 연결 전). 검증: 테스트 전부 exit 0, Unity 배치 컴파일 OK. 미검증: Unity 실행, 실제 웹캠. 게임 연결은 팀 합의 후.
   - 함께 고침: `Tests/SignRecordingCheck.Tests.ps1`이 UTF-8이 아닌 콘솔(cp949, 푸시 훅)에서 자식 출력 한글이 깨져 실패하던 문제(출력 인코딩 UTF-8 고정).
+- **[Claude] 2026-11-27 워치 심박·가속도·자이로 UDP 파이프라인(Galaxy Watch4 Classic)**: `Tools/WearOS/HeartRateStreamer`(Kotlin 앱, 진단 로그 포함)와 PC 수신 `HeartRate*.cs`·`WatchImu*.cs`, 가짜 송신·녹화 스크립트. 사용법은 AGENTS.md 7절.
+  - 검증: 앱 `testDebugUnitTest`·`assembleDebug`·`lintDebug` exit 0, `Tests/*.ps1` 22종 exit 0. 미검증: 워치 실기 설치·측정, Unity 컴파일, 게임·AI 연동(없음). **플레이 방법**: 아직 없음(수신까지만).
 - **[Claude] 2026-11-27 수어 학습 데이터 전달을 구글 드라이브 방식으로 변경**: 학습용 GPU PC가 한 대뿐이라 팀원이 `<가명>` 폴더를 구글 드라이브 팀 폴더에 올리면 학습 PC 담당이 받아 `Tools/SignData/raw/`에 두고 에이전트가 점검·학습하는 흐름을 녹화 가이드 8절·9.5절에 반영(PDF 13쪽 갱신). 사용자 판단(중요도 낮은 관절 좌표)으로 제한 공유·암호화 등 보안 절차는 두지 않았고, `Sign-Fingerspelling.md` 2.2절에 팀 결정 예외 한 줄을 넣었다. 기능상 주의만 남겼다(CSV를 엑셀·시트로 열어 저장하지 않기, 폴더·파일 이름 유지, Git에 올리지 않기). **플레이 방법**: 없음(문서). 미검증: 실제 업로드·다운로드 흐름, 팀 폴더 주소(가이드 8.1절 빈칸). 사용자 결정 대기: 구글 드라이브 팀 폴더 만들고 주소 공유.
 - **[Claude] 2026-11-27 수어 12/3 수정안 제안(팀 합의 전)**: `docs/plans/Sign-Fingerspelling-1203-Proposal.md`. 녹화·학습 없이 규칙 분류기(손가락 펴짐+방향, ㅂ·ㅇ·ㅎ·ㄹ·ㅅ) + 즉석 "내 손에 맞추기" k-NN.
   - 근거: Claude·Codex·Gemini 독립 검토 3명 모두 "수정 후 진행"(일정 불가, 빌드에 참여자 CSV, 소표본 평가). MLP·GPU·팀 녹화는 졸업작품으로 미루는 안.
