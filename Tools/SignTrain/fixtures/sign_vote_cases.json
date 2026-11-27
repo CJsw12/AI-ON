@@ -1,0 +1,246 @@
+[
+    {
+        "entries":  [
+                        {
+                            "input":  0,
+                            "time":  0,
+                            "label":  0,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  100,
+                            "label":  0,
+                            "progress":  0.166666672,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  200,
+                            "label":  0,
+                            "progress":  0.333333343,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  300,
+                            "label":  0,
+                            "progress":  0.5,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  400,
+                            "label":  0,
+                            "progress":  0.6666667,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  500,
+                            "label":  0,
+                            "progress":  0.8333333,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  599,
+                            "label":  0,
+                            "progress":  0.998333335,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  600,
+                            "label":  0,
+                            "progress":  1,
+                            "confirmed":  true
+                        },
+                        {
+                            "input":  0,
+                            "time":  650,
+                            "label":  0,
+                            "progress":  1,
+                            "confirmed":  false
+                        }
+                    ],
+        "name":  "hold-boundary"
+    },
+    {
+        "entries":  [
+                        {
+                            "input":  0,
+                            "time":  0,
+                            "label":  0,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  100,
+                            "label":  0,
+                            "progress":  0.166666672,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  -2,
+                            "time":  150,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  200,
+                            "label":  0,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  300,
+                            "label":  0,
+                            "progress":  0.166666672,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  400,
+                            "label":  0,
+                            "progress":  0.333333343,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  500,
+                            "label":  0,
+                            "progress":  0.5,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  600,
+                            "label":  0,
+                            "progress":  0.6666667,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  700,
+                            "label":  0,
+                            "progress":  0.8333333,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  800,
+                            "label":  0,
+                            "progress":  1,
+                            "confirmed":  true
+                        }
+                    ],
+        "name":  "no-hand"
+    },
+    {
+        "entries":  [
+                        {
+                            "input":  1,
+                            "time":  0,
+                            "label":  1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  100,
+                            "label":  1,
+                            "progress":  0.166666672,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  300,
+                            "label":  1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  400,
+                            "label":  1,
+                            "progress":  0.166666672,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  350,
+                            "label":  1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  450,
+                            "label":  1,
+                            "progress":  0.166666672,
+                            "confirmed":  false
+                        }
+                    ],
+        "name":  "gap"
+    },
+    {
+        "entries":  [
+                        {
+                            "input":  0,
+                            "time":  0,
+                            "label":  0,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  50,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  -1,
+                            "time":  100,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  1,
+                            "time":  150,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  200,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  0,
+                            "time":  250,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        },
+                        {
+                            "input":  -1,
+                            "time":  300,
+                            "label":  -1,
+                            "progress":  0,
+                            "confirmed":  false
+                        }
+                    ],
+        "name":  "tie-unknown"
+    }
+]

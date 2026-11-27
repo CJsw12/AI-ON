@@ -138,6 +138,9 @@ KakaoTalk*
 /[Aa]ssets/[Rr]esources/UI.meta
 Tools/SignData/raw/
 Tools/SignData/reports/
+Tools/SignTrain/runs/
+*.pt
+__pycache__/
 /Assets/StreamingAssets/SignData/**/*.csv
 /Assets/StreamingAssets/SignData/**/*.csv.meta
 /Assets/StreamingAssets/SignData/*.csv

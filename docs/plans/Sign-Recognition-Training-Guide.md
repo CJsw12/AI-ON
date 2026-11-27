@@ -154,16 +154,16 @@
    ```
 5. **나머지 패키지**
    ```powershell
-   pip install numpy pandas scikit-learn matplotlib onnx onnxruntime
+   pip install -r <AI-ON 저장소>\Tools\SignTrain\requirements.txt
    ```
 6. **GPU 인식 확인** — `True`와 GPU 이름이 나와야 합니다
    ```powershell
    python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
    ```
-7. **버전 고정**: 설치가 끝나면 `pip freeze > requirements.txt`로 버전을 기록하고, 🛠 `Tools/SignTrain/requirements.txt`로 저장소에 올립니다(계획서 11.6절).
+7. **버전 확인**: `Tools/SignTrain/requirements.txt`에 검증한 버전이 고정되어 있습니다. CPU 전용 설치 명령도 그 파일의 주석에 있습니다.
 8. **저장소 받기**: `git clone` 또는 `git pull`로 AI-ON을 받습니다. 녹화 원본(`Tools/SignData/raw/`)은 Git에 없으므로 백업 저장소에서 따로 복사합니다.
 
-**GPU 대 CPU 측정 방법(발표용):** 같은 데이터·같은 설정·같은 에폭으로 `--device cuda`와 `--device cpu`를 각각 실행하고, 워밍업 1회 뒤 학습 시간과 최대 메모리를 기록합니다(🛠 학습 스크립트에 이 옵션과 시간 기록을 넣어야 함).
+**GPU 대 CPU 측정 방법(발표용):** 같은 데이터·같은 설정·같은 에폭으로 `--device cuda`와 `--device cpu`를 각각 실행하고, `--time-report`로 첫 에폭을 제외한 학습 시간과 최대 메모리를 기록합니다.
 
 ### 2.5 개발 PC 준비 (A 단계)
 - Unity 6000.3.23f1, 저장소 최신(`git pull`), 테스트 통과 확인:
@@ -242,17 +242,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-
 
 ---
 
-## 4. 튜토리얼 B — 관절 MLP를 GPU로 학습 (🛠 스크립트 필요)
+## 4. 튜토리얼 B — 관절 MLP 학습
 
 > A가 끝나고 측정 결과가 있을 때 시작합니다. **A보다 나을 때만** 게임에 넣습니다.
 
-### B-0. 먼저 만들어야 하는 것 (Codex 워커 등에 구현 요청)
+### B-0. 준비 상태
 | 파일 | 역할 | 입력 → 출력 |
 |---|---|---|
-| 🛠 `Tools/SignTrain/requirements.txt` | 패키지 버전 고정 | 2.4절 |
-| 🛠 `Tools/SignTrain/dataset.py` | CSV 읽기 → `sign_features.py`로 특징 57개 → 사람·시도 정보와 함께 배열 | `raw/` → 메모리 |
-| 🛠 `Tools/SignTrain/train_mlp.py` | 사람 단위 교차 검증 학습, `--device cuda/cpu`, 시드, 시간·메모리 기록 | `raw/` → `runs/<날짜>/`(점수·혼동표·학습 곡선·설정) |
-| 🛠 `Tools/SignTrain/export_onnx.py` | 최종 모델 → ONNX, onnxruntime로 PyTorch와 출력 일치 확인 | 체크포인트 → `sign_mlp.onnx` |
+| ✅ `Tools/SignTrain/requirements.txt` | 패키지 버전 고정 | 2.4절 |
+| ✅ `Tools/SignTrain/dataset.py` | CSV 읽기 → `sign_features.py`로 특징 57개 → 사람·시도 정보 | `raw/` → 메모리 |
+| ✅ `Tools/SignTrain/train_mlp.py` | 사람 단위 교차 검증 학습, 시드, 시간·메모리 기록 | `raw/` → `runs/<날짜>/` |
+| ✅ `Tools/SignTrain/export_onnx.py` | 최종 모델 → ONNX, onnxruntime 출력 확인 | 체크포인트 → `sign_mlp.onnx` |
 | 🛠 `Assets/Scripts/Sign/OnnxSignClassifier.cs` | 게임에서 ONNX 실행(Inference Engine), k-NN과 같은 거절·투표 규칙 | `.onnx` → 글자 |
 | 🛠 Measure 도구 확장 | k-NN과 MLP를 **같은 나누기·같은 판정 규칙**으로 비교 | 비교표 |
 
@@ -261,21 +261,22 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-
 ### B-1. 데이터 준비
 ```powershell
 cd <AI-ON 저장소>
-.\.venv\Scripts\Activate.ps1        # 2.4절 가상 환경
-python Tools/SignTrain/test_sign_features.py   # ✅ 특징 계산 일치 확인
+<가상환경>\Scripts\Activate.ps1        # 2.4절 가상 환경
+python -m unittest discover Tools/SignTrain   # 특징·투표·학습·내보내기 검사
 ```
 
-### B-2. 학습 (예시 명령 — 스크립트 완성 후 실제 옵션으로 갱신)
+### B-2. 학습
 ```powershell
 python Tools/SignTrain/train_mlp.py --data Tools/SignData/raw --sealed p05 --device cuda --seeds 1 2 3 --epochs 200 --hidden 128 64 --dropout 0.2
 ```
-- 화면에 보이는 것: 에폭마다 학습 손실, 사람별 검증 정확도
+- 사람별 평가 결과와 마지막 손실이 화면에 표시되고 `report.md`, `metrics.json`, `config.json`, `learning_curves.png`, `final.pt`가 실행 폴더에 저장됩니다. `--augment`는 학습 좌표에만 증강을 적용합니다.
+- 기본 `--min-margin 0.2`는 k-NN의 5표 중 1표 차이(1/5)에 대응하는 탐색 시작값이며 확률과 투표는 달라 검증 데이터로 조정해야 합니다.
 - 학습 곡선 보는 법: 학습 손실은 내려가는데 검증 정확도가 내려가기 시작하면 **과적합** → 에폭 줄이기·드롭아웃 늘리기·증강 켜기
 
 ### B-3. GPU 대 CPU 실측 (발표용)
 ```powershell
-python Tools/SignTrain/train_mlp.py ... --device cuda --time-report
-python Tools/SignTrain/train_mlp.py ... --device cpu  --time-report
+python Tools/SignTrain/train_mlp.py --data Tools/SignData/raw --sealed p05 --seeds 1 2 3 --epochs 200 --device cuda --time-report
+python Tools/SignTrain/train_mlp.py --data Tools/SignData/raw --sealed p05 --seeds 1 2 3 --epochs 200 --device cpu --time-report
 ```
 같은 설정으로 학습 시간, 에폭당 시간, 최대 VRAM·RAM을 표로 남깁니다.
 
@@ -289,9 +290,10 @@ python Tools/SignTrain/train_mlp.py ... --device cpu  --time-report
 
 ### B-5. 내보내기와 게임 적용
 ```powershell
-python Tools/SignTrain/export_onnx.py --checkpoint runs/<날짜>/final.pt --out Assets/StreamingAssets/SignModel/sign_mlp.onnx
+python Tools/SignTrain/export_onnx.py --checkpoint Tools/SignTrain/runs/<날짜>/final.pt --out <모델 보관 폴더>/sign_mlp.onnx
 ```
 - 내보낸 뒤 onnxruntime 출력과 PyTorch 출력이 같은지 확인합니다(스크립트에 포함).
+- 모델 선택 후 `python Tools/SignTrain/train_mlp.py --data Tools/SignData/raw --sealed p05 --device cpu --seeds 1 --epochs 200 --final`로 봉인 평가를 한 번만 합니다. 반복 여부는 사람이 관리합니다.
 - Unity에서 수어 게임을 실기 확인하고 학교 PC에서 처리 시간을 잽니다.
 - 학습에 쓴 사람 중 누가 동의를 철회하면 그 데이터를 빼고 **다시 학습**해 교체합니다.
 
