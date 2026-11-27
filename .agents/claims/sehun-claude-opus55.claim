@@ -1,0 +1,7 @@
+agent: sehun-claude-opus55
+task: 수어 12/3 수정안 제안 문서
+host: YUZA
+started: 2026-11-27T15:25:47+0900
+updated: 2026-11-27T15:25:47+0900
+paths:
+- docs/plans/Sign-Fingerspelling-1203-Proposal.md
