@@ -1,8 +1,0 @@
-agent: sh-com-claude
-task: 수어 가이드: 차트 기반 글자 재선정
-host: DESKTOP-GCC8QCI
-started: 2026-11-27T15:16:26+0900
-updated: 2026-11-27T15:16:26+0900
-paths:
-- docs/plans/Sign-Data-Recording-Guide.md
-- docs/reports/AI-ON-수어데이터-녹화가이드.pdf
