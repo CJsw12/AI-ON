@@ -1,8 +1,8 @@
 agent: home-claude-opus55
-task: Wear OS IMU sensors
+task: Wear OS diagnostics
 host: KIM_BYEONGGU
 started: 2026-11-27T14:08:35+0900
-updated: 2026-11-27T17:06:48+0900
+updated: 2026-11-27T17:09:22+0900
 paths:
 - Tools/WearOS/
 - Assets/Scripts/HeartRatePacket.cs
@@ -13,3 +13,5 @@ paths:
 - Assets/Scripts/WatchImuPacket.cs
 - Assets/Scripts/WatchImuTracker.cs
 - Tests/WatchImu.Tests.ps1
+- Assets/Scripts/HeartRateDiagnostics.cs
+- Tests/HeartRateDiagnostics.Tests.ps1
