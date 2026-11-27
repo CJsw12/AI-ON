@@ -1,0 +1,12 @@
+agent: home-claude-opus55
+task: Wear OS heart rate pipeline
+host: KIM_BYEONGGU
+started: 2026-11-27T14:08:35+0900
+updated: 2026-11-27T14:08:35+0900
+paths:
+- Tools/WearOS/
+- Assets/Scripts/HeartRatePacket.cs
+- Assets/Scripts/HeartRateTracker.cs
+- Assets/Scripts/HeartRateUdpReceiver.cs
+- Tests/HeartRate.Tests.ps1
+- .gitignore
