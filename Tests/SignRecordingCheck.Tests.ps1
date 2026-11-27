@@ -1,4 +1,6 @@
 ﻿$ErrorActionPreference = 'Stop'
+# The checker runs in a child powershell.exe and the asserts match its Korean output; decode it as UTF-8 on any console code page.
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $check = Join-Path $repo 'Tools/SignTrain/Check-SignRecording.ps1'
 if (-not (Test-Path $check)) { throw '녹화 점검 도구가 없습니다.' }
