@@ -1,0 +1,8 @@
+agent: sh-com-claude
+task: 수어 학습 PC 준비
+host: DESKTOP-GCC8QCI
+started: 2026-11-27T13:52:52+0900
+updated: 2026-11-27T13:52:52+0900
+paths:
+- Tools/SignTrain/
+- docs/plans/Sign-Fingerspelling.md
