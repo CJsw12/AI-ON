@@ -301,7 +301,7 @@
 #### 1.7 그래픽카드(GPU) 학습의 개념
 - **왜 GPU인가:** 신경망 학습은 거의 전부 **큰 행렬 곱셈의 반복**입니다. CPU는 강한 코어 몇 개(우리 PC는 6코어)로 순서대로 계산하고, GPU는 작은 코어 수천 개로 같은 계산을 **동시에** 합니다. 그래서 이미지처럼 큰 입력은 GPU가 수십 배 빠릅니다.
 - **CUDA:** NVIDIA GPU에서 계산을 돌리는 플랫폼입니다. PyTorch를 **CUDA 버전과 맞는 빌드**로 설치해야 GPU를 씁니다.
-  - 우리 GPU(RTX 5060 Ti, Blackwell, 컴퓨트 능력 12.0)는 최신 세대라 **CUDA 12.8 이상 빌드(cu128 또는 cu130)가** 필요합니다. TTS 작업에서 같은 PC로 cu128·cu130 둘 다 동작을 확인했습니다([TTS 문서 3.1절](TTS-Voice-Production.md)).
+  - 우리 GPU(RTX 5060 Ti, Blackwell, 컴퓨트 능력 12.0)는 최신 세대라 **CUDA 12.8 이상 빌드(cu128 이상)가** 필요합니다. TTS 작업에서 같은 PC로 cu128·cu130 둘 다 동작을 확인했습니다([TTS 문서 3.1절](TTS-Voice-Production.md)). 단, 수어 학습에 고정한 `torch 2.15.0`은 **cu132 인덱스에만** 있어서 이 PC에서는 cu132로 설치했습니다(4부 7절).
 - **VRAM(그래픽 메모리):** 모델·입력·중간 계산이 모두 VRAM에 올라갑니다. 우리 GPU는 8GB입니다. 부족하면 `CUDA out of memory` 오류가 나며, **배치 크기**를 줄이면 해결됩니다.
 - **배치(batch):** 한 번에 GPU에 넣는 예시 개수입니다. 크면 빠르지만 메모리를 많이 씁니다.
 - **에폭(epoch):** 학습 데이터를 한 바퀴 다 보는 단위입니다. 보통 수십~수백 에폭을 돕니다.
@@ -369,9 +369,9 @@
    & $env:USERPROFILE\SignTrainVenv\Scripts\Activate.ps1
    python -m pip install --upgrade pip
    ```
-4. **PyTorch (GPU 빌드) 설치** — RTX 50 시리즈는 cu128 이상. 버전은 `requirements.txt` 맨 위 주석을 따릅니다.
+4. **PyTorch (GPU 빌드) 설치** — RTX 50 시리즈는 cu128 이상. 고정 버전(`torch 2.15.0`, `torchvision 0.29.2`)은 **cu132 인덱스에만** 있습니다(cu128은 2.11.0까지). 버전은 `requirements.txt` 맨 위 주석을 따릅니다.
    ```powershell
-   python -m pip install torch==2.15.0 torchvision==0.29.2 --index-url https://download.pytorch.org/whl/cu128
+   python -m pip install torch==2.15.0 torchvision==0.29.2 --index-url https://download.pytorch.org/whl/cu132
    ```
 5. **나머지 패키지**
    ```powershell
@@ -568,7 +568,7 @@ python Tools/SignTrain/export_onnx.py --checkpoint Tools/SignTrain/runs/<날짜>
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| `torch.cuda.is_available()`가 False | CPU 전용 PyTorch 설치, 드라이버 문제 | 2.4절 4번 cu128 명령으로 재설치, `nvidia-smi` 확인 |
+| `torch.cuda.is_available()`가 False | CPU 전용 PyTorch 설치, 드라이버 문제 | 2.4절 4번 cu132 명령으로 재설치, `nvidia-smi` 확인 |
 | `CUDA error: no kernel image is available` | GPU 세대(RTX 50)에 비해 오래된 PyTorch·CUDA 빌드 | cu128 이상 빌드로 재설치 |
 | `CUDA out of memory` | 배치가 너무 큼 | 배치 크기 절반, bf16 사용 |
 | 교차 검증 점수는 높은데 게임에서 안 맞음 | 학습·게임 특징 계산 불일치, 좌우 반전 규칙 차이 | `test_sign_features.py`와 PS 테스트로 일치 확인 |
@@ -774,7 +774,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-
 
 ## 4부. 작업 지시서: 학습 PC 소프트웨어 설치와 GPU 검증 (B·C 단계 전에 한 번)
 
-작성 2026-11-27 · 요청 home-claude-opus55(사용자 승인) → 담당: 학습 PC 에이전트(sh-com-claude, RTX 5060 Ti PC) · 상태: **요청됨** (2차 갱신: 2부 2.4절 설치 전체 + C 단계 준비 포함)
+작성 2026-11-27 · 요청 home-claude-opus55(사용자 승인) → 담당: 학습 PC 에이전트(sh-com-claude, RTX 5060 Ti PC) · 상태: **완료(2026-11-27)** — 단계 1~6 모두 실행, 결과는 7절. 사용자가 정할 것은 7.7절
 
 근거 문서: 수어 인식 학습 가이드(2부)(특히 1.7, 2.3~2.6, 4장), 계획서(1부) 6.2·11.6절, [TTS 제작 기술 문서](TTS-Voice-Production.md) 3절(같은 GPU 사용 기록)
 
@@ -787,7 +787,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Measure-
 - 학습 스크립트(`Tools/SignTrain/` 아래)는 **완성되어 main에 있습니다**(`a2a21c4`). 구성은 `requirements.txt`, `dataset.py`, `sign_vote.py`, `train_mlp.py`, `export_onnx.py`, `make_synthetic.py`, 테스트입니다.
   - home PC(Python 3.11.9, torch 2.15.0+cpu)에서는 **CPU 경로만 검증**했습니다(unittest 8개 통과). **GPU 경로(`--device cuda`)는 이 PC에서 처음 확인합니다.**
 - C 단계(이미지 CNN·지식 증류)용 이미지 녹화 기능과 학습 스크립트는 **아직 없습니다.** 이번에는 C에 필요한 **환경만** 미리 확인합니다(단계 3-2).
-- 이 PC의 GPU는 RTX 5060 Ti(Blackwell, 컴퓨트 능력 12.0)입니다. PyTorch는 **CUDA 12.8 이상 빌드(cu128·cu130)**가 필요하고, TTS 작업에서 둘 다 동작이 확인됐습니다.
+- 이 PC의 GPU는 RTX 5060 Ti(Blackwell, 컴퓨트 능력 12.0)입니다. PyTorch는 **CUDA 12.8 이상 빌드**가 필요합니다. TTS 작업에서 cu128·cu130 동작이 확인됐고, 이 작업의 고정 버전은 cu132 인덱스에만 있습니다(단계 2).
 - TTS에 쓴 Python 환경(3.13, 3.10 CosyVoice)과 **섞지 않습니다.** 수어 학습용 가상 환경을 따로 만듭니다.
 
 ### 3. 작업 단계
@@ -813,11 +813,11 @@ py -3.11 -m venv $env:USERPROFILE\SignTrainVenv
 & $env:USERPROFILE\SignTrainVenv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 Get-Content Tools/SignTrain/requirements.txt -TotalCount 2      # 맨 위 주석의 GPU 설치 명령 확인
-python -m pip install torch==2.15.0 torchvision==0.29.2 --index-url https://download.pytorch.org/whl/cu128
+python -m pip install torch==2.15.0 torchvision==0.29.2 --index-url https://download.pytorch.org/whl/cu132
 python -m pip install -r Tools/SignTrain/requirements.txt
 ```
 - 버전은 `requirements.txt`의 고정값을 따릅니다(home PC에서 검증한 버전). 파일의 주석과 위 명령이 다르면 **파일 쪽**을 따릅니다.
-- cu128 빌드가 이 GPU에서 오류를 내면 cu130(`--index-url https://download.pytorch.org/whl/cu130`)으로 바꿔 보고, 바꾼 사실과 이유를 결과에 적습니다(TTS 작업에서 둘 다 동작 확인).
+- 2026-11-27 실행 결과: 이전 지시의 cu128 명령은 `No matching distribution found for torch==2.15.0`로 **실패**했다(cu128 인덱스는 2.11.0까지). cu129·cu130에도 고정 버전이 없고 **cu132에 `torch 2.15.0+cu132`, `torchvision 0.29.2+cu132`가 있어** 그것으로 설치했다(드라이버 CUDA 지원 13.3). 위 명령은 이에 맞춰 고쳤다. 다른 PC에서 cu128이 필요하면 `requirements.txt`의 버전도 그 인덱스에 있는 값으로 함께 바꿔야 한다.
 - 가상 환경 위치는 2부 2.4절과 같은 `%USERPROFILE%\SignTrainVenv`로 통일합니다.
 - **설치 창(GUI)이 뜨거나 관리자 권한이 필요하면 우회하지 말고 멈춘 뒤 사용자에게 알립니다.** 학교·관리 PC라면 보안 정책을 지킵니다.
 
@@ -888,15 +888,91 @@ bash Tools/agent-sync.sh finish "수어 학습 PC 준비: GPU 검증과 실측�
 - `git add -A` 금지. `PROGRESS.md` Done에 한 줄을 **추가**합니다(기존 줄 수정 금지).
 
 ### 6. 완료 체크리스트
-- [ ] 단계 1: GPU·드라이버·CUDA 기록
-- [ ] 단계 2: `SignTrainVenv`(Python 3.11)와 PyTorch cu128 설치
-- [ ] 단계 3: `torch.cuda.is_available() == True`, 행렬 곱 GPU 대 CPU 시간
-- [ ] 단계 3-2: 사전학습 가중치 2종 캐시, bf16 배치 32·64 VRAM·스텝 시간, MobileNetV3 ONNX 일치
-- [ ] 단계 4: unittest 통과, `train_mlp.py --device cuda` 성공, ONNX 일치 (스크립트가 있을 때)
-- [ ] 단계 5: 실측표 작성
-- [ ] 단계 6: Git 제외 확인, 사용자 확인 항목 정리
-- [ ] 이 문서 상태를 "완료"(또는 "1~3단계 완료, 스크립트 대기")로 변경
-- [ ] 사용자에게 보고: 설치 버전, 실측표, GPU에서만 생긴 문제와 해결, 미검증 항목, 사용자가 정할 것
+- [x] 단계 1: GPU·드라이버·CUDA 기록
+- [x] 단계 2: `SignTrainVenv`(Python 3.11)와 PyTorch 설치 (고정 버전이 있는 cu132)
+- [x] 단계 3: `torch.cuda.is_available() == True`, 행렬 곱 GPU 대 CPU 시간
+- [x] 단계 3-2: 사전학습 가중치 2종 캐시, bf16 배치 32·64 VRAM·스텝 시간, MobileNetV3 ONNX 일치
+- [x] 단계 4: unittest 통과, `train_mlp.py --device cuda` 성공, ONNX 일치 (스크립트가 있을 때)
+- [x] 단계 5: 실측표 작성
+- [x] 단계 6: Git 제외 확인, 사용자 확인 항목 정리
+- [x] 이 문서 상태를 "완료"(또는 "1~3단계 완료, 스크립트 대기")로 변경
+- [x] 사용자에게 보고: 설치 버전, 실측표, GPU에서만 생긴 문제와 해결, 미검증 항목, 사용자가 정할 것
 
 ### 7. 결과 (학습 PC 에이전트가 작성)
-(비어 있음)
+
+작성 2026-11-27 · sh-com-claude · RTX 5060 Ti PC. 모든 값은 이 PC에서 직접 잰 값이다. 임시 스크립트는 저장소 밖(`step3.py` 등)에 두었고 커밋하지 않았다. **실제 참여자 데이터는 쓰지 않았다**(합성 데이터만).
+
+#### 7.1 설치 환경 (단계 1~2)
+
+| 항목 | 값 |
+|---|---|
+| GPU / 드라이버 / VRAM | NVIDIA GeForce RTX 5060 Ti(WDDM) / 610.88 / 8,151MiB (nvidia-smi의 CUDA UMD 13.3) |
+| Python | 3.11.9, `winget install --id Python.Python.3.11 -e --scope user --silent`로 설치(설치 창·관리자 권한 없이 성공) |
+| 가상 환경 | `%USERPROFILE%\SignTrainVenv` (저장소 밖, TTS 환경과 분리). pip 26.3 |
+| PyTorch | **torch 2.15.0+cu132, torchvision 0.29.2+cu132** (CUDA 런타임 13.2, 컴퓨트 능력 12.0, bf16 지원) |
+| 나머지 | numpy 2.4.6, scikit-learn 1.9.1, matplotlib 3.11.2, onnx 1.23.2, onnxruntime 1.32.0 (의존으로 scipy 1.17.1, pillow 13.0.0). `pip check`: 깨진 의존성 없음 |
+
+**지시서와 다르게 한 것: cu128 → cu132.** 지시서의 cu128 명령은 `No matching distribution found for torch==2.15.0`로 실패했다(cu128 인덱스는 2.11.0까지). cu129(2.9.0까지)·cu130(2.14.1까지)에도 고정 버전이 없고, **cu132에만 `torch 2.15.0`·`torchvision 0.29.2`가 있다.** "버전은 `requirements.txt` 고정값을 따른다"는 원칙을 지키려고 cu132로 설치했다. 오류가 아니라 **패키지 인덱스에 그 버전이 없어서** 바꾼 것이다. 그에 맞춰 이 문서의 설치 명령과 `requirements.txt` 첫 주석을 고쳤다.
+
+#### 7.2 실측표 (단계 5)
+
+| 항목 | GPU (RTX 5060 Ti) | CPU (Ryzen 5 5600, 6코어) |
+|---|---|---|
+| 행렬 곱 4096² × 50회, fp32 | **0.402초** (회당 8.04ms, 17.1 TFLOPS) | 17.858초 (회당 357ms, 0.385 TFLOPS) → GPU가 약 44배 빠름 |
+| 행렬 곱 4096² × 50회, bf16 | **0.133초** (회당 2.66ms, 51.6 TFLOPS) | **환산 11,769초(약 3.3시간)**: 직접 재면 너무 오래 걸려 2회만 측정(470.8초, 회당 235초, 0.001 TFLOPS)하고 50회로 환산. **50회 직접 측정은 아님** |
+| MLP 학습 총시간 (합성 4명, 시드 3개) | 10.19초 | **6.01초** (GPU가 약 1.7배 **느림**) |
+| 에폭당 시간 (첫 에폭 제외) | 5.12ms | **3.02ms** |
+| 최대 메모리 | VRAM 32.5MiB (`cuda_allocated`) | RAM 757MiB (프로세스 최대 사용량, PyTorch 라이브러리 포함) |
+| 교차 검증 평균 재현율 | 1.0 (표준편차 0.0) | 1.0 (표준편차 0.0) → **두 장치가 같음** |
+| MobileNetV3-Small 배치 32 스텝 시간 / 최대 VRAM (bf16) | **24.7ms** / 339MB (1,296장/초) | fp32 346ms (bf16 CPU는 위 이유로 미측정) → 약 14배 |
+| EfficientNet-B0 배치 32 스텝 시간 / 최대 VRAM (bf16) | **57.9ms** / 1,516MB (553장/초) | fp32 2,087ms → 약 36배 |
+| 배치 64가 VRAM 8GB에 들어가는지 | **들어감**: MobileNetV3-Small 28.7ms·606MB, EfficientNet-B0 103.3ms·2,931MB | — |
+| 측정 조건 | 아래 7.3 | |
+
+#### 7.3 측정 조건과 세부
+
+- **행렬 곱**: 4096×4096, 무작위 값, 워밍업 1회 제외, GPU는 `torch.cuda.synchronize()` 포함, CPU 스레드 6개. 정밀도는 fp32와 bf16.
+- **MLP 학습**(합성 데이터): `Tools/SignTrain/make_synthetic.py`로 만든 4명(글자 A·B·C와 `_other`, 사람당 96프레임, 봉인 `p04`). 기본 설정(에폭 200, 은닉층 128·64, 드롭아웃 0.2, 학습률 0.001, 배치 64, 증강 없음), 시드 1·2·3, `--time-report`. 학습 10번(교차 검증 9 + 최종 1) 합계. 명령은 두 장치에서 `--device`만 다르다.
+- **데이터 크기를 키운 확인**: 같은 생성기로 20명(봉인 `p20`, 시드 1, 학습 20번)을 만들어 같은 방식으로 재측정.
+
+  | 합성 20명 | GPU | CPU |
+  |---|---|---|
+  | 학습 총시간 | 174.45초 | **101.51초** |
+  | 에폭당 | 43.83ms | **25.50ms** |
+  | 평균 재현율 | 1.0 | 1.0 |
+
+- **GPU가 더 느린 이유(추정, 프로파일링은 하지 않음)**: 4명과 20명에서 비율이 같다(GPU가 약 1.7배 느림). 스텝당 시간으로 보면 GPU 약 1.6ms, CPU 약 0.9ms다(에폭당 시간 ÷ 스텝 수). 데이터가 늘어도 비율이 같다는 것은 **작은 MLP(입력 57개)에서는 계산량이 아니라 스텝마다 드는 고정 비용**이 지배한다는 뜻이다. `train_mlp.py`는 매 스텝 파이썬 객체에서 배치를 만들어 GPU로 보내고 `loss.item()`으로 동기화하므로, 그 전송·동기화 비용이 CPU 계산보다 크다고 **추정**한다. **발표에서 "GPU가 빨랐다"를 쓰면 안 된다.** 관절 MLP는 CPU로 충분하고, GPU는 이미지 CNN(C 단계)에서 의미가 있다(위 표의 CNN 14~36배).
+- **이미지 CNN(단계 3-2)**: 입력 `[B,3,224,224]` 무작위 텐서, `torch.autocast("cuda", dtype=torch.bfloat16)`, AdamW, 순전파+역전파+옵티마이저 1스텝을 워밍업 1회 뒤 10번 측정(CPU fp32는 3번). 합성 무작위 입력이라 **실제 데이터 로딩·증강 비용은 포함되지 않았다.**
+- **사전학습 가중치 캐시**(`%USERPROFILE%\.cache\torch\hub\checkpoints`): `mobilenet_v3_small-047dcff4.pth` 9.8MiB, `efficientnet_b0_rwightman-7f5810bc.pth` 20.5MiB.
+- **ONNX(MobileNetV3-Small)**: opset 17, 9.71MiB, PyTorch와 onnxruntime(CPU)의 최대 절대 오차 8.40e-06(배치 1), 7.63e-06(배치 4, 동적 배치 축 확인). 파일 크기·정확도 모두 문제 없음. **Unity Inference Engine 2.6 호환은 미검증.**
+- **학습 스크립트 내보내기**: `export_onnx.py`(opset 15)로 GPU로 학습한 체크포인트와 CPU로 학습한 체크포인트를 각각 내보냈다. 최대 절대 오차 9.54e-07과 1.43e-06(허용 1e-05), 둘 다 일치.
+- **`python -m unittest discover Tools/SignTrain`**: 8개 모두 통과(17초).
+
+#### 7.4 GPU에서만 생긴 문제와 해결
+
+| 문제 | 해결·결론 |
+|---|---|
+| cu128 인덱스에 고정 버전(`torch 2.15.0`)이 없어 설치 실패 | cu132 인덱스로 설치(7.1). 문서·`requirements.txt` 주석 수정 |
+| **오류는 없었다**: 장치 불일치, bf16 관련 오류, `no kernel image`, `out of memory` 모두 발생하지 않음. `train_mlp.py`를 고치지 않았다 | — |
+| 결정성: 같은 장치에서 같은 설정으로 두 번 돌리면 출력된 마지막 손실이 모두 같았다(GPU, CPU 각각). GPU와 CPU의 마지막 손실 차이는 최대 2e-4(출력 소수 4자리 기준), 평균 재현율은 같음 | 정상 범위. 장치가 다르면 부동소수점 결과가 약간 다른 것은 예상된다 |
+| MLP 학습은 GPU가 CPU보다 느림(7.2~7.3) | 문제가 아니라 결과. 그대로 기록 |
+| (GPU 문제가 아닌 참고) CPU에서 bf16 행렬 곱이 극단적으로 느림(회당 235초, fp32의 약 660배 느림). 원인은 확인하지 못했고 CPU의 bf16 하드웨어 지원이 없기 때문으로 **추정**한다 | CPU는 fp32로만 쓴다. bf16은 GPU 전용으로 쓴다 |
+
+#### 7.5 단계 6: 데이터 받을 준비
+
+- Git 제외 확인(`git check-ignore -v`): `Tools/SignData/raw/`(`.gitignore:139`), `Tools/SignTrain/runs/`(141), `*.pt`(142), `__pycache__/`(143) 모두 제외됨. 가상 환경은 저장소 밖(`%USERPROFILE%\SignTrainVenv`)이라 커밋될 수 없다.
+- **사용자가 정할 것**(보관 위치와 담당자는 팀 결정): ① 이 PC의 백업·삭제 담당자와 보관 위치, ② 녹화본을 옮기는 방법(암호화 USB 등)과 옮긴 뒤 원본 삭제 시점.
+
+#### 7.6 미검증·미측정
+
+- 실제 참여자 데이터로 학습한 결과(정확도, 학습 시간). 합성 데이터의 재현율 1.0은 합성 데이터가 쉬워서 나온 값으로 **성능 근거가 아니다.**
+- 이미지 학습 실제 속도(데이터 로딩·증강·에폭 수 포함). 3-2의 값은 무작위 텐서 기준이다.
+- Unity Inference Engine 2.6에서 ONNX 실행(이번 범위 밖).
+- CPU bf16 행렬 곱 50회 직접 측정(환산값), GPU가 느린 이유의 프로파일링.
+- cu128 빌드의 동작(고정 버전이 없어 이번에는 설치하지 못함).
+
+#### 7.7 사용자가 정할 것
+
+1. **PyTorch 빌드**: 고정 버전을 지키며 cu132를 유지할지, cu128 빌드(버전 2.11.0까지)에 맞춰 `requirements.txt`를 낮출지. home PC에서 검증된 `torch 2.15.0`(CPU)과 맞추려면 cu132 유지가 쉽다.
+2. **관절 MLP 학습 장치**: 위 실측으로는 CPU가 더 빠르다. B 단계는 CPU로 진행하고 GPU는 C 단계(이미지 CNN)에 쓸지.
+3. 7.5의 백업·삭제 담당자와 보관 위치.
