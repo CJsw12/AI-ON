@@ -1,0 +1,12 @@
+agent: sh-com-claude
+task: 수어 학습 데이터 녹화 가이드(md+pdf)와 녹화 점검 도구
+host: DESKTOP-GCC8QCI
+started: 2026-11-27T14:55:20+0900
+updated: 2026-11-27T14:55:20+0900
+paths:
+- docs/plans/Sign-Data-Recording-Guide.md
+- docs/reports/AI-ON-수어데이터-녹화가이드.pdf
+- docs/plans/Sign-Fingerspelling.md
+- Tools/SignTrain/Check-SignRecording.ps1
+- Tests/SignRecordingCheck.Tests.ps1
+- AGENTS.md
