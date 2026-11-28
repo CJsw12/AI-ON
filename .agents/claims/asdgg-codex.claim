@@ -1,0 +1,10 @@
+agent: asdgg-codex
+task: Azure 교수 음성 전환(심한뫼 제외 31명): 생성 스크립트·설정·재생성
+host: DESKTOP-BVE9KOT
+started: 2026-11-28T17:54:33+0900
+updated: 2026-11-28T17:54:34+0900
+paths:
+- Tools/Voice/
+- Assets/Resources/Voice/
+- Tests/AzureVoice.Tests.ps1
+- AGENTS.md
