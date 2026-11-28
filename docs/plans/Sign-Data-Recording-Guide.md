@@ -203,7 +203,7 @@
    |---|---|---|
    | `사람 ID (가명)` | 받은 가명 | `p01` |
    | `세션 ID` | 세션 이름 | `s1` (둘째 날은 `s2`) |
-   | `글자 목록 (쉼표 구분)` | 확정 글자 5개와 `_other` | `A,B,C,D,E,_other` (실제 글자로) |
+   | `글자 목록 (쉼표 구분)` | 확정 글자 5개와 `_other` | **`ㅂ,ㅇ,ㅎ,ㄹ,ㅅ,_other`** (처음부터 이렇게 들어 있다. 다른 글자나 `A,B,C`가 보이면 고친다) |
 
    창 아래에 `저장 경로: …/Tools/SignData/raw/<가명>/<세션>.csv`가 보이면 입력이 맞다. 빨간 오류가 뜨면 칸의 규칙(공백·쉼표 금지)을 확인한다.
 4. **`손 이미지도 함께 저장`** 체크가 **켜져 있는지** 확인한다(기본 켜짐). 끄면 이미지 학습에 쓸 데이터가 없다.
@@ -261,7 +261,7 @@
 녹화가 끝나면 **프로젝트 루트의 PowerShell**에서 실행한다. 이 도구는 **좌표를 출력하지 않고** 개수와 판정만 보여 준다(사람과 에이전트가 같이 써도 안전하다).
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Check-SignRecording.ps1 -Person p01 -Labels "A,B,C,D,E,_other" -RequireImages
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Check-SignRecording.ps1 -Person p01 -Labels "ㅂ,ㅇ,ㅎ,ㄹ,ㅅ,_other" -RequireImages
 ```
 
 | 옵션 | 뜻 | 기본 |
@@ -278,32 +278,32 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tools/SignTrain/Check-Si
 ```text
 == p01  (세션 2개: s1, s2)
 글자             유효 시도     짧은 시도       프레임     이미지  판정
-A                 15         0       330     120  OK
-B                 15         0       330     120  OK
-C                 16         0       352     128  OK
-D                 15         0       330     120  OK
-E                 15         0       330     120  OK
+ㄹ                 15         0       330     120  OK
+ㅂ                 15         0       330     120  OK
+ㅅ                 15         0       330     120  OK
+ㅇ                 15         0       330     120  OK
+ㅎ                 16         0       352     128  OK
 _other            16         0       352     128  OK
 
 결과: 형식 정상, 모든 글자가 목표(15 회) 이상입니다.
 ```
 
-**부족 예(글자 C가 모자라고 `_other`가 없고 세션이 1개):**
+**부족 예(ㅎ이 모자라고 `_other`가 없고 세션이 1개):**
 
 ```text
 == p02  (세션 1개: s1)
 글자             유효 시도     짧은 시도       프레임     이미지  판정
-A                 15         0       330     120  OK
-B                 15         0       330     120  OK
-C                 11         0       242      88  부족 (4회 더)
-D                 15         0       330     120  OK
-E                 15         0       330     120  OK
+ㄹ                 15         0       330     120  OK
+ㅂ                 15         0       330     120  OK
+ㅅ                 15         0       330     120  OK
+ㅇ                 15         0       330     120  OK
+ㅎ                 11         0       242      88  부족 (4회 더)
 예상 글자 _other 의 녹화가 없습니다.
 
 [주의]
   - p02: 세션이 1개뿐입니다. 다른 날·다른 조명의 세션을 한 번 더 녹화하세요(권장).
 [목표 미달]
-  - p02 / C : 유효 시도 11 / 15
+  - p02 / ㅎ : 유효 시도 11 / 15
   - p02 / _other : 녹화 없음
 ```
 

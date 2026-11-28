@@ -17,7 +17,8 @@ public sealed class SignRecorderWindow : EditorWindow
 {
     const string PrivacyNotice = "관절 좌표와, 켜 두면 손 부분만 잘라 낸 이미지(224×224)를 저장합니다. 전체 영상은 저장하지 않습니다. 팀 합의에 따라 녹화하세요.";
     const string LimitNotice = "한계: 단일 에디터·단일 창 기준이며 프로세스 간 파일 잠금은 지원하지 않습니다.";
-    const string DefaultLabels = "A,B,C,_other";
+    const string DefaultLabels = "ㅂ,ㅇ,ㅎ,ㄹ,ㅅ,_other";   // 확정 글자 5개 + 그 밖의 손 모양(2026-11-27)
+    static readonly string[] ConfirmedLabels = { "ㅂ", "ㅇ", "ㅎ", "ㄹ", "ㅅ", "_other" };
     const int TargetTrialsPerLabel = 15, MinValidFramesPerTrial = 10, LandmarkCount = 21;
     const double RepaintIntervalSeconds = 0.08;
 
@@ -265,6 +266,12 @@ public sealed class SignRecorderWindow : EditorWindow
             EditorGUI.EndDisabledGroup();
             if (!ValidateInputs(out string err)) EditorGUILayout.HelpBox(err, MessageType.Error);
             else EditorGUILayout.LabelField("저장 경로: " + GetCsvPath(), s_MiniWrap);
+            string unexpected = UnexpectedLabels();
+            if (unexpected.Length > 0) EditorGUILayout.HelpBox("확정 글자(ㅂ, ㅇ, ㅎ, ㄹ, ㅅ, _other)가 아닌 글자가 있습니다: " + unexpected + "\n학습 데이터에는 확정 글자만 쓰세요. 오타나 옛 목록(A,B,C)이면 입력칸을 고치세요.", MessageType.Warning);
+            else {
+                string missing = MissingLabels();
+                if (missing.Length > 0) EditorGUILayout.HelpBox("글자 목록에 없는 확정 글자: " + missing, MessageType.Info);
+            }
         }
     }
 
@@ -665,6 +672,18 @@ public sealed class SignRecorderWindow : EditorWindow
         int maxNum = labelMaxTrialNumbers.TryGetValue(label, out int m) ? m : 0;
         int count = labelTrialCounts.TryGetValue(label, out int c) ? c : 0;
         return Math.Max(maxNum, count) + 1;
+    }
+
+    string UnexpectedLabels() {
+        var bad = new List<string>();
+        for (int i = 0; i < parsedLabels.Count; i++) if (Array.IndexOf(ConfirmedLabels, parsedLabels[i]) < 0) bad.Add(parsedLabels[i]);
+        return string.Join(", ", bad.ToArray());
+    }
+
+    string MissingLabels() {
+        var missing = new List<string>();
+        for (int i = 0; i < ConfirmedLabels.Length; i++) if (!parsedLabels.Contains(ConfirmedLabels[i])) missing.Add(ConfirmedLabels[i]);
+        return string.Join(", ", missing.ToArray());
     }
 
     bool ValidateInputs(out string error) {
