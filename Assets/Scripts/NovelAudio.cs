@@ -11,6 +11,7 @@ public class NovelAudio : MonoBehaviour
     AudioSource music, effects, voice;
     string current;
     Coroutine transition, speaking;
+    AudioClip transientVoice;
     float fade;   // 0..1 crossfade between moods, multiplied by the music volume setting.
     readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
 
@@ -43,7 +44,23 @@ public class NovelAudio : MonoBehaviour
         if (speaking != null) StopCoroutine(speaking);
         speaking = null;
         voice.Stop();
+        ReleaseTransientVoice();
     }
+    // Runtime TTS clips belong to this player, unlike Resources clips.
+    public void SpeakTransient(AudioClip clip)
+    {
+        Speak(new List<AudioClip> { clip });
+        transientVoice = clip;
+        if (!Speaking) ReleaseTransientVoice();
+    }
+    void ReleaseTransientVoice()
+    {
+        if (transientVoice == null) return;
+        if (voice.clip == transientVoice) voice.clip = null;
+        Destroy(transientVoice);
+        transientVoice = null;
+    }
+    void OnDestroy() { ReleaseTransientVoice(); }
     IEnumerator SpeakAll(List<AudioClip> lines)
     {
         for (int i = 0; i < lines.Count; i++)
@@ -54,6 +71,7 @@ public class NovelAudio : MonoBehaviour
             while (voice.isPlaying) yield return null;
         }
         speaking = null;
+        ReleaseTransientVoice();
     }
 
     public void SetMood(string mood)

@@ -15,7 +15,7 @@ using UnityEngine;
 public static class AiProfessor
 {
     // The relay's address (not a secret): Server/ai-proxy deployed on Cloudflare. Players need no key.
-    const string ProxyEndpoint = "https://aion-ai-proxy.dugeun-campus.workers.dev";
+    internal const string ProxyEndpoint = "https://aion-ai-proxy.dugeun-campus.workers.dev";
     const string ProxyClient = "dugeun-campus";   // Must match CLIENT in Server/ai-proxy/worker.js.
     const string GeminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     const string GeminiModel = "gemini-3.1-flash-lite";   // pinned: the "-latest" alias moved to a model that took 15-40 s per reply (2026-11-05)
@@ -35,7 +35,7 @@ public static class AiProfessor
     public static readonly bool Supported = true;
 #endif
 
-    static readonly HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(40) };
+    internal static readonly HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(40) };
     static bool sendEffort = true;   // Dropped for the session if the gateway rejects reasoning_effort.
 
     // AI mode can run: the player's own key, or the relay server.
@@ -360,7 +360,7 @@ public static class AiProfessor
 
     // ---- Minimal JSON -------------------------------------------------------------------------
 
-    static string Json(string s)
+    internal static string Json(string s)
     {
         var sb = new StringBuilder("\"");
         foreach (char c in s)

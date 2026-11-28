@@ -2,6 +2,10 @@ name = "aion-ai-proxy"
 main = "worker.js"
 compatibility_date = "2026-09-01"
 
+[vars]
+TTS_DAILY_LIMIT = "300" # 0 disables speech; UTC-day budget in the relay object.
+# AZURE_SPEECH_KEY and AZURE_SPEECH_REGION are Worker secrets.
+
 # Per-IP limit: 20 AI requests a minute (a player sends one every few seconds at most).
 [[ratelimits]]
 name = "LIMITER"

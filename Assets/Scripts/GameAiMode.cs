@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 using UnityEngine;
 
 // AI mode (AiProfessor): at choice slots the player types their own answer and the professor model replies
@@ -21,10 +22,15 @@ public partial class GameController
     bool aiPendingHint;
     string aiAnswer = "";        // The free answer being graded.
     bool aiImeWanted;            // An AI text field had focus during the last GUI pass.
+    Task<AiProfessorVoice.Speech> aiVoicePending;
+    CancellationTokenSource aiVoiceCancellation;
+    string aiVoiceSlot, aiVoiceLine, aiVoiceKey;
+    int aiVoiceDialogue;
 
     // IMGUI only receives Hangul when IME composition is forced on; Auto drops it (notably in the Editor's Game view).
     void AiImeUpdate()
     {
+        AiVoicePoll();
         Input.imeCompositionMode = (aiImeWanted || (miniGame is CodeTutorPractice tutor && tutor.WantsIme) || (miniGame is ArCodeLab arCode && arCode.WantsIme)) ? IMECompositionMode.On : IMECompositionMode.Auto;
         aiImeWanted = false;
     }
@@ -40,6 +46,7 @@ public partial class GameController
 
     void AiReset()
     {
+        AiVoiceCancel();
         CancelStoryDictation();
         aiRun++;
         aiPending = null;
@@ -56,6 +63,7 @@ public partial class GameController
     {
         string key = AiSlotKey;
         if (aiSlot == key) return;
+        AiVoiceCancel();
         CancelStoryDictation();
         aiSlot = key;
         aiPending = null;   // a request from the previous question must not keep this one waiting
@@ -127,6 +135,42 @@ public partial class GameController
         resultKey = null;   // A generated reply is new text every time, so skip mode stops on it.
         showResult = true;
         aiTyped = "";
+        if (!nonsense && grade.Valid && AiProfessorVoice.CanSpeak(p.Voice) && GameSettings.Voice > 0)
+        {
+            AiVoiceCancel();
+            aiVoiceSlot = AiSlotKey;
+            aiVoiceLine = resultLine;
+            aiVoiceDialogue = dialogueIndex;
+            aiVoiceKey = scene + "/" + choiceStage + "/" + dialogueIndex + "/True";
+            aiVoiceCancellation = new CancellationTokenSource();
+            aiVoicePending = AiProfessorVoice.Request(p.Voice, grade.Reply, aiVoiceCancellation.Token);
+        }
+    }
+
+    void AiVoiceCancel()
+    {
+        aiVoiceCancellation?.Cancel();
+        aiVoiceCancellation?.Dispose();
+        aiVoiceCancellation = null;
+        aiVoicePending = null;
+    }
+
+    void AiVoicePoll()
+    {
+        if (aiVoicePending == null) return;
+        if (!aiMode || !showResult || aiVoiceSlot != AiSlotKey || resultLine != aiVoiceLine ||
+            dialogueIndex != aiVoiceDialogue || miniGame != null || lookAwayInterruptActive)
+        {
+            AiVoiceCancel();
+            return;
+        }
+        // SpeakOnce must register the result key before this clip arrives, or the next GUI pass stops it.
+        if (!aiVoicePending.IsCompleted || voiceKey != aiVoiceKey || menu != Menu.None) return;
+        var speech = aiVoicePending.IsFaulted || aiVoicePending.IsCanceled ? null : aiVoicePending.Result;
+        AiVoiceCancel();
+        if (speech == null || GameSettings.Voice <= 0) return;
+        AudioClip clip = AiProfessorVoice.CreateClip(speech);
+        if (clip != null) novelAudio.SpeakTransient(clip);
     }
 
     List<string[]> Recent()
@@ -138,6 +182,7 @@ public partial class GameController
     // "이전" during a request: the reply would otherwise replace the line being re-read. Drop it and refund a hint.
     void AiCancelPending()
     {
+        AiVoiceCancel();
         if (aiPending == null) return;
         aiPending = null;
         if (aiPendingHint) aiHintsUsed = Mathf.Max(0, aiHintsUsed - 1);

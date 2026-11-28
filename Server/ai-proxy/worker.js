@@ -13,6 +13,39 @@
 // eastern North America.
 
 import { DurableObject } from "cloudflare:workers";
+import voices from "./voices.json" with { type: "json" };
+
+// Canonical Python SAY order and patterns (checked offline).
+export const SAY = [
+  [String.raw`i\+\+`, "아이 플러스 플러스"],
+  [String.raw`\bGit\b`, "깃"],
+  [String.raw`\bCount\b`, "카운트"],
+  [String.raw`\bOT\b`, "오티"],
+  [String.raw`(?<![A-Za-z])LIFO(?![A-Za-z])`, "라이포"],
+  [String.raw`(?<![A-Za-z])FIFO(?![A-Za-z])`, "파이포"],
+  [String.raw`(?<![A-Za-z])target(?![A-Za-z])`, "타깃"],
+  [String.raw`\bk번째`, "케이번째"],
+  [String.raw`\b10진수`, "십진수"],
+  [String.raw`\b2진수`, "이진수"],
+  [String.raw`(?<!\d)1이`, "일이"],
+];
+// Python word boundaries include Korean; JavaScript's native \b does not.
+const word = String.raw`[\p{L}\p{N}_]`;
+const boundary = `(?:(?<=${word})(?!${word})|(?<!${word})(?=${word}))`;
+const speechRules = SAY.map(([p, t]) => [new RegExp(p.replaceAll(String.raw`\b`, boundary).replaceAll(String.raw`\d`, String.raw`\p{Nd}`), "gu"), t]);
+const xml = t => t.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
+export function buildSsml(text, config) {
+  for (const [p, t] of speechRules) text = text.replace(p, t);
+  text = text.replaceAll("…", "... ").trim().replace(/^(\.\.\.\s*)+/, "").replace(/\s+/gu, " ").trim();
+  let body = xml(text);
+  if (config.pause > 0) body = body.replace(/([,.?!…])(?=\s)/gu, `$1<break time='${config.pause}ms'/>`);
+  return `<speak version='1.0' xml:lang='ko-KR'><voice name='${xml(config.voice)}'><prosody rate='${config.rate}%' pitch='${config.pitch}%' volume='${config.volume >= 0 ? "+" : ""}${config.volume}%'>${body}</prosody></voice></speak>`;
+}
+function ttsInput(body) {
+  if (!body || typeof body.voice !== "string" || body.voice === "ShimHanmoe" || !Object.hasOwn(voices, body.voice) || !voices[body.voice]?.voice || typeof body.text !== "string") return null;
+  const text = body.text.replace(/\s+/gu, " ").trim();
+  return text.length > 0 && [...text].length <= 300 ? { voice: body.voice, text } : null;
+}
 
 const OPENAI_UPSTREAM = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MODEL = "gpt-6.1-terra";
@@ -37,7 +70,7 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",  // Lets a WebGL build call it too.
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, X-AION-Client",
-  "Access-Control-Expose-Headers": "X-AION-Model",
+  "Access-Control-Expose-Headers": "X-AION-Model, X-AION-Volume",
 };
 const JSON_TYPE = { "Content-Type": "application/json; charset=utf-8" };
 
@@ -73,6 +106,7 @@ async function callModel(url, key, body, timeoutMs) {
 // so it also keeps the daily Terra count.
 export class GeminiRelay extends DurableObject {
   async fetch(request) {
+    if (new URL(request.url).pathname === "/tts") return this.tts(request);
     const { system, user } = await request.json();
     const messages = [{ role: "system", content: system }, { role: "user", content: user }];
 
@@ -93,6 +127,40 @@ export class GeminiRelay extends DurableObject {
       { model: GEMINI_MODEL, messages, max_completion_tokens: MAX_OUTPUT_TOKENS }, GEMINI_TIMEOUT_MS);
     if (gemini.text === null) return reply(gemini.status, gemini.timedOut ? "AI server timed out" : "Could not reach the AI service");
     return new Response(gemini.text, { status: gemini.status, headers: { ...JSON_TYPE, "X-AION-Model": GEMINI_MODEL } });
+  }
+
+  async tts(request) {
+    let input;
+    try { input = ttsInput(await request.json()); } catch { return reply(400, "Invalid JSON"); }
+    if (!input) return reply(400, "Invalid speech request");
+    const key = (this.env.AZURE_SPEECH_KEY || "").trim();
+    const region = (this.env.AZURE_SPEECH_REGION || "").trim();
+    if (!key || !/^[a-z0-9-]+$/.test(region)) return reply(503, "Speech service unavailable");
+    if (!await this.takeTtsSlot()) return reply(429, "Speech daily limit reached");
+    const config = voices[input.voice];
+    try {
+      const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+        method: "POST", headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/ssml+xml",
+          "X-Microsoft-OutputFormat": "riff-24khz-16bit-mono-pcm", "User-Agent": "aion-ai-proxy" },
+        body: buildSsml(input.text, config), signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) return reply(res.status, "Speech service failed");
+      const bytes = await res.arrayBuffer();
+      return new Response(bytes, { headers: { ...CORS, "Content-Type": "audio/wav", "X-AION-Volume": String(config.volume) } });
+    } catch { return reply(504, "Speech service unavailable"); }
+  }
+  async takeTtsSlot() {
+    const n = Number(this.env.TTS_DAILY_LIMIT);
+    const limit = this.env.TTS_DAILY_LIMIT !== undefined && Number.isFinite(n) ? n : 300;
+    if (limit <= 0) return false;
+    // Reserve atomically, including concurrent calls, before contacting Azure.
+    return this.ctx.storage.transaction(async storage => {
+      const day = "tts:" + new Date().toISOString().slice(0, 10);
+      const used = (await storage.get(day)) || 0;
+      if (used >= limit) return false;
+      await storage.put(day, used + 1);
+      return true;
+    });
   }
 
   // Counts a Terra call against today's budget; false while Terra is paused or once the budget is used up.
@@ -131,6 +199,15 @@ async function handle(request, env) {
     let body;
     try { body = await request.json(); } catch { return reply(400, "Invalid JSON"); }
     if (!body || typeof body !== "object" || Array.isArray(body)) return reply(400, "Invalid request");
+    if (new URL(request.url).pathname === "/tts") {
+      const input = ttsInput(body);
+      if (!input) return reply(400, "Invalid speech request");
+      const relay = env.RELAY.get(env.RELAY.idFromName("gemini-" + REGION), { locationHint: REGION });
+      const upstream = await relay.fetch("https://relay/tts", { method: "POST", body: JSON.stringify(input) });
+      return new Response(upstream.body, { status: upstream.status, headers: { ...CORS,
+        "Content-Type": upstream.headers.get("Content-Type") || "application/json",
+        "X-AION-Volume": upstream.headers.get("X-AION-Volume") || "0" } });
+    }
     const system = typeof body.system === "string" ? body.system : "";
     const user = typeof body.user === "string" ? body.user : "";
     if (!system || !user || system.length > MAX_SYSTEM || user.length > MAX_USER) return reply(400, "Invalid request");

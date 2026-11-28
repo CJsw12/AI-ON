@@ -86,8 +86,16 @@ Get-UnityConsole -Level error -Tail 20; Invoke-UnityEval 'return UnityEditor.Edi
 **iPhone 시선 연결** (VTube Studio, 장애는 `docs/plans/iPhone-Gaze-Handoff.md`): Wi-Fi는 iPhone 앱 `3rd Party PC Clients` 켜기 → Unity 시선 테스트 → iPhone 추적 → **iPhone의 Wi-Fi IPv4**와 앱 포트(보통 21412) → 보정. PC 수신은 UDP 11125, 같은 로컬망 필요(게스트 Wi-Fi·AP 격리·VPN·방화벽 Block 확인, 방화벽 전체를 끄지 않음). USB는 Apple Devices와 VTube Studio PC 앱 → 양쪽 Connect USB(iPhone 먼저) → PC 앱 `Allow Plugin API access`(보통 8001) → Unity에서 연결 후 `AI-ON Gaze Test` 허용(실기 미검증). 무료 버전은 5분 뒤 끊길 수 있다.
 
 **교수 목소리** (`Professor.Voice`, 현재 `ShimHanmoe`): 음성 `Assets/Resources/Voice/<Voice>/<해시>.ogg`, 목록 `lines.txt`. 대사를 고치면 `.\Tools\Voice\export_lines.ps1 -Voice ShimHanmoe` → `<voice-clone>\cosyvoice\.venv\Scripts\python.exe Tools\Voice\generate.py Tools\Voice\ShimHanmoe.lines.txt Assets\Resources\Voice\ShimHanmoe`(바뀐 것만, `--force`는 전부, 읽는 법은 `SAY` 표) → `.ogg.meta`까지 커밋. TTS 환경 설치는 `docs/plans/TTS-Local-Setup.md`.
+심한뫼는 위 CosyVoice 경로를 유지하며, 나머지 31명은 `Tools/Voice/azure/voices.json`의 Azure 한국어 음성 배정을 사용한다.
+먼저 `powershell -NoProfile -ExecutionPolicy Bypass -File Tools/Voice/export_lines.ps1 -Voice <Id>`로 대사를 추출한다. 키와 지역은 사용자 PC의 `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` 환경 변수에만 둔다(Windows 사용자 환경 변수도 읽음).
+실행 예: `uv run --with requests --with soundfile --with numpy --with pyloudnorm python Tools/Voice/generate_azure.py --voice LeeMyeonghee --dry-run`. 확인 후 `--dry-run`을 빼면 생성하며, `--all`은 심한뫼를 제외한 전원, `--force`는 기존 음성도 다시 생성한다.
+요청 간격은 최소 3.1초이며, WAV를 교수별 `−20 + 20*log10(1 + volume/100)` LUFS 목표로 정규화한 뒤 피크를 −1 dBFS로 제한해 24kHz mono OGG Vorbis로 저장한다. 측정 불가한 짧은 음성은 같은 목표값을 RMS 기준으로 적용한다.
+실패한 대사는 목록과 기존 오디오를 유지한다. 더 이상 쓰지 않는 `.ogg`와 짝 `.ogg.meta`는 지우므로, 생성 결과와 변경 파일을 확인한다. 로그는 Git에서 제외된 `Logs/Voice/`에 저장한다.
+선택 검사: uv에 `--with faster-whisper`를 추가하고 스크립트에 `--asr`를 붙이면 small CPU int8로 받아쓰며, `Logs/Voice/azure-asr-<Id>.tsv`에서 CER 0.25 초과를 표시한다. 최초 모델 다운로드가 필요하며 기본값은 꺼짐이다.
 
 **AI 모드 서버** (`Server/ai-proxy/`, Cloudflare Worker): `gpt-6.1-terra`(12초, 하루 500회) → 실패 시 `gemini-3.1-flash-lite`. 키는 Cloudflare 비밀 설정에만 둔다. 배포: `npx wrangler login` → `npx wrangler secret put GEMINI_API_KEY`/`OPENAI_API_KEY` → `npx wrangler deploy`(주소는 `AiProfessor.ProxyEndpoint`). 설정에 개인 Gemini 키가 있으면 서버를 거치지 않는다.
+스토리 AI 자유 답변은 `POST /tts`에서 Azure 음성을 받는다. 비밀값 `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`을 서버에 설정하고, 교수 설정은 `Server/ai-proxy/voices.json`을 원본과 동일하게 유지한다.
+`TTS_DAILY_LIMIT`은 UTC 기준 하루 요청 상한(기본 300회, 0이면 끔)이다. 심한뫼·미등록 교수 및 음성 실패·시간 초과·429는 자막으로만 진행하며, 힌트·별도 질문 화면·고정 대사에는 적용하지 않는다.
 
 **로컬 음성 입력·대화** (`Tools/StorySpeech/`, Windows 확인용): `transcribe.py --worker`는 faster-whisper 1.2.1·av 16.1.0·small CPU int8 모델을 유지한다. 첫 실행 모델 다운로드 후 캐시를 우선 사용한다.
 스토리 AI 자유 대답에서 자동 음성 입력을 켜면 발화 뒤 1.3초 침묵 감지 → 인식 문장 1.5초 표시 → 기존 채점으로 전송한다. 마이크 이름 버튼으로 장치를 바꾸고 감도를 조절한다.

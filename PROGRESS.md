@@ -8,6 +8,11 @@
 - 회귀 테스트 `Tests/*.ps1` 10종. 문서는 `AGENTS.md`(규칙·도구), `PROGRESS.md`, `docs/plans/`(계획)만 쓴다.
 
 ## 2. 완료 및 검증 (Done)
+- **[Claude+Codex] 2026-11-28 교수 31명 음성 Azure 전환 + AI 자유 답변 실시간 TTS**: 심한뫼 제외 31명 대사 2,202개를 Azure 한국어 음성으로 재생성(`Tools/Voice/azure/voices.json`, `generate_azure.py`). 서버 `/tts`가 같은 설정으로 AI 답변을 읽는다(심한뫼는 자막만).
+  - **플레이 방법**: 스토리 진행 시 새 목소리 확인. 실시간 음성은 서버 배포 후 AI 모드 켜기 → 심한뫼 외 교수에게 자유 답변 → 교수 답변이 목소리로 나온다. 배포 전·실패 시 자막만.
+  - 배포(계정 주인): `Server/ai-proxy`에서 `npx wrangler secret put AZURE_SPEECH_KEY`/`AZURE_SPEECH_REGION`(koreacentral) → `npx wrangler deploy`. 하루 상한 `TTS_DAILY_LIMIT`=300.
+  - 검증: Tests 27종 exit 0, diff 검사, Unity 컴파일 오류 0, VoiceCoverage 2282/2282. 실패 1건(백소담 `…….` 무음 대사, 기존 파일 유지).
+  - 미검증: 서버 배포·실제 실시간 재생, 전체 음성 청취(일부 발음 손전등·옷이고·루트 확인 필요). 기획 초안 `docs/plans/Education-AI-Expansion-Plan.md` 추가.
 - **[Claude] 2026-11-28 수어 녹화기 기본 글자 목록을 확정 글자로 수정**: 팀원이 녹화 창을 열면 입력칸에 `A,B,C,_other`(옛 기본값)가 떠서 알파벳이 보이던 문제를 고쳤다. `SignRecorderWindow.cs`의 기본값을 `ㅂ,ㅇ,ㅎ,ㄹ,ㅅ,_other`로 바꾸고, 확정 글자가 아닌 글자가 입력되면 경고(막지는 않음)를 표시한다. 녹화 가이드와 `Sign-Fingerspelling.md`의 알파벳 입력 예시·샘플 출력도 확정 글자로 교체(PDF 갱신). 검증: Tests 25종 exit 0, git diff --check 통과, UnityEngine/UnityEditor DLL 참조 컴파일 오류 0. **주의: 이미 열려 있던 녹화 창은 옛 값을 저장해 둘 수 있어, 입력칸이 `A,B,C`면 직접 고치거나 창을 닫았다 다시 연다.** 미검증: Unity 에디터에서의 실제 표시.
 - **main 통합 검증**: 원격 최신 수어·워치 변경과 이번 스토리 음성 입력·교수 텍스트 대화·AI 조교·AR 실습을 합쳤다. AGENTS/PROGRESS는 양쪽 내용을 보존했다.
   - **플레이 방법**: 스토리 AI 자유 답변은 하단 음성 입력/마이크 설정, 타이틀은 교수님께 질문하기, 미니게임→컴퓨터공학과에서 기존 AI 조교와 새 AR 실습을 비교한다. 스토리에 새 미니게임은 넣지 않았다.
